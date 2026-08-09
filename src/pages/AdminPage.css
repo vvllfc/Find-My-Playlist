@@ -2,6 +2,13 @@
   max-width: 60rem;
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .admin {
+    padding: 1.25rem 1rem 3rem;
+  }
 }
 
 .admin-intro {
@@ -26,6 +33,8 @@
 }
 
 .admin-field input {
+  width: 100%;
+  box-sizing: border-box;
   padding: 0.5rem 0.7rem;
   border-radius: 0.4rem;
   border: 1px solid #ccc;
@@ -49,6 +58,16 @@
   display: grid;
   grid-template-columns: minmax(12rem, 16rem) 1fr;
   gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .admin-editor {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-playlist-list {
+    max-height: 12rem;
+  }
 }
 
 .admin-playlist-list {
@@ -103,6 +122,8 @@
 
 .admin-form input,
 .admin-form textarea {
+  width: 100%;
+  box-sizing: border-box;
   padding: 0.5rem 0.7rem;
   border-radius: 0.4rem;
   border: 1px solid #ccc;

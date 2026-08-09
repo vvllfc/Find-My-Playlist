@@ -2,6 +2,13 @@
   max-width: 72rem;
   margin: 0 auto;
   padding: 2rem 1.5rem 4rem;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .catalog {
+    padding: 1.25rem 1rem 3rem;
+  }
 }
 
 .catalog-header {
@@ -28,6 +35,8 @@
 }
 
 .catalog-search {
+  width: 100%;
+  box-sizing: border-box;
   padding: 0.6rem 0.9rem;
   border-radius: 0.5rem;
   border: 1px solid #ccc;
@@ -63,8 +72,15 @@
 
 .catalog-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
   gap: 1.25rem;
+}
+
+@media (max-width: 480px) {
+  .catalog-grid {
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: 0.85rem;
+  }
 }
 
 .playlist-card {
