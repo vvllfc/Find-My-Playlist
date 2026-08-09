@@ -42,6 +42,10 @@ jobs:
         env:
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          # Only the daily cron and the admin's manual "Rafraîchir le site
+          # maintenant" button (workflow_dispatch) actually call Spotify; a
+          # plain code push reuses the cached playlist list to save quota.
+          SKIP_LIVE_FETCH: ${{ github.event_name == 'push' && 'true' || 'false' }}
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

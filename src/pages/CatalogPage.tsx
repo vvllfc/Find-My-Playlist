@@ -38,7 +38,7 @@ export default function CatalogPage() {
     <div className="catalog-page">
       <div className="hero-zone">
         <div className="hero-inner">
-          <p className="kicker">Find My Playlist</p>
+          <p className="kicker">VLF Music</p>
           <h1>Trouve ta playlist</h1>
           <p>{playlists ? `${playlists.length} playlists` : 'Playlists'} triées par genre, tempo et présence de voix — cherche par nom ou filtre par tag.</p>
         </div>

@@ -8,12 +8,13 @@ const rootDir = path.resolve(__dirname, '..')
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
 const REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN
+const SKIP_LIVE_FETCH = process.env.SKIP_LIVE_FETCH === 'true'
 
 // Gitignored, persisted between CI runs via actions/cache (see deploy.yml) —
-// not committed. Track counts rarely change and Spotify's Development Mode
-// quota is easy to exhaust with hundreds of playlists, so once a count is
-// known it's trusted indefinitely rather than re-fetched on every build.
-// Delete this file locally (or clear the Actions cache) to force a refresh.
+// not committed. Keyed by playlist ID to { trackCount, snapshotId }; a
+// per-playlist track-count call (the expensive part, Spotify's Development
+// Mode quota is easy to exhaust with hundreds of playlists) is only made
+// when the playlist's snapshot_id has actually changed since last time.
 const TRACK_COUNT_CACHE_PATH = 'data/track-counts-cache.json'
 
 // Same persistence mechanism, holding the last successfully fetched playlist
@@ -113,6 +114,7 @@ async function fetchOwnPublicPlaylists(accessToken) {
   const me = await meRes.json()
 
   const playlists = []
+  const snapshotIds = {}
   let url = 'https://api.spotify.com/v1/me/playlists?limit=50'
 
   while (url) {
@@ -133,6 +135,10 @@ async function fetchOwnPublicPlaylists(accessToken) {
         trackCount: 0,
         externalUrl: item.external_urls?.spotify ?? `https://open.spotify.com/playlist/${item.id}`,
       })
+      // snapshot_id changes whenever a playlist's tracks/order change — comes
+      // free with the list response, so it's a zero-cost way to tell whether
+      // a per-playlist track-count call is actually worth making below.
+      snapshotIds[item.id] = item.snapshot_id
     }
     url = data.next
   }
@@ -140,17 +146,19 @@ async function fetchOwnPublicPlaylists(accessToken) {
   const cache = await readTrackCountCache()
   let cacheHits = 0
   await mapWithConcurrency(playlists, 5, async (playlist) => {
-    if (typeof cache[playlist.id] === 'number') {
-      playlist.trackCount = cache[playlist.id]
+    const cached = cache[playlist.id]
+    const snapshotId = snapshotIds[playlist.id]
+    if (cached && cached.snapshotId === snapshotId) {
+      playlist.trackCount = cached.trackCount
       cacheHits += 1
       return
     }
     playlist.trackCount = await fetchTrackCount(accessToken, playlist.id)
-    cache[playlist.id] = playlist.trackCount
+    cache[playlist.id] = { trackCount: playlist.trackCount, snapshotId }
   })
   await writeFile(path.join(rootDir, TRACK_COUNT_CACHE_PATH), JSON.stringify(cache, null, 2))
   console.log(
-    `[fetch-and-merge-playlists] track counts: ${cacheHits} from cache, ${playlists.length - cacheHits} fetched from Spotify (${playlists.filter((p) => p.trackCount > 0).length} non-zero total).`,
+    `[fetch-and-merge-playlists] track counts: ${cacheHits} unchanged (skipped), ${playlists.length - cacheHits} fetched from Spotify (${playlists.filter((p) => p.trackCount > 0).length} non-zero total).`,
   )
 
   return playlists
@@ -162,6 +170,22 @@ async function loadSpotifyPlaylists() {
       '[fetch-and-merge-playlists] SPOTIFY_CLIENT_ID/SPOTIFY_REFRESH_TOKEN not set — using sample fixture data instead of calling Spotify.',
     )
     return readJson('data/sample-spotify-fixture.json')
+  }
+
+  if (SKIP_LIVE_FETCH) {
+    // A plain code push doesn't need fresh Spotify data — reuse the last
+    // successful fetch instead of spending API quota on every deploy. Real
+    // refreshes only happen on the daily cron or the admin's manual button
+    // (see deploy.yml, which only sets SKIP_LIVE_FETCH=true for push events).
+    try {
+      const cached = await readJson(LAST_GOOD_PLAYLISTS_PATH)
+      console.log(
+        `[fetch-and-merge-playlists] Skipping live Spotify fetch for this push — reusing cached playlist list (${cached.length} playlists).`,
+      )
+      return cached
+    } catch {
+      console.warn('[fetch-and-merge-playlists] SKIP_LIVE_FETCH set but no cached playlist list yet — fetching live instead.')
+    }
   }
 
   try {

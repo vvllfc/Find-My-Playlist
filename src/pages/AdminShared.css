@@ -1,3 +1,7 @@
+/* Shared by AdminPage and ModifyPage: the password gate, and the
+   panel/form/list building blocks used for editing forms on both pages
+   (even though ModifyPage's outer chrome reuses CatalogPage.css instead). */
+
 .admin {
   max-width: 54rem;
   margin: 0 auto;
@@ -21,6 +25,7 @@
   font-size: 1.1rem;
 }
 
+.admin-section h2,
 .admin h2 {
   font-family: var(--font-mono);
   text-transform: uppercase;
@@ -29,7 +34,7 @@
   color: var(--muted);
 }
 
-.admin h3 {
+.admin-form h3 {
   font-size: 1rem;
 }
 
@@ -37,6 +42,11 @@
   color: var(--muted);
   font-size: 0.9rem;
   margin-bottom: 2rem;
+}
+
+.admin-intro code {
+  font-family: var(--font-mono);
+  color: var(--violet);
 }
 
 .admin-gate {
@@ -218,9 +228,14 @@
   color: #ff6b6b;
 }
 
-/* Buttons — mono, uppercase, quiet by default; submit buttons (the main save
-   actions) pop in Spotify green. */
-button {
+/* Buttons within these admin building blocks — mono, uppercase, quiet by
+   default; submit buttons (the main save actions) pop in Spotify green.
+   Scoped to these classes rather than a bare `button` selector so it
+   doesn't leak onto the catalog-styled chrome ModifyPage also uses. */
+.admin-gate button,
+.admin-section button,
+.admin-toolbar button,
+.admin-form button {
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -233,9 +248,14 @@ button {
   cursor: pointer;
 }
 
-.admin input:focus-visible,
-.admin textarea:focus-visible,
-.admin button:focus-visible {
+.admin-gate input:focus-visible,
+.admin-field input:focus-visible,
+.admin-form input:focus-visible,
+.admin-form textarea:focus-visible,
+.admin-gate button:focus-visible,
+.admin-section button:focus-visible,
+.admin-toolbar button:focus-visible,
+.admin-form button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }

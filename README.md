@@ -2,8 +2,9 @@
 
 Site du projet Find My Playlist, servi sur [vlfmusic.fr](https://vlfmusic.fr) via GitHub Pages.
 
-Catalogue public des playlists Spotify publiques (recherche + tags), et page privée `#/admin`
-pour éditer les descriptions/tags et modifier directement le nom/description sur Spotify.
+Catalogue public des playlists Spotify publiques (recherche + tags), et deux pages privées :
+`#/admin` pour éditer les descriptions/tags du site, `#/modify` pour éditer nom/description
+directement sur Spotify (publiques ou privées).
 
 ## Stack
 
@@ -11,8 +12,12 @@ pour éditer les descriptions/tags et modifier directement le nom/description su
 - Récupération des playlists publiques au build (GitHub Actions) via l'API Spotify, authentifiée
   avec un refresh token (Spotify n'autorise plus le flow app-only "Client Credentials" pour lister
   les playlists d'un compte, même publiques — voir "Sécurité" ci-dessous)
-- Admin (`#/admin`) : édition des tags/descriptions du site via l'API GitHub (Contents), édition
-  directe nom/description Spotify via OAuth (Authorization Code + PKCE)
+- `#/admin` : édition des tags/descriptions du site via l'API GitHub (Contents), déclenchement du
+  redéploiement, connexion CI (lecture seule) pour le fetch au build
+- `#/modify` : édition directe nom/description sur Spotify via OAuth (Authorization Code + PKCE),
+  habillée comme le catalogue public plutôt que dans le style sobre de l'admin
+- Les deux pages privées partagent le même écran de mot de passe optionnel
+  ([`src/lib/adminGate.ts`](src/lib/adminGate.ts))
 
 ## Développement
 
@@ -39,12 +44,15 @@ Le site est déployé automatiquement sur GitHub Pages : à chaque push sur `mai
 "Rafraîchir le site maintenant" de l'admin. Le workflow (`.github/workflows/deploy.yml`) régénère
 `public/data/playlists.json` avant de builder.
 
-Si le fetch Spotify échoue au build (quota épuisé, secret expiré...), le site garde la dernière
-liste de playlists récupérée avec succès (`data/last-successful-playlists.json`, mise en cache
-entre les runs) plutôt que de retomber sur les données d'exemple — les exemples ne servent que s'il
-n'y a jamais eu de fetch réussi. Les compteurs de titres sont mis en cache de la même façon
-(`data/track-counts-cache.json`) pour éviter de re-consommer inutilement le quota Spotify à chaque
-build.
+**Un simple push ne consomme aucun appel Spotify** — seuls le cron quotidien et le bouton
+"Rafraîchir le site maintenant" appellent réellement l'API (`SKIP_LIVE_FETCH` dans le workflow, basé
+sur `github.event_name`) ; un push de code réutilise juste la dernière liste de playlists mise en
+cache. Cette dernière liste réussie (`data/last-successful-playlists.json`) sert aussi de filet de
+sécurité si le fetch Spotify échoue (quota épuisé, secret expiré...) — les données d'exemple ne
+servent que s'il n'y a jamais eu de fetch réussi. Les compteurs de titres sont mis en cache par
+playlist avec leur `snapshot_id` (`data/track-counts-cache.json`) : un appel individuel n'est refait
+que si le `snapshot_id` a changé depuis la dernière fois, donc seules les playlists réellement
+modifiées coûtent du quota.
 
 Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
 
@@ -71,22 +79,25 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
    variables → Actions). Sans ça, le build utilise les données d'exemple à la place de tes vraies
    playlists.
 6. **Mot de passe admin (optionnel)** — dissuade les visiteurs curieux qui tomberaient sur l'URL
-   `#/admin` (voir "Sécurité" : ce n'est pas ce qui protège réellement tes données). Génère un hash
-   avec `node scripts/hash-password.mjs "ton-mot-de-passe"` et colle le résultat dans
-   [`src/config.ts`](src/config.ts) (`ADMIN_GATE_PASSWORD_HASH`). Laisser vide désactive l'écran.
+   `#/admin` ou `#/modify` (voir "Sécurité" : ce n'est pas ce qui protège réellement tes données).
+   Génère un hash avec `node scripts/hash-password.mjs "ton-mot-de-passe"` et colle le résultat dans
+   [`src/config.ts`](src/config.ts) (`ADMIN_GATE_PASSWORD_HASH`). Laisser vide désactive l'écran sur
+   les deux pages (même mot de passe, même verrou pour les deux).
 
 ## Sécurité
 
 - Spotify a désactivé l'accès en "Client Credentials" (app-only, sans connexion) à la liste des
   playlists d'un compte — même publiques. Le fetch au build doit donc s'authentifier avec un vrai
   token utilisateur, mais celui-ci est obtenu via une connexion **dédiée, en lecture seule**
-  (scope `playlist-read-private` uniquement, bouton "Configuration CI" dans l'admin) : le secret
+  (scope `playlist-read-private` uniquement, section "Configuration CI" de `#/admin`) : le secret
   GitHub Actions qui en résulte ne peut donc rien modifier sur le compte Spotify, seulement lire la
   liste de playlists.
-- L'édition directe des playlists (nom/description, bouton "Connecter Spotify" du haut) utilise une
-  connexion **séparée**, avec les scopes d'écriture — stockée uniquement dans le navigateur de la
-  personne qui se connecte, jamais dans un secret CI. Un token capable de modifier le compte ne peut
-  exister que si quelqu'un s'y connecte avec les identifiants Spotify réels du compte.
+- L'édition directe des playlists (nom/description, `#/modify`) utilise une connexion **séparée**,
+  avec les scopes d'écriture — stockée uniquement dans le navigateur de la personne qui se connecte,
+  jamais dans un secret CI. Un token capable de modifier le compte ne peut exister que si quelqu'un
+  s'y connecte avec les identifiants Spotify réels du compte. La liste de playlists y est aussi mise
+  en cache (`localStorage`, pas de secret) pour limiter les appels — rafraîchie uniquement via le
+  bouton "Rafraîchir la liste", jamais automatiquement.
 - Les écritures sur le repo (`#/admin`) passent par un token GitHub que seul le propriétaire (ou un
   collaborateur autorisé) peut générer avec accès en écriture à ce repo précis.
 - `#/admin` n'est jamais lié depuis la navigation publique — accessible seulement en tapant l'URL.

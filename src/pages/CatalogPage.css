@@ -160,6 +160,10 @@
   border-color: var(--accent-fill);
   color: var(--accent-ink);
 }
+.tag:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 
 /* Tracklist rows — solid panel so the busy backdrop doesn't fight with the
    list text; the oil-slick stays visible around it (gutters, hero, mixer). */
