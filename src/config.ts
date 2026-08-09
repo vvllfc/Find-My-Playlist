@@ -14,4 +14,4 @@ export const SPOTIFY_SCOPES = ['playlist-read-private', 'playlist-modify-public'
 // SHA-256 hex hash of a password gate for #/admin — a deterrent against casual
 // visitors, not real security (see src/lib/adminGate.ts). Leave empty to
 // disable the gate. Generate a hash with: node scripts/hash-password.mjs "…"
-export const ADMIN_GATE_PASSWORD_HASH = ''
+export const ADMIN_GATE_PASSWORD_HASH = 'ac3f6da328c6062ef2e8638543b6757f54f905b664ecfcd52fcbc7cde9dda452'
