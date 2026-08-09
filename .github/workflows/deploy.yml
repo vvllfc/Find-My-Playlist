@@ -27,6 +27,15 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: data/track-counts-cache.json
+          # Unique key per run so the updated cache actually gets saved back at
+          # the end (cache keys are immutable — a fixed key would only ever
+          # save once); restore-keys falls back to the most recent entry.
+          key: spotify-track-counts-${{ github.run_id }}
+          restore-keys: |
+            spotify-track-counts-
       - run: npm run fetch:playlists
         env:
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}

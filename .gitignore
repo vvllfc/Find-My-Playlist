@@ -15,6 +15,9 @@ dist-ssr
 # Generated at build time by scripts/fetch-and-merge-playlists.mjs — never hand-edit or commit
 public/data/
 
+# Persisted between CI runs via actions/cache (see deploy.yml), not committed
+data/track-counts-cache.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

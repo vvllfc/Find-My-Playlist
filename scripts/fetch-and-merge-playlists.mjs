@@ -9,9 +9,24 @@ const rootDir = path.resolve(__dirname, '..')
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
 const REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN
 
+// Gitignored, persisted between CI runs via actions/cache (see deploy.yml) —
+// not committed. Track counts rarely change and Spotify's Development Mode
+// quota is easy to exhaust with hundreds of playlists, so once a count is
+// known it's trusted indefinitely rather than re-fetched on every build.
+// Delete this file locally (or clear the Actions cache) to force a refresh.
+const TRACK_COUNT_CACHE_PATH = 'data/track-counts-cache.json'
+
 async function readJson(relPath) {
   const raw = await readFile(path.join(rootDir, relPath), 'utf-8')
   return JSON.parse(raw)
+}
+
+async function readTrackCountCache() {
+  try {
+    return await readJson(TRACK_COUNT_CACHE_PATH)
+  } catch {
+    return {}
+  }
 }
 
 // Spotify's Client Credentials flow (app-only, no login) can no longer list a
@@ -115,11 +130,20 @@ async function fetchOwnPublicPlaylists(accessToken) {
     url = data.next
   }
 
+  const cache = await readTrackCountCache()
+  let cacheHits = 0
   await mapWithConcurrency(playlists, 5, async (playlist) => {
+    if (typeof cache[playlist.id] === 'number') {
+      playlist.trackCount = cache[playlist.id]
+      cacheHits += 1
+      return
+    }
     playlist.trackCount = await fetchTrackCount(accessToken, playlist.id)
+    cache[playlist.id] = playlist.trackCount
   })
+  await writeFile(path.join(rootDir, TRACK_COUNT_CACHE_PATH), JSON.stringify(cache, null, 2))
   console.log(
-    `[fetch-and-merge-playlists] fetched track counts for ${playlists.length} playlists (${playlists.filter((p) => p.trackCount > 0).length} non-zero — see warnings above for any that failed).`,
+    `[fetch-and-merge-playlists] track counts: ${cacheHits} from cache, ${playlists.length - cacheHits} fetched from Spotify (${playlists.filter((p) => p.trackCount > 0).length} non-zero total).`,
   )
 
   return playlists
