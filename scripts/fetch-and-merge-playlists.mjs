@@ -74,18 +74,22 @@ async function mapWithConcurrency(items, limit, fn) {
   return results
 }
 
-// Retries on 429 (respecting Retry-After when Spotify sends one) for ANY
-// Spotify call, not just the per-playlist track-count one — the list
-// endpoint (/v1/me/playlists) can 429 too. Note this only helps with a
-// short-window rate limit; a Development Mode *quota* exhaustion (a 429 with
-// reason "QUOTA_EXCEEDED") will just keep failing no matter how long it
-// waits within these 4 attempts — reducing total call volume is the only
-// real fix for that (see SKIP_LIVE_FETCH and the snapshot_id-gated cache).
+// Retries on 429 (respecting Retry-After when Spotify sends one, but capped —
+// see below) for ANY Spotify call, not just the per-playlist track-count one.
+// This only helps with a short-window rate limit; a Development Mode *quota*
+// exhaustion (a 429 with reason "QUOTA_EXCEEDED") sends a Retry-After that can
+// be tens of thousands of seconds (a literal "come back tomorrow"), and
+// blindly sleeping that long would hang the whole CI job for hours. Cap the
+// wait per attempt so a handful of quick retries either clear a transient
+// rate limit or fail fast — reducing total call volume is the only real fix
+// for genuine quota exhaustion (see SKIP_LIVE_FETCH and the snapshot_id cache).
+const MAX_RETRY_WAIT_SECONDS = 30
+
 async function fetchWithRetry(url, accessToken, attempt = 0) {
   const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
 
   if (res.status === 429 && attempt < 4) {
-    const retryAfterSeconds = Number(res.headers.get('retry-after')) || 2 ** attempt
+    const retryAfterSeconds = Math.min(Number(res.headers.get('retry-after')) || 2 ** attempt, MAX_RETRY_WAIT_SECONDS)
     console.warn(`[fetch-and-merge-playlists] 429 on ${url}, waiting ${retryAfterSeconds}s (attempt ${attempt + 1}/4)`)
     await new Promise((resolve) => setTimeout(resolve, retryAfterSeconds * 1000))
     return fetchWithRetry(url, accessToken, attempt + 1)
@@ -183,10 +187,13 @@ async function loadSpotifyPlaylists() {
   }
 
   if (SKIP_LIVE_FETCH) {
-    // A plain code push doesn't need fresh Spotify data — reuse the last
-    // successful fetch instead of spending API quota on every deploy. Real
-    // refreshes only happen on the daily cron or the admin's manual button
-    // (see deploy.yml, which only sets SKIP_LIVE_FETCH=true for push events).
+    // A plain code push must NEVER call Spotify — reuse the last successful
+    // fetch instead. Real refreshes only happen on the daily cron or the
+    // admin's manual button (see deploy.yml, which only sets
+    // SKIP_LIVE_FETCH=true for push events). If there's no cache yet either
+    // (e.g. it hasn't been seeded since a cache-key change, or quota has been
+    // exhausted for a while), fall back to the fixture — NOT a live call —
+    // so a push can never end up waiting on Spotify's rate limit.
     try {
       const cached = await readJson(LAST_GOOD_PLAYLISTS_PATH)
       console.log(
@@ -194,7 +201,10 @@ async function loadSpotifyPlaylists() {
       )
       return cached
     } catch {
-      console.warn('[fetch-and-merge-playlists] SKIP_LIVE_FETCH set but no cached playlist list yet — fetching live instead.')
+      console.warn(
+        '[fetch-and-merge-playlists] SKIP_LIVE_FETCH set but no cached playlist list yet — using sample fixture data (still never calling Spotify on a push).',
+      )
+      return readJson('data/sample-spotify-fixture.json')
     }
   }
 
