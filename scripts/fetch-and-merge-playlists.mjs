@@ -82,8 +82,16 @@ async function loadSpotifyPlaylists() {
     return readJson('data/sample-spotify-fixture.json')
   }
 
-  const accessToken = await getAccessToken()
-  return fetchOwnPublicPlaylists(accessToken)
+  try {
+    const accessToken = await getAccessToken()
+    return await fetchOwnPublicPlaylists(accessToken)
+  } catch (err) {
+    // A bad/expired Spotify credential shouldn't block deploying unrelated code
+    // changes — fall back to the fixture (loudly) instead of failing the whole
+    // build. Re-connect via #/admin → "Configuration CI" to fix the secret.
+    console.error('[fetch-and-merge-playlists] Spotify fetch failed, falling back to sample fixture data:', err)
+    return readJson('data/sample-spotify-fixture.json')
+  }
 }
 
 async function main() {
