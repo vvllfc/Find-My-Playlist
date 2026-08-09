@@ -51,13 +51,14 @@ async function mapWithConcurrency(items, limit, fn) {
   return results
 }
 
-// Since Spotify's February 2026 API changes, tracks.total on the list endpoint
-// (/v1/me/playlists) is unreliable/always 0 — the accurate count now needs a
-// per-playlist follow-up call. With hundreds of playlists this can trip
-// Spotify's rate limit (429), so retry with backoff instead of silently
-// giving up — and log real failures instead of masking them as "0 tracks".
+// Since Spotify's February 2026 API changes, tracks.total on the playlist
+// object (both the /v1/me/playlists list and GET /v1/playlists/{id} itself)
+// no longer reliably reports a count — confirmed by 200 OK responses with the
+// field empty. The playlist-items endpoint (the old /tracks sub-resource,
+// renamed to /items) still returns an accurate `total` in its paging object,
+// so use that instead, asking for just 1 item to keep the payload tiny.
 async function fetchTrackCount(accessToken, playlistId, attempt = 0) {
-  const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}?fields=tracks.total`, {
+  const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/items?limit=1&fields=total`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
 
@@ -73,7 +74,11 @@ async function fetchTrackCount(accessToken, playlistId, attempt = 0) {
   }
 
   const data = await res.json()
-  return data.tracks?.total ?? 0
+  if (typeof data.total !== 'number') {
+    console.warn(`[fetch-and-merge-playlists] track count missing in response for ${playlistId}: ${JSON.stringify(data)}`)
+    return 0
+  }
+  return data.total
 }
 
 async function fetchOwnPublicPlaylists(accessToken) {
