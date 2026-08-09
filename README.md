@@ -78,6 +78,13 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
    GitHub Actions `SPOTIFY_REFRESH_TOKEN`, avec `SPOTIFY_CLIENT_ID` (Settings → Secrets and
    variables → Actions). Sans ça, le build utilise les données d'exemple à la place de tes vraies
    playlists.
+
+   ⏳ **Depuis le 20 juillet 2026, Spotify fait expirer les refresh tokens au bout de 6 mois** à
+   partir de la connexion initiale (pas rallongé par les rafraîchissements de token d'accès). À
+   refaire tous les ~6 mois : reconnexion sur `#/admin` → "Configuration CI" → remettre à jour le
+   secret `SPOTIFY_REFRESH_TOKEN`. Idem pour la connexion d'édition sur `#/modify` (pas de secret à
+   changer, juste se reconnecter sur place). Si le token expire sans être renouvelé, le build ne
+   casse pas : il retombe sur la dernière liste de playlists connue (voir "Déploiement").
 6. **Mot de passe admin (optionnel)** — dissuade les visiteurs curieux qui tomberaient sur l'URL
    `#/admin` ou `#/modify` (voir "Sécurité" : ce n'est pas ce qui protège réellement tes données).
    Génère un hash avec `node scripts/hash-password.mjs "ton-mot-de-passe"` et colle le résultat dans
