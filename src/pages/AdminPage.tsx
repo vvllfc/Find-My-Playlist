@@ -4,14 +4,7 @@ import { deriveTagsFromName } from '../lib/genreTaxonomy.js'
 import taxonomy from '../../data/genre-taxonomy.json'
 import { GithubConflictError, getFile, triggerRedeploy, updateFile } from '../lib/github'
 import { GITHUB_META_PATH, SPOTIFY_CLIENT_ID } from '../config'
-import {
-  clearTokens,
-  ensureFreshAccessToken,
-  getStoredTokens,
-  handleRedirectCallback,
-  isLoggedIn,
-  startLogin,
-} from '../lib/spotifyAuth'
+import { clearTokens, ensureFreshAccessToken, getStoredTokens, isLoggedIn, startLogin } from '../lib/spotifyAuth'
 import { fetchMyPlaylists, updatePlaylistDetails, type SpotifyPlaylistSummary } from '../lib/spotifyApi'
 import './AdminPage.css'
 
@@ -210,13 +203,6 @@ function SpotifyEditor() {
   const [status, setStatus] = useState<string | null>(null)
   const [ciLoggedIn, setCiLoggedIn] = useState(isLoggedIn('ci-export'))
   const [ciStatus, setCiStatus] = useState<string | null>(null)
-
-  useEffect(() => {
-    handleRedirectCallback().then((purpose) => {
-      if (purpose === 'edit') setLoggedIn(true)
-      if (purpose === 'ci-export') setCiLoggedIn(true)
-    })
-  }, [])
 
   async function copyRefreshTokenForCi() {
     const refreshToken = getStoredTokens('ci-export')?.refreshToken
