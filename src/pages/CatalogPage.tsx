@@ -35,7 +35,7 @@ export default function CatalogPage() {
   }
 
   return (
-    <>
+    <div className="catalog-page">
       <div className="hero-zone">
         <div className="hero-inner">
           <p className="kicker">Find My Playlist</p>
@@ -99,6 +99,6 @@ export default function CatalogPage() {
           </>
         )}
       </main>
-    </>
+    </div>
   )
 }
