@@ -58,8 +58,9 @@ function GithubMetaEditor() {
   const [conflict, setConflict] = useState(false)
 
   function saveToken(value: string) {
-    setToken(value)
-    localStorage.setItem(GH_TOKEN_KEY, value)
+    const trimmed = value.trim()
+    setToken(trimmed)
+    localStorage.setItem(GH_TOKEN_KEY, trimmed)
   }
 
   const loadMeta = useCallback(async () => {
