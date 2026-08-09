@@ -3,15 +3,13 @@ import { usePlaylists } from '../lib/usePlaylists'
 import { deriveTagsFromName } from '../lib/genreTaxonomy.js'
 import taxonomy from '../../data/genre-taxonomy.json'
 import { GithubConflictError, getFile, triggerRedeploy, updateFile } from '../lib/github'
-import { GITHUB_META_PATH, SPOTIFY_CLIENT_ID } from '../config'
+import { GITHUB_META_PATH, GITHUB_TOKEN_STORAGE_KEY, SPOTIFY_CLIENT_ID } from '../config'
 import { clearTokens, getStoredTokens, isLoggedIn, startLogin } from '../lib/spotifyAuth'
 import { isGateConfigured, isUnlocked, lock } from '../lib/adminGate'
 import PasswordGate from './PasswordGate'
 import './AdminShared.css'
 
-const GH_TOKEN_KEY = 'github_pat'
-
-type MetaMap = Record<string, { description: string; tags: string[] }>
+type MetaMap = Record<string, { tags: string[] }>
 
 export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(isUnlocked())
@@ -48,11 +46,10 @@ export default function AdminPage() {
 
 function GithubMetaEditor() {
   const { playlists } = usePlaylists()
-  const [token, setToken] = useState(() => localStorage.getItem(GH_TOKEN_KEY) ?? '')
+  const [token, setToken] = useState(() => localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY) ?? '')
   const [meta, setMeta] = useState<MetaMap | null>(null)
   const [sha, setSha] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [description, setDescription] = useState('')
   const [tagsInput, setTagsInput] = useState('')
   const [status, setStatus] = useState<string | null>(null)
   const [conflict, setConflict] = useState(false)
@@ -60,7 +57,7 @@ function GithubMetaEditor() {
   function saveToken(value: string) {
     const trimmed = value.trim()
     setToken(trimmed)
-    localStorage.setItem(GH_TOKEN_KEY, trimmed)
+    localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, trimmed)
   }
 
   const loadMeta = useCallback(async () => {
@@ -85,13 +82,11 @@ function GithubMetaEditor() {
     setSelectedId(id)
     const entry = meta?.[id]
     if (entry) {
-      setDescription(entry.description)
       setTagsInput(entry.tags.join(', '))
       return
     }
     const playlist = playlists?.find((p) => p.id === id)
     const suggested = playlist ? deriveTagsFromName(playlist.name, taxonomy) : []
-    setDescription('')
     setTagsInput(suggested.join(', '))
   }
 
@@ -100,7 +95,6 @@ function GithubMetaEditor() {
     const updatedMeta: MetaMap = {
       ...meta,
       [selectedId]: {
-        description: description.trim(),
         tags: tagsInput
           .split(',')
           .map((t) => t.trim())
@@ -138,7 +132,11 @@ function GithubMetaEditor() {
 
   return (
     <section className="admin-section">
-      <h2>Descriptions &amp; tags du site</h2>
+      <h2>Tags du site</h2>
+      <p className="hint">
+        Les descriptions affichées sur le site suivent directement celles de tes playlists sur Spotify (éditables sur{' '}
+        <code>#/modify</code>) — seuls les tags sont gérés ici, à la main.
+      </p>
       <label className="admin-field">
         Token GitHub (fine-grained, Contents + Actions: Read and write, scopé à ce repo)
         <input type="password" value={token} onChange={(e) => saveToken(e.target.value)} placeholder="github_pat_…" />
@@ -156,7 +154,7 @@ function GithubMetaEditor() {
             type="button"
             onClick={() => {
               setToken('')
-              localStorage.removeItem(GH_TOKEN_KEY)
+              localStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY)
               setMeta(null)
             }}
           >
@@ -174,7 +172,7 @@ function GithubMetaEditor() {
               <li key={p.id}>
                 <button type="button" className={p.id === selectedId ? 'selected' : ''} onClick={() => selectPlaylist(p.id)}>
                   {p.name}
-                  {!meta[p.id] && <span className="badge-new">non décrite</span>}
+                  {!meta[p.id] && <span className="badge-new">non taguée</span>}
                 </button>
               </li>
             ))}
@@ -189,11 +187,7 @@ function GithubMetaEditor() {
               }}
             >
               <h3>{selectedPlaylist.name}</h3>
-              {!hasEntry && <p className="hint">Pas encore décrite — tags suggérés pré-remplis, à valider.</p>}
-              <label>
-                Description
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-              </label>
+              {!hasEntry && <p className="hint">Pas encore taguée — tags suggérés pré-remplis, à valider.</p>}
               <label>
                 Tags (séparés par des virgules)
                 <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} />

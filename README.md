@@ -3,19 +3,24 @@
 Site du projet Find My Playlist, servi sur [vlfmusic.fr](https://vlfmusic.fr) via GitHub Pages.
 
 Catalogue public des playlists Spotify publiques (recherche + tags), et deux pages privées :
-`#/admin` pour éditer les descriptions/tags du site, `#/modify` pour éditer nom/description
-directement sur Spotify (publiques ou privées).
+`#/admin` pour éditer les tags du site, `#/modify` pour éditer nom/description directement sur
+Spotify (publiques ou privées) — la description affichée sur le site suit automatiquement celle de
+Spotify, il n'y a qu'un seul texte à maintenir.
 
 ## Stack
 
 - [Vite](https://vite.dev) + React + TypeScript
 - Récupération des playlists publiques au build (GitHub Actions) via l'API Spotify, authentifiée
   avec un refresh token (Spotify n'autorise plus le flow app-only "Client Credentials" pour lister
-  les playlists d'un compte, même publiques — voir "Sécurité" ci-dessous)
-- `#/admin` : édition des tags/descriptions du site via l'API GitHub (Contents), déclenchement du
-  redéploiement, connexion CI (lecture seule) pour le fetch au build
+  les playlists d'un compte, même publiques — voir "Sécurité" ci-dessous). Le nom et la description
+  affichés sur le site sont ceux de Spotify tels quels ; seuls les tags sont une donnée du site,
+  éditée à la main.
+- `#/admin` : édition des tags du site via l'API GitHub (Contents), déclenchement du redéploiement,
+  connexion CI (lecture seule) pour le fetch au build
 - `#/modify` : édition directe nom/description sur Spotify via OAuth (Authorization Code + PKCE),
-  habillée comme le catalogue public plutôt que dans le style sobre de l'admin
+  habillée comme le catalogue public plutôt que dans le style sobre de l'admin. Une sauvegarde
+  réussie sur une playlist publique déclenche aussi automatiquement un redéploiement du site (si un
+  token GitHub est déjà enregistré sur `#/admin` dans ce navigateur).
 - Les deux pages privées partagent le même écran de mot de passe optionnel
   ([`src/lib/adminGate.ts`](src/lib/adminGate.ts))
 
@@ -70,8 +75,9 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
      pas un secret. Le Client Secret ne sert plus du tout dans ce projet (voir "Sécurité").
 4. **Token admin GitHub** — créer un PAT *fine-grained* (github.com/settings/tokens?type=beta),
    scopé uniquement à ce repo, permissions **Contents: Read and write** + **Actions: Read and
-   write**, avec une expiration. Le coller dans `#/admin`, section "Descriptions & tags du site"
-   (stocké uniquement dans le navigateur).
+   write**, avec une expiration. Le coller dans `#/admin`, section "Tags du site" (stocké uniquement
+   dans le navigateur — `#/modify` réutilise ce même token pour déclencher un redéploiement
+   automatique après une sauvegarde publique, sans avoir à le recoller).
 5. **Refresh token Spotify pour le build** — une fois le site déployé (ou en local via `npm run
    dev`), ouvrir `#/admin`, section "Configuration CI", cliquer **Connecter Spotify (lecture seule,
    pour CI)**, autoriser l'accès, puis **Copier le refresh token**. Ajouter ce token comme secret
@@ -107,9 +113,9 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
   `public/data/playlists.json` que le site public (iso par construction, aucun appel Spotify pour
   juste les lister) ; les playlists **privées** viennent d'un fetch Spotify mis en cache à part
   (`localStorage`), rafraîchi uniquement via le bouton "Rafraîchir la liste (privées)", jamais
-  automatiquement. Cliquer sur une playlist publique va chercher sa vraie description Spotify avant
-  affichage (celle du JSON public est la description **du site**, pas celle de Spotify — les deux
-  sont éditées à des endroits différents et ne doivent jamais s'écraser l'une l'autre).
+  automatiquement. Cliquer sur une playlist publique va quand même chercher son nom/description
+  Spotify à jour avant affichage — le JSON public n'est qu'un instantané pris au dernier build, il
+  peut être légèrement périmé si la playlist a été modifiée sur Spotify depuis.
 - Les écritures sur le repo (`#/admin`) passent par un token GitHub que seul le propriétaire (ou un
   collaborateur autorisé) peut générer avec accès en écriture à ce repo précis.
 - `#/admin` n'est jamais lié depuis la navigation publique — accessible seulement en tapant l'URL.

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { usePlaylists } from '../lib/usePlaylists'
-import { SPOTIFY_CLIENT_ID } from '../config'
+import { GITHUB_TOKEN_STORAGE_KEY, SPOTIFY_CLIENT_ID } from '../config'
 import { clearTokens, ensureFreshAccessToken, isLoggedIn, startLogin } from '../lib/spotifyAuth'
 import { fetchMyPlaylists, fetchPlaylistDetails, updatePlaylistDetails } from '../lib/spotifyApi'
+import { triggerRedeploy } from '../lib/github'
 import { clearCachedEditPlaylists, getCachedEditPlaylists, setCachedEditPlaylists, updateCachedEditPlaylist } from '../lib/editPlaylistsCache'
 import { isUnlocked } from '../lib/adminGate'
 import PasswordGate from './PasswordGate'
@@ -136,15 +137,33 @@ function SpotifyDirectEditor() {
     setFormStatus('Enregistrement sur Spotify…')
     try {
       await updatePlaylistDetails(token, selected.id, { name, description })
+
       if (selected.source === 'private') {
         updateCachedEditPlaylist(selected.id, { name, description })
         setPrivatePlaylists(getCachedEditPlaylists()?.filter((p) => !p.isPublic) ?? null)
+        setFormStatus('Enregistré sur Spotify.')
+        return
       }
-      setFormStatus(
-        selected.source === 'public'
-          ? 'Enregistré sur Spotify. Pense à "Rafraîchir le site maintenant" sur #/admin pour que le site public reprenne le nouveau nom.'
-          : 'Enregistré sur Spotify.',
-      )
+
+      // Public playlists are shown on the live site — reuse the GitHub token
+      // already saved on #/admin (if any) to trigger a rebuild automatically,
+      // so a save here really does update both Spotify and the site without
+      // a separate manual step.
+      const githubToken = localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY)
+      if (!githubToken) {
+        setFormStatus(
+          'Enregistré sur Spotify. Connecte un token GitHub sur #/admin pour que le site se mette à jour automatiquement, ou clique "Rafraîchir le site maintenant" là-bas.',
+        )
+        return
+      }
+      try {
+        await triggerRedeploy(githubToken)
+        setFormStatus('Enregistré sur Spotify — le site se met à jour automatiquement, ce sera visible dans quelques minutes.')
+      } catch {
+        setFormStatus(
+          'Enregistré sur Spotify, mais le déclenchement automatique du site a échoué — utilise "Rafraîchir le site maintenant" sur #/admin.',
+        )
+      }
     } catch {
       setFormStatus("Échec de l'enregistrement sur Spotify.")
     }

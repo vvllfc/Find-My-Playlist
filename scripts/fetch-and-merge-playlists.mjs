@@ -145,6 +145,7 @@ async function fetchOwnPublicPlaylists(accessToken) {
       playlists.push({
         id: item.id,
         name: item.name,
+        description: item.description ?? '',
         imageUrl: item.images?.[0]?.url ?? null,
         trackCount: 0,
         externalUrl: item.external_urls?.spotify ?? `https://open.spotify.com/playlist/${item.id}`,
@@ -241,13 +242,16 @@ async function main() {
     readJson('data/genre-taxonomy.json'),
   ])
 
-  let described = 0
+  // The description is the real Spotify one (already on `playlist`, fetched
+  // live above) — it just follows whatever's on Spotify. Only tags are a
+  // site-only concept, hand-authored in data/playlists.meta.json.
+  let tagged = 0
   const merged = spotifyPlaylists.map((playlist) => {
     const entry = meta[playlist.id]
-    if (entry) described += 1
+    if (entry) tagged += 1
     return {
       ...playlist,
-      description: entry?.description ?? '',
+      description: playlist.description ?? '',
       tags: entry?.tags ?? deriveTagsFromName(playlist.name, taxonomy),
     }
   })
@@ -259,7 +263,7 @@ async function main() {
   await writeFile(path.join(outDir, 'playlists.json'), JSON.stringify(merged, null, 2))
 
   console.log(
-    `[fetch-and-merge-playlists] ${merged.length} playlists fetched, ${described} with saved descriptions, ${merged.length - described} awaiting description.`,
+    `[fetch-and-merge-playlists] ${merged.length} playlists fetched, ${tagged} with saved tags, ${merged.length - tagged} awaiting tags.`,
   )
 }
 

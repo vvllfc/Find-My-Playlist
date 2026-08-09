@@ -2,6 +2,7 @@
   {
     "id": "sample-feel-the-vibe-chill",
     "name": "Feel The Vibe Chill",
+    "description": "Sample Spotify description — chill session.",
     "imageUrl": null,
     "trackCount": 42,
     "externalUrl": "https://open.spotify.com/playlist/sample-feel-the-vibe-chill"
@@ -9,6 +10,7 @@
   {
     "id": "sample-feel-the-vibe-much-higher",
     "name": "Feel The Vibe Much Higher",
+    "description": "Sample Spotify description — energetic session.",
     "imageUrl": null,
     "trackCount": 38,
     "externalUrl": "https://open.spotify.com/playlist/sample-feel-the-vibe-much-higher"
@@ -16,6 +18,7 @@
   {
     "id": "sample-feel-the-hardrock",
     "name": "Feel The HardRock",
+    "description": "",
     "imageUrl": null,
     "trackCount": 25,
     "externalUrl": "https://open.spotify.com/playlist/sample-feel-the-hardrock"
@@ -23,6 +26,7 @@
   {
     "id": "sample-techno-nappe-aftervnr-voice",
     "name": "Techno Nappe AfterVNR Voice",
+    "description": "Sample Spotify description — vocal techno.",
     "imageUrl": null,
     "trackCount": 60,
     "externalUrl": "https://open.spotify.com/playlist/sample-techno-nappe-aftervnr-voice"
@@ -30,6 +34,7 @@
   {
     "id": "sample-techno-minimal-after",
     "name": "Techno Minimal After",
+    "description": "",
     "imageUrl": null,
     "trackCount": 55,
     "externalUrl": "https://open.spotify.com/playlist/sample-techno-minimal-after"
@@ -37,6 +42,7 @@
   {
     "id": "sample-dnb-voice",
     "name": "D&B Voice",
+    "description": "",
     "imageUrl": null,
     "trackCount": 30,
     "externalUrl": "https://open.spotify.com/playlist/sample-dnb-voice"
