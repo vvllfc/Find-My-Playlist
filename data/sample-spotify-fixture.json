@@ -1,0 +1,44 @@
+[
+  {
+    "id": "sample-feel-the-vibe-chill",
+    "name": "Feel The Vibe Chill",
+    "imageUrl": null,
+    "trackCount": 42,
+    "externalUrl": "https://open.spotify.com/playlist/sample-feel-the-vibe-chill"
+  },
+  {
+    "id": "sample-feel-the-vibe-much-higher",
+    "name": "Feel The Vibe Much Higher",
+    "imageUrl": null,
+    "trackCount": 38,
+    "externalUrl": "https://open.spotify.com/playlist/sample-feel-the-vibe-much-higher"
+  },
+  {
+    "id": "sample-feel-the-hardrock",
+    "name": "Feel The HardRock",
+    "imageUrl": null,
+    "trackCount": 25,
+    "externalUrl": "https://open.spotify.com/playlist/sample-feel-the-hardrock"
+  },
+  {
+    "id": "sample-techno-nappe-aftervnr-voice",
+    "name": "Techno Nappe AfterVNR Voice",
+    "imageUrl": null,
+    "trackCount": 60,
+    "externalUrl": "https://open.spotify.com/playlist/sample-techno-nappe-aftervnr-voice"
+  },
+  {
+    "id": "sample-techno-minimal-after",
+    "name": "Techno Minimal After",
+    "imageUrl": null,
+    "trackCount": 55,
+    "externalUrl": "https://open.spotify.com/playlist/sample-techno-minimal-after"
+  },
+  {
+    "id": "sample-dnb-voice",
+    "name": "D&B Voice",
+    "imageUrl": null,
+    "trackCount": 30,
+    "externalUrl": "https://open.spotify.com/playlist/sample-dnb-voice"
+  }
+]

@@ -1,12 +1,10 @@
-import './App.css'
+import { useHashRoute } from './lib/hashRoute'
+import CatalogPage from './pages/CatalogPage'
+import AdminPage from './pages/AdminPage'
 
 function App() {
-  return (
-    <main className="landing">
-      <h1>Find My Playlist</h1>
-      <p>Coming soon on vlfmusic.fr.</p>
-    </main>
-  )
+  const route = useHashRoute()
+  return route.startsWith('/admin') ? <AdminPage /> : <CatalogPage />
 }
 
 export default App

@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    # Picks up Spotify-side playlist changes (new/renamed/deleted) even with no commits.
+    - cron: '0 6 * * *'
 
 permissions:
   contents: read
@@ -24,6 +27,11 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run fetch:playlists
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_USER_ID: ${{ secrets.SPOTIFY_USER_ID }}
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

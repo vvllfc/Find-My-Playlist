@@ -1,0 +1,26 @@
+[
+  {
+    "id": "feel-the-vibe-rock",
+    "match": { "type": "prefix", "value": "Feel The Vibe" },
+    "genre": "Rock",
+    "tempoTokens": {
+      "Much Higher": "energetic+",
+      "ChillFort": "chill+",
+      "Higher": "energetic",
+      "Chill": "chill"
+    }
+  },
+  {
+    "id": "feel-the-x",
+    "match": { "type": "prefix", "value": "Feel The" },
+    "genreFromRemainder": true
+  },
+  {
+    "id": "techno",
+    "match": { "type": "prefix", "value": "Techno" },
+    "genre": "Techno",
+    "subgenreTokens": ["Léctro", "Mélo", "Minimal", "Nappe", "Acide"],
+    "eraTokens": ["AfterVNR160+", "AfterVNR", "Before", "Middle", "After"],
+    "voiceToken": "Voice"
+  }
+]
