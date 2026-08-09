@@ -16,6 +16,13 @@ const REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN
 // Delete this file locally (or clear the Actions cache) to force a refresh.
 const TRACK_COUNT_CACHE_PATH = 'data/track-counts-cache.json'
 
+// Same persistence mechanism, holding the last successfully fetched playlist
+// list. On a failed fetch (e.g. Spotify quota exhausted) this is used instead
+// of the fixture, so a transient API outage doesn't replace real playlists
+// with 6 sample ones on the live site — the fixture is only for when there's
+// no real data at all yet.
+const LAST_GOOD_PLAYLISTS_PATH = 'data/last-successful-playlists.json'
+
 async function readJson(relPath) {
   const raw = await readFile(path.join(rootDir, relPath), 'utf-8')
   return JSON.parse(raw)
@@ -159,13 +166,27 @@ async function loadSpotifyPlaylists() {
 
   try {
     const accessToken = await getAccessToken()
-    return await fetchOwnPublicPlaylists(accessToken)
+    const playlists = await fetchOwnPublicPlaylists(accessToken)
+    await writeFile(path.join(rootDir, LAST_GOOD_PLAYLISTS_PATH), JSON.stringify(playlists, null, 2))
+    return playlists
   } catch (err) {
-    // A bad/expired Spotify credential shouldn't block deploying unrelated code
-    // changes — fall back to the fixture (loudly) instead of failing the whole
-    // build. Re-connect via #/admin → "Configuration CI" to fix the secret.
-    console.error('[fetch-and-merge-playlists] Spotify fetch failed, falling back to sample fixture data:', err)
-    return readJson('data/sample-spotify-fixture.json')
+    // A bad/expired Spotify credential or exhausted quota shouldn't block
+    // deploying unrelated code changes, nor wipe real playlists off the live
+    // site — fall back to the last successful fetch if we have one, and only
+    // to the sample fixture if we've never fetched real data at all.
+    console.error('[fetch-and-merge-playlists] Spotify fetch failed:', err)
+    try {
+      const cached = await readJson(LAST_GOOD_PLAYLISTS_PATH)
+      console.warn(
+        `[fetch-and-merge-playlists] Using last known good playlist list (${cached.length} playlists) instead of live Spotify data.`,
+      )
+      return cached
+    } catch {
+      console.warn(
+        '[fetch-and-merge-playlists] No cached playlist list available either — falling back to sample fixture data.',
+      )
+      return readJson('data/sample-spotify-fixture.json')
+    }
   }
 }
 

@@ -39,6 +39,13 @@ Le site est déployé automatiquement sur GitHub Pages : à chaque push sur `mai
 "Rafraîchir le site maintenant" de l'admin. Le workflow (`.github/workflows/deploy.yml`) régénère
 `public/data/playlists.json` avant de builder.
 
+Si le fetch Spotify échoue au build (quota épuisé, secret expiré...), le site garde la dernière
+liste de playlists récupérée avec succès (`data/last-successful-playlists.json`, mise en cache
+entre les runs) plutôt que de retomber sur les données d'exemple — les exemples ne servent que s'il
+n'y a jamais eu de fetch réussi. Les compteurs de titres sont mis en cache de la même façon
+(`data/track-counts-cache.json`) pour éviter de re-consommer inutilement le quota Spotify à chaque
+build.
+
 Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
 
 ## Configuration à faire une fois (côté propriétaire du site)
