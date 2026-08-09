@@ -37,6 +37,32 @@ async function getAccessToken() {
   return data.access_token
 }
 
+// Runs `fn` over `items` with at most `limit` calls in flight at once.
+async function mapWithConcurrency(items, limit, fn) {
+  const results = new Array(items.length)
+  let next = 0
+  async function worker() {
+    while (next < items.length) {
+      const i = next++
+      results[i] = await fn(items[i], i)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return results
+}
+
+// Since Spotify's February 2026 API changes, tracks.total on the list endpoint
+// (/v1/me/playlists) is unreliable/always 0 — the accurate count now needs a
+// per-playlist follow-up call.
+async function fetchTrackCount(accessToken, playlistId) {
+  const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}?fields=tracks.total`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) return 0
+  const data = await res.json()
+  return data.tracks?.total ?? 0
+}
+
 async function fetchOwnPublicPlaylists(accessToken) {
   const authHeaders = { Authorization: `Bearer ${accessToken}` }
 
@@ -64,12 +90,16 @@ async function fetchOwnPublicPlaylists(accessToken) {
         id: item.id,
         name: item.name,
         imageUrl: item.images?.[0]?.url ?? null,
-        trackCount: item.tracks?.total ?? 0,
+        trackCount: 0,
         externalUrl: item.external_urls?.spotify ?? `https://open.spotify.com/playlist/${item.id}`,
       })
     }
     url = data.next
   }
+
+  await mapWithConcurrency(playlists, 8, async (playlist) => {
+    playlist.trackCount = await fetchTrackCount(accessToken, playlist.id)
+  })
 
   return playlists
 }
