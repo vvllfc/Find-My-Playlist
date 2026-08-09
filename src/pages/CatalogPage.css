@@ -46,9 +46,9 @@
 .hero-inner {
   position: relative;
   z-index: 1;
-  max-width: 52rem;
+  max-width: 68rem;
   margin: 0 auto;
-  padding: 3rem 1.25rem 2.25rem;
+  padding: 3.5rem 2rem 2.5rem;
   box-sizing: border-box;
 }
 
@@ -56,36 +56,39 @@
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   color: #3df08a;
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.5rem;
 }
 .hero-inner h1 {
   font-family: var(--font-display);
   text-transform: uppercase;
   font-weight: 900;
   letter-spacing: -0.01em;
-  font-size: clamp(2rem, 6vw, 3rem);
+  font-size: clamp(2.25rem, 5vw, 3.75rem);
   line-height: 0.95;
   margin: 0;
   text-wrap: balance;
 }
 .hero-inner p {
-  margin: 0.6rem 0 0;
-  max-width: 34em;
+  margin: 0.75rem 0 0;
+  max-width: 36em;
+  font-size: 1.05rem;
   opacity: 0.85;
 }
 
 .catalog {
-  max-width: 52rem;
+  max-width: 68rem;
   margin: 0 auto;
-  padding: 0 1.25rem 4rem;
+  padding: 0 2rem 4rem;
   box-sizing: border-box;
+  font-size: 1.05rem;
 }
 
 @media (max-width: 480px) {
   .catalog {
     padding: 0 1rem 3rem;
+    font-size: 1rem;
   }
   .hero-inner {
     padding: 2.25rem 1rem 1.75rem;
@@ -103,22 +106,24 @@
 .mixer {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.6rem;
   align-items: center;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.4rem;
-  padding: 0.7rem 0.85rem;
-  margin: 2rem 0 1.75rem;
+  padding: 0.85rem 1rem;
+  margin: 2.5rem 0 2rem;
 }
 .mixer input[type='search'] {
-  flex: 1 1 12rem;
+  flex: 1 1 14rem;
   min-width: 8rem;
-  border: none;
-  background: transparent;
+  border: 1px solid rgba(166, 107, 255, 0.3);
+  background: rgba(166, 107, 255, 0.12);
+  border-radius: 0.3rem;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.95rem;
   color: var(--ink);
+  padding: 0.5rem 0.7rem;
   outline: none;
 }
 .mixer input[type='search']::placeholder {
@@ -131,14 +136,14 @@
 }
 .tag {
   font-family: var(--font-mono);
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 0.3rem 0.6rem;
+  padding: 0.35rem 0.7rem;
   border-radius: 999px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--muted);
+  border: 1px solid rgba(166, 107, 255, 0.3);
+  background: rgba(166, 107, 255, 0.12);
+  color: var(--ink);
   cursor: pointer;
 }
 .tag:focus-visible,
@@ -159,10 +164,10 @@
 }
 .row {
   display: grid;
-  grid-template-columns: 2.5rem 1fr auto;
+  grid-template-columns: 2.75rem 1fr auto;
   align-items: center;
-  gap: 1rem;
-  padding: 0.85rem 0.25rem;
+  gap: 1.25rem;
+  padding: 1rem 0.35rem;
   border-bottom: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
@@ -179,44 +184,48 @@
 
 .row-index {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
 .row-main .name {
   font-family: var(--font-body);
   font-weight: 700;
-  font-size: 1rem;
-  margin: 0 0 0.15rem;
+  font-size: 1.1rem;
+  margin: 0 0 0.2rem;
 }
 .row-main .desc {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--muted);
-  margin: 0 0 0.4rem;
+  margin: 0 0 0.5rem;
 }
 .row-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.4rem;
 }
 .chip {
   font-family: var(--font-mono);
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 0.12rem 0.45rem;
+  padding: 0.18rem 0.55rem;
   border-radius: 0.2rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
+  background: rgba(166, 107, 255, 0.12);
+  border: 1px solid rgba(166, 107, 255, 0.3);
   color: var(--muted);
 }
-.chip.voice {
+/* Highlights only when this tag is currently selected in the mixer above —
+   not tied to any specific tag value. */
+.chip.matched {
+  background: var(--violet);
   border-color: var(--violet);
-  color: var(--violet);
+  color: #150a24;
+  font-weight: 700;
 }
 .row-count {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

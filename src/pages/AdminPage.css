@@ -1,14 +1,16 @@
 .admin {
-  max-width: 42rem;
+  max-width: 54rem;
   margin: 0 auto;
-  padding: 2.5rem 1.25rem 4rem;
+  padding: 2.5rem 2rem 4rem;
   box-sizing: border-box;
   font-family: var(--font-body);
+  font-size: 1.05rem;
 }
 
 @media (max-width: 480px) {
   .admin {
     padding: 1.5rem 1rem 3rem;
+    font-size: 1rem;
   }
 }
 
@@ -16,24 +18,24 @@
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 1rem;
+  font-size: 1.1rem;
 }
 
 .admin h2 {
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--muted);
 }
 
 .admin h3 {
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .admin-intro {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   margin-bottom: 2rem;
 }
 
@@ -48,27 +50,27 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  width: min(20rem, 100%);
+  width: min(22rem, 100%);
 }
 
 .admin-gate label {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--muted);
 }
 
 .admin-gate input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.55rem 0.7rem;
+  padding: 0.6rem 0.75rem;
   border-radius: 0.3rem;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 1px solid rgba(166, 107, 255, 0.3);
+  background: rgba(166, 107, 255, 0.12);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .admin-lock-button {
@@ -79,7 +81,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.4rem;
-  padding: 1.25rem 1.5rem;
+  padding: 1.5rem 1.75rem;
   margin-bottom: 1.5rem;
 }
 
@@ -87,7 +89,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--muted);
   margin-bottom: 1rem;
 }
@@ -95,13 +97,13 @@
 .admin-field input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.55rem 0.7rem;
+  padding: 0.6rem 0.75rem;
   border-radius: 0.3rem;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 1px solid rgba(166, 107, 255, 0.3);
+  background: rgba(166, 107, 255, 0.12);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .admin-toolbar {
@@ -112,14 +114,14 @@
 }
 
 .admin-status {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--muted);
   margin-bottom: 1rem;
 }
 
 .admin-editor {
   display: grid;
-  grid-template-columns: minmax(12rem, 16rem) 1fr;
+  grid-template-columns: minmax(13rem, 18rem) 1fr;
   gap: 1.5rem;
 }
 
@@ -148,9 +150,9 @@
   text-align: left;
   background: none;
   border: none;
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.85rem;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--ink);
   display: flex;
   justify-content: space-between;
@@ -165,10 +167,10 @@
 .badge-new,
 .badge-private {
   font-family: var(--font-mono);
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 0.1rem 0.45rem;
+  padding: 0.1rem 0.5rem;
   border-radius: 999px;
   border: 1px solid var(--violet);
   color: var(--violet);
@@ -185,7 +187,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--muted);
 }
 
@@ -193,13 +195,13 @@
 .admin-form textarea {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.55rem 0.7rem;
+  padding: 0.6rem 0.75rem;
   border-radius: 0.3rem;
-  border: 1px solid var(--border);
-  background: var(--bg);
+  border: 1px solid rgba(166, 107, 255, 0.3);
+  background: rgba(166, 107, 255, 0.12);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 0.95rem;
+  font-size: 1rem;
 }
 
 .admin-form button {
@@ -207,12 +209,12 @@
 }
 
 .hint {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--muted);
 }
 
 .admin-conflict {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: #ff6b6b;
 }
 
@@ -222,11 +224,11 @@ button {
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--ink);
-  padding: 0.5rem 0.9rem;
+  padding: 0.55rem 1rem;
   border-radius: 0.3rem;
   cursor: pointer;
 }

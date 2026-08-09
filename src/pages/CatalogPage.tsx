@@ -85,7 +85,7 @@ export default function CatalogPage() {
                     {playlist.description && <p className="desc">{playlist.description}</p>}
                     <span className="row-tags">
                       {playlist.tags.map((tag) => (
-                        <span key={tag} className={tag.toLowerCase() === 'vocals' ? 'chip voice' : 'chip'}>
+                        <span key={tag} className={activeTags.has(tag) ? 'chip matched' : 'chip'}>
                           {tag}
                         </span>
                       ))}
