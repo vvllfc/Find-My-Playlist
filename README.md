@@ -8,7 +8,9 @@ pour éditer les descriptions/tags et modifier directement le nom/description su
 ## Stack
 
 - [Vite](https://vite.dev) + React + TypeScript
-- Récupération des playlists publiques au build (GitHub Actions) via l'API Spotify (Client Credentials)
+- Récupération des playlists publiques au build (GitHub Actions) via l'API Spotify, authentifiée
+  avec un refresh token (Spotify n'autorise plus le flow app-only "Client Credentials" pour lister
+  les playlists d'un compte, même publiques — voir "Sécurité" ci-dessous)
 - Admin (`#/admin`) : édition des tags/descriptions du site via l'API GitHub (Contents), édition
   directe nom/description Spotify via OAuth (Authorization Code + PKCE)
 
@@ -19,10 +21,11 @@ npm install
 npm run dev
 ```
 
-Sans les variables Spotify (`SPOTIFY_CLIENT_ID`/`SPOTIFY_CLIENT_SECRET`/`SPOTIFY_USER_ID`),
-`npm run fetch:playlists` utilise automatiquement `data/sample-spotify-fixture.json` — pratique
-pour développer sans credentials réels. Pour tester avec de vraies données en local, crée un
-`.env.local` (gitignored) avec ces trois variables et lance :
+Sans les variables Spotify (`SPOTIFY_CLIENT_ID`/`SPOTIFY_REFRESH_TOKEN`), `npm run fetch:playlists`
+utilise automatiquement `data/sample-spotify-fixture.json` — pratique pour développer sans
+credentials réels. Pour tester avec de vraies données en local, crée un `.env.local` (gitignored)
+avec ces deux variables (le refresh token s'obtient via `#/admin`, voir étape 5 ci-dessous) et
+lance :
 
 ```bash
 node --env-file=.env.local scripts/fetch-and-merge-playlists.mjs
@@ -49,21 +52,30 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
 3. **App Spotify** (developer.spotify.com/dashboard, gratuit) :
    - Redirect URI à enregistrer exactement : `https://vlfmusic.fr/`.
    - Copier le **Client ID** dans [`src/config.ts`](src/config.ts) (`SPOTIFY_CLIENT_ID`) — ce n'est
-     pas un secret, seul le Client Secret l'est.
-   - Trouver son user ID Spotify (profil → Partager → Copier le lien → segment après `/user/`).
-4. **Secrets GitHub Actions** (Settings → Secrets and variables → Actions) :
-   `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_USER_ID`.
-5. **Token admin** — créer un PAT *fine-grained* (github.com/settings/tokens?type=beta), scopé
-   uniquement à ce repo, permissions **Contents: Read and write** + **Actions: Read and write**,
-   avec une expiration. Le coller une fois dans `#/admin` (stocké uniquement dans le navigateur).
+     pas un secret. Le Client Secret ne sert plus du tout dans ce projet (voir "Sécurité").
+4. **Token admin GitHub** — créer un PAT *fine-grained* (github.com/settings/tokens?type=beta),
+   scopé uniquement à ce repo, permissions **Contents: Read and write** + **Actions: Read and
+   write**, avec une expiration. Le coller dans `#/admin`, section "Descriptions & tags du site"
+   (stocké uniquement dans le navigateur).
+5. **Refresh token Spotify pour le build** — une fois le site déployé (ou en local via `npm run
+   dev`), ouvrir `#/admin`, section "Configuration CI", cliquer **Connecter Spotify (lecture seule,
+   pour CI)**, autoriser l'accès, puis **Copier le refresh token**. Ajouter ce token comme secret
+   GitHub Actions `SPOTIFY_REFRESH_TOKEN`, avec `SPOTIFY_CLIENT_ID` (Settings → Secrets and
+   variables → Actions). Sans ça, le build utilise les données d'exemple à la place de tes vraies
+   playlists.
 
 ## Sécurité
 
-- Le fetch public (build) n'utilise que le flow *Client Credentials* de Spotify : lecture seule,
-  incapable d'écrire quoi que ce soit sur un compte Spotify.
-- L'édition directe des playlists Spotify (`#/admin`) passe par le vrai écran de connexion Spotify
-  (`accounts.spotify.com`) — un token capable de modifier le compte ne peut exister que si quelqu'un
-  s'y connecte avec les identifiants réels du compte.
+- Spotify a désactivé l'accès en "Client Credentials" (app-only, sans connexion) à la liste des
+  playlists d'un compte — même publiques. Le fetch au build doit donc s'authentifier avec un vrai
+  token utilisateur, mais celui-ci est obtenu via une connexion **dédiée, en lecture seule**
+  (scope `playlist-read-private` uniquement, bouton "Configuration CI" dans l'admin) : le secret
+  GitHub Actions qui en résulte ne peut donc rien modifier sur le compte Spotify, seulement lire la
+  liste de playlists.
+- L'édition directe des playlists (nom/description, bouton "Connecter Spotify" du haut) utilise une
+  connexion **séparée**, avec les scopes d'écriture — stockée uniquement dans le navigateur de la
+  personne qui se connecte, jamais dans un secret CI. Un token capable de modifier le compte ne peut
+  exister que si quelqu'un s'y connecte avec les identifiants Spotify réels du compte.
 - Les écritures sur le repo (`#/admin`) passent par un token GitHub que seul le propriétaire (ou un
   collaborateur autorisé) peut générer avec accès en écriture à ce repo précis.
 - `#/admin` n'est jamais lié depuis la navigation publique — accessible seulement en tapant l'URL.

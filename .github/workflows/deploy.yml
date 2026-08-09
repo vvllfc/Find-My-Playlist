@@ -30,8 +30,7 @@ jobs:
       - run: npm run fetch:playlists
         env:
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
-          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-          SPOTIFY_USER_ID: ${{ secrets.SPOTIFY_USER_ID }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

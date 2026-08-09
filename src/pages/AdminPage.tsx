@@ -4,7 +4,14 @@ import { deriveTagsFromName } from '../lib/genreTaxonomy.js'
 import taxonomy from '../../data/genre-taxonomy.json'
 import { GithubConflictError, getFile, triggerRedeploy, updateFile } from '../lib/github'
 import { GITHUB_META_PATH, SPOTIFY_CLIENT_ID } from '../config'
-import { clearTokens, ensureFreshAccessToken, handleRedirectCallback, isLoggedIn, startLogin } from '../lib/spotifyAuth'
+import {
+  clearTokens,
+  ensureFreshAccessToken,
+  getStoredTokens,
+  handleRedirectCallback,
+  isLoggedIn,
+  startLogin,
+} from '../lib/spotifyAuth'
 import { fetchMyPlaylists, updatePlaylistDetails, type SpotifyPlaylistSummary } from '../lib/spotifyApi'
 import './AdminPage.css'
 
@@ -195,21 +202,31 @@ function GithubMetaEditor() {
 }
 
 function SpotifyEditor() {
-  const [loggedIn, setLoggedIn] = useState(isLoggedIn())
+  const [loggedIn, setLoggedIn] = useState(isLoggedIn('edit'))
   const [playlists, setPlaylists] = useState<SpotifyPlaylistSummary[] | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [status, setStatus] = useState<string | null>(null)
+  const [ciLoggedIn, setCiLoggedIn] = useState(isLoggedIn('ci-export'))
+  const [ciStatus, setCiStatus] = useState<string | null>(null)
 
   useEffect(() => {
-    handleRedirectCallback().then((ok) => {
-      if (ok) setLoggedIn(true)
+    handleRedirectCallback().then((purpose) => {
+      if (purpose === 'edit') setLoggedIn(true)
+      if (purpose === 'ci-export') setCiLoggedIn(true)
     })
   }, [])
 
+  async function copyRefreshTokenForCi() {
+    const refreshToken = getStoredTokens('ci-export')?.refreshToken
+    if (!refreshToken) return
+    await navigator.clipboard.writeText(refreshToken)
+    setCiStatus('Copié — colle-le comme secret GitHub Actions SPOTIFY_REFRESH_TOKEN.')
+  }
+
   const load = useCallback(async () => {
-    const token = await ensureFreshAccessToken()
+    const token = await ensureFreshAccessToken('edit')
     if (!token) {
       setLoggedIn(false)
       return
@@ -236,7 +253,7 @@ function SpotifyEditor() {
 
   async function save() {
     if (!selectedId) return
-    const token = await ensureFreshAccessToken()
+    const token = await ensureFreshAccessToken('edit')
     if (!token) {
       setLoggedIn(false)
       return
@@ -267,7 +284,7 @@ function SpotifyEditor() {
     <section className="admin-section">
       <h2>Édition directe Spotify (nom + description)</h2>
       {!loggedIn && (
-        <button type="button" onClick={() => startLogin()}>
+        <button type="button" onClick={() => startLogin('edit')}>
           Connecter Spotify
         </button>
       )}
@@ -278,7 +295,7 @@ function SpotifyEditor() {
             <button
               type="button"
               onClick={() => {
-                clearTokens()
+                clearTokens('edit')
                 setLoggedIn(false)
                 setPlaylists(null)
               }}
@@ -325,6 +342,37 @@ function SpotifyEditor() {
           )}
         </>
       )}
+
+      <hr />
+      <h3>Configuration CI (une seule fois)</h3>
+      <p className="hint">
+        Le build automatique ne peut plus lister tes playlists publiques sans connexion (Spotify l'a bloqué). Connecte-toi
+        ici en lecture seule pour générer le refresh token à coller dans le secret GitHub Actions SPOTIFY_REFRESH_TOKEN —
+        ce token-là ne peut rien modifier sur ton compte, contrairement à celui de la connexion d'édition ci-dessus.
+      </p>
+      {!ciLoggedIn && (
+        <button type="button" onClick={() => startLogin('ci-export')}>
+          Connecter Spotify (lecture seule, pour CI)
+        </button>
+      )}
+      {ciLoggedIn && (
+        <div className="admin-toolbar">
+          <button type="button" onClick={copyRefreshTokenForCi}>
+            Copier le refresh token
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              clearTokens('ci-export')
+              setCiLoggedIn(false)
+              setCiStatus(null)
+            }}
+          >
+            Déconnecter
+          </button>
+        </div>
+      )}
+      {ciStatus && <p className="admin-status">{ciStatus}</p>}
     </section>
   )
 }

@@ -7,44 +7,59 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '..')
 
 const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
-const CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET
-const USER_ID = process.env.SPOTIFY_USER_ID
+const REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN
 
 async function readJson(relPath) {
   const raw = await readFile(path.join(rootDir, relPath), 'utf-8')
   return JSON.parse(raw)
 }
 
+// Spotify's Client Credentials flow (app-only, no login) can no longer list a
+// user's playlists — even public ones — as of their 2025/2026 API tightening.
+// So this reuses a real user token instead: a refresh token captured once via
+// the admin page's "Connecter Spotify" PKCE login (src/lib/spotifyAuth.ts) and
+// stored as a repo secret. No client secret needed — same public-client
+// refresh grant the browser flow already uses.
 async function getAccessToken() {
   const res = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: `Basic ${Buffer.from(`${CLIENT_ID}:${CLIENT_SECRET}`).toString('base64')}`,
-    },
-    body: 'grant_type=client_credentials',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: REFRESH_TOKEN,
+      client_id: CLIENT_ID,
+    }),
   })
   if (!res.ok) {
-    throw new Error(`Spotify token request failed: ${res.status} ${await res.text()}`)
+    throw new Error(`Spotify token refresh failed: ${res.status} ${await res.text()}`)
   }
   const data = await res.json()
   return data.access_token
 }
 
-async function fetchPublicPlaylists(accessToken) {
+async function fetchOwnPublicPlaylists(accessToken) {
+  const authHeaders = { Authorization: `Bearer ${accessToken}` }
+
+  const meRes = await fetch('https://api.spotify.com/v1/me', { headers: authHeaders })
+  if (!meRes.ok) {
+    throw new Error(`Spotify /me request failed: ${meRes.status} ${await meRes.text()}`)
+  }
+  const me = await meRes.json()
+
   const playlists = []
-  let url = `https://api.spotify.com/v1/users/${encodeURIComponent(USER_ID)}/playlists?limit=50`
+  let url = 'https://api.spotify.com/v1/me/playlists?limit=50'
 
   while (url) {
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
+    const res = await fetch(url, { headers: authHeaders })
     if (!res.ok) {
       throw new Error(`Spotify playlists request failed: ${res.status} ${await res.text()}`)
     }
     const data = await res.json()
     for (const item of data.items) {
       // Spotify pads pagination with null entries for playlists that became
-      // unavailable mid-fetch; skip those and anything not actually public.
-      if (!item || item.public !== true) continue
+      // unavailable mid-fetch; skip those, anything not public, and playlists
+      // this account merely follows rather than owns.
+      if (!item || item.public !== true || item.owner?.id !== me.id) continue
       playlists.push({
         id: item.id,
         name: item.name,
@@ -60,15 +75,15 @@ async function fetchPublicPlaylists(accessToken) {
 }
 
 async function loadSpotifyPlaylists() {
-  if (!CLIENT_ID || !CLIENT_SECRET || !USER_ID) {
+  if (!CLIENT_ID || !REFRESH_TOKEN) {
     console.warn(
-      '[fetch-and-merge-playlists] SPOTIFY_CLIENT_ID/SPOTIFY_CLIENT_SECRET/SPOTIFY_USER_ID not set — using sample fixture data instead of calling Spotify.',
+      '[fetch-and-merge-playlists] SPOTIFY_CLIENT_ID/SPOTIFY_REFRESH_TOKEN not set — using sample fixture data instead of calling Spotify.',
     )
     return readJson('data/sample-spotify-fixture.json')
   }
 
   const accessToken = await getAccessToken()
-  return fetchPublicPlaylists(accessToken)
+  return fetchOwnPublicPlaylists(accessToken)
 }
 
 async function main() {

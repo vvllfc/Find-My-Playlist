@@ -4,8 +4,17 @@ const AUTHORIZE_URL = 'https://accounts.spotify.com/authorize'
 const TOKEN_URL = 'https://accounts.spotify.com/api/token'
 const VERIFIER_KEY = 'spotify_pkce_verifier'
 const STATE_KEY = 'spotify_pkce_state'
+const PURPOSE_KEY = 'spotify_pkce_purpose'
 const TOKENS_KEY = 'spotify_tokens'
+const CI_TOKENS_KEY = 'spotify_tokens_ci_readonly'
 const EXPIRY_BUFFER_MS = 60_000
+
+// The CI build only ever needs to read the public playlist list, so its login
+// requests read-only scope — keeping the secret later pasted into GitHub
+// Actions incapable of modifying the account, unlike the full admin login.
+const CI_READONLY_SCOPES = ['playlist-read-private']
+
+export type LoginPurpose = 'edit' | 'ci-export'
 
 export interface SpotifyTokenSet {
   accessToken: string
@@ -29,18 +38,22 @@ async function generateCodeChallenge(verifier: string): Promise<string> {
   return base64UrlEncode(digest)
 }
 
-function storeTokens(data: { access_token: string; refresh_token?: string; expires_in: number }): void {
-  const existing = getStoredTokens()
+function keyFor(purpose: LoginPurpose): string {
+  return purpose === 'ci-export' ? CI_TOKENS_KEY : TOKENS_KEY
+}
+
+function storeTokens(purpose: LoginPurpose, data: { access_token: string; refresh_token?: string; expires_in: number }): void {
+  const existing = getStoredTokens(purpose)
   const tokens: SpotifyTokenSet = {
     accessToken: data.access_token,
     refreshToken: data.refresh_token ?? existing?.refreshToken ?? '',
     expiresAt: Date.now() + data.expires_in * 1000,
   }
-  localStorage.setItem(TOKENS_KEY, JSON.stringify(tokens))
+  localStorage.setItem(keyFor(purpose), JSON.stringify(tokens))
 }
 
-export function getStoredTokens(): SpotifyTokenSet | null {
-  const raw = localStorage.getItem(TOKENS_KEY)
+export function getStoredTokens(purpose: LoginPurpose = 'edit'): SpotifyTokenSet | null {
+  const raw = localStorage.getItem(keyFor(purpose))
   if (!raw) return null
   try {
     return JSON.parse(raw) as SpotifyTokenSet
@@ -49,29 +62,33 @@ export function getStoredTokens(): SpotifyTokenSet | null {
   }
 }
 
-export function isLoggedIn(): boolean {
-  return getStoredTokens() !== null
+export function isLoggedIn(purpose: LoginPurpose = 'edit'): boolean {
+  return getStoredTokens(purpose) !== null
 }
 
-export function clearTokens(): void {
-  localStorage.removeItem(TOKENS_KEY)
+export function clearTokens(purpose: LoginPurpose = 'edit'): void {
+  localStorage.removeItem(keyFor(purpose))
 }
 
 // Kicks off Spotify's own login screen at accounts.spotify.com — the app never
 // sees the owner's Spotify credentials, only the resulting authorization code.
-export async function startLogin(): Promise<void> {
+// `purpose: 'ci-export'` requests read-only scope, for generating a refresh
+// token safe to store as a GitHub Actions secret; `'edit'` requests the full
+// modify scopes used by the direct-edit playlist manager below.
+export async function startLogin(purpose: LoginPurpose = 'edit'): Promise<void> {
   const verifier = randomString(64)
   const state = randomString(32)
   const challenge = await generateCodeChallenge(verifier)
 
   sessionStorage.setItem(VERIFIER_KEY, verifier)
   sessionStorage.setItem(STATE_KEY, state)
+  sessionStorage.setItem(PURPOSE_KEY, purpose)
 
   const params = new URLSearchParams({
     client_id: SPOTIFY_CLIENT_ID,
     response_type: 'code',
     redirect_uri: SPOTIFY_REDIRECT_URI,
-    scope: SPOTIFY_SCOPES.join(' '),
+    scope: (purpose === 'ci-export' ? CI_READONLY_SCOPES : SPOTIFY_SCOPES).join(' '),
     code_challenge_method: 'S256',
     code_challenge: challenge,
     state,
@@ -80,26 +97,29 @@ export async function startLogin(): Promise<void> {
   window.location.href = `${AUTHORIZE_URL}?${params.toString()}`
 }
 
-// Call once on app load. Returns true if this page load was a Spotify login
-// redirect that completed successfully (caller should then route to #/admin).
-export async function handleRedirectCallback(): Promise<boolean> {
+// Call once on app load. Returns the login purpose if this page load was a
+// Spotify login redirect that completed successfully, so the caller knows
+// which UI to update (edit-mode vs. the CI token export flow).
+export async function handleRedirectCallback(): Promise<LoginPurpose | null> {
   const params = new URLSearchParams(window.location.search)
   const code = params.get('code')
   const returnedState = params.get('state')
   const error = params.get('error')
 
-  if (!code && !error) return false
+  if (!code && !error) return null
 
   const expectedState = sessionStorage.getItem(STATE_KEY)
   const verifier = sessionStorage.getItem(VERIFIER_KEY)
+  const purpose = (sessionStorage.getItem(PURPOSE_KEY) as LoginPurpose | null) ?? 'edit'
   sessionStorage.removeItem(STATE_KEY)
   sessionStorage.removeItem(VERIFIER_KEY)
+  sessionStorage.removeItem(PURPOSE_KEY)
 
   // Strip the OAuth query params from the address bar regardless of outcome.
   window.history.replaceState({}, '', window.location.pathname + window.location.hash)
 
   if (error || !code || !verifier || returnedState !== expectedState) {
-    return false
+    return null
   }
 
   const res = await fetch(TOKEN_URL, {
@@ -114,14 +134,14 @@ export async function handleRedirectCallback(): Promise<boolean> {
     }),
   })
 
-  if (!res.ok) return false
+  if (!res.ok) return null
 
-  storeTokens(await res.json())
-  return true
+  storeTokens(purpose, await res.json())
+  return purpose
 }
 
-export async function ensureFreshAccessToken(): Promise<string | null> {
-  const tokens = getStoredTokens()
+export async function ensureFreshAccessToken(purpose: LoginPurpose = 'edit'): Promise<string | null> {
+  const tokens = getStoredTokens(purpose)
   if (!tokens) return null
 
   if (Date.now() < tokens.expiresAt - EXPIRY_BUFFER_MS) {
@@ -139,11 +159,11 @@ export async function ensureFreshAccessToken(): Promise<string | null> {
   })
 
   if (!res.ok) {
-    clearTokens()
+    clearTokens(purpose)
     return null
   }
 
   const data = await res.json()
-  storeTokens(data)
+  storeTokens(purpose, data)
   return data.access_token
 }
