@@ -1,28 +1,28 @@
+/* Dark only, like Spotify itself — no light mode to switch to. */
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
+  --bg: #121212; /* Spotify's actual app background */
+  --surface: #1a1a1a;
+  --ink: #f7f5fa;
+  --muted: #a7a0af;
+  --border: #2a2a2e;
+  --accent: #1ed760; /* Spotify green */
+  --accent-fill: #1ed760;
+  --accent-ink: #0b1f12; /* text placed on the green fill */
+  --violet: #a66bff; /* contrast accent — used sparingly */
+  --violet-fill: #a66bff;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Anton', 'Arial Narrow', Impact, sans-serif;
+  --font-body: 'Archivo', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
-  font: 16px/145% var(--sans);
-  color-scheme: light dark;
-  color: var(--text);
+  font: 16px/145% var(--font-body);
+  color-scheme: dark;
+  color: var(--ink);
   background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-  }
 }
 
 body {
@@ -32,6 +32,6 @@ body {
 h1,
 h2,
 h3 {
-  color: var(--text-h);
+  color: var(--ink);
   font-weight: 600;
 }

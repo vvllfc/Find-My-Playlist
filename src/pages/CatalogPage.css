@@ -1,23 +1,95 @@
-.catalog {
-  max-width: 72rem;
+/* Oil-slick hero band — an iridescent sheen built only from our own
+   green/violet tokens (no literal rainbow), full-bleed to the viewport
+   edges while its content stays aligned to the same column as the rest
+   of the page. */
+.hero-zone {
+  position: relative;
+  left: 50%;
+  right: 50%;
+  width: 100vw;
+  margin-left: -50vw;
+  margin-right: -50vw;
+  overflow: hidden;
+  background: #0a0a0d;
+  isolation: isolate;
+}
+.hero-zone::before {
+  /* diagonal iridescent streaks, screened together for that oil-sheen glow */
+  content: '';
+  position: absolute;
+  inset: -30% -20%;
+  background: repeating-linear-gradient(
+    -24deg,
+    transparent 0,
+    transparent 34px,
+    var(--violet-fill) 58px,
+    rgba(30, 215, 96, 0.9) 84px,
+    transparent 118px,
+    transparent 168px
+  );
+  filter: blur(22px) saturate(1.3);
+  opacity: 0.55;
+  mix-blend-mode: screen;
+}
+.hero-zone::after {
+  /* fine grit speckle, layered dot fields at slightly different scales */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, #000 1px, transparent 1.5px),
+    radial-gradient(circle, #000 1.2px, transparent 1.6px), radial-gradient(circle, #000 0.7px, transparent 1.1px);
+  background-size: 41px 37px, 67px 71px, 23px 29px;
+  background-position: 0 0, 20px 10px, 6px 18px;
+  opacity: 0.5;
+  mix-blend-mode: multiply;
+}
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  max-width: 52rem;
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: 3rem 1.25rem 2.25rem;
+  box-sizing: border-box;
+}
+
+.kicker {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.72rem;
+  color: #3df08a;
+  margin: 0 0 0.4rem;
+}
+.hero-inner h1 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 0.95;
+  margin: 0;
+  text-wrap: balance;
+}
+.hero-inner p {
+  margin: 0.6rem 0 0;
+  max-width: 34em;
+  opacity: 0.85;
+}
+
+.catalog {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 0 1.25rem 4rem;
   box-sizing: border-box;
 }
 
 @media (max-width: 480px) {
   .catalog {
-    padding: 1.25rem 1rem 3rem;
+    padding: 0 1rem 3rem;
   }
-}
-
-.catalog-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.catalog-header h1 {
-  margin: 0 0 0.25rem;
+  .hero-inner {
+    padding: 2.25rem 1rem 1.75rem;
+  }
 }
 
 .catalog-loading,
@@ -27,108 +99,125 @@
   opacity: 0.7;
 }
 
-.catalog-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-}
-
-.catalog-search {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 0.6rem 0.9rem;
-  border-radius: 0.5rem;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-}
-
-.catalog-tags {
+/* Filter strip — reads like a mixer, not a search box */
+.mixer {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.7rem 0.85rem;
+  margin: 2rem 0 1.75rem;
 }
-
-.tag-chip {
-  border: 1px solid #ccc;
+.mixer input[type='search'] {
+  flex: 1 1 12rem;
+  min-width: 8rem;
+  border: none;
   background: transparent;
-  border-radius: 999px;
-  padding: 0.3rem 0.8rem;
+  font-family: var(--font-mono);
   font-size: 0.85rem;
+  color: var(--ink);
+  outline: none;
+}
+.mixer input[type='search']::placeholder {
+  color: var(--muted);
+}
+.mixer-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border);
+}
+.tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
   cursor: pointer;
 }
-
-.tag-chip.active {
-  background: #1db954;
-  border-color: #1db954;
-  color: #fff;
+.tag:focus-visible,
+.row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.tag.active {
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--accent-ink);
 }
 
-.tag-chip.small {
-  font-size: 0.7rem;
-  padding: 0.15rem 0.5rem;
-  pointer-events: none;
+/* Tracklist rows */
+.tracklist {
+  display: flex;
+  flex-direction: column;
 }
-
-.catalog-grid {
+.row {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: 2.5rem 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.85rem 0.25rem;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  color: inherit;
 }
 
 @media (max-width: 480px) {
-  .catalog-grid {
-    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-    gap: 0.85rem;
+  .row {
+    grid-template-columns: 1.75rem 1fr;
+  }
+  .row-count {
+    grid-column: 2;
   }
 }
 
-.playlist-card {
-  display: flex;
-  flex-direction: column;
-  border-radius: 0.75rem;
-  overflow: hidden;
-  border: 1px solid #e2e2e2;
-  text-decoration: none;
-  color: inherit;
-  transition: transform 0.15s ease;
+.row-index {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
-
-.playlist-card:hover {
-  transform: translateY(-2px);
-}
-
-.playlist-cover {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: cover;
-  display: block;
-}
-
-.playlist-cover-placeholder {
-  background: linear-gradient(135deg, #1db954, #191414);
-}
-
-.playlist-info {
-  padding: 0.85rem 1rem 1rem;
-}
-
-.playlist-info h2 {
+.row-main .name {
+  font-family: var(--font-body);
+  font-weight: 700;
   font-size: 1rem;
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.15rem;
 }
-
-.playlist-info p {
+.row-main .desc {
   font-size: 0.85rem;
-  opacity: 0.75;
-  margin: 0 0 0.6rem;
+  color: var(--muted);
+  margin: 0 0 0.4rem;
 }
-
-.playlist-meta {
+.row-tags {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  opacity: 0.8;
+  gap: 0.35rem;
+}
+.chip {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 0.2rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.chip.voice {
+  border-color: var(--violet);
+  color: var(--violet);
+}
+.row-count {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }

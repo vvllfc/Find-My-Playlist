@@ -35,68 +35,70 @@ export default function CatalogPage() {
   }
 
   return (
-    <main className="catalog">
-      <header className="catalog-header">
-        <h1>Find My Playlist</h1>
-        <p>Trouve la playlist qui te correspond.</p>
-      </header>
+    <>
+      <div className="hero-zone">
+        <div className="hero-inner">
+          <p className="kicker">Find My Playlist</p>
+          <h1>Trouve ta playlist</h1>
+          <p>{playlists ? `${playlists.length} playlists` : 'Playlists'} triées par genre, tempo et présence de voix — cherche par nom ou filtre par tag.</p>
+        </div>
+      </div>
 
-      {error && <p className="catalog-error">Impossible de charger les playlists pour le moment.</p>}
+      <main className="catalog">
+        {error && <p className="catalog-error">Impossible de charger les playlists pour le moment.</p>}
 
-      {!error && !playlists && <p className="catalog-loading">Chargement des playlists…</p>}
+        {!error && !playlists && <p className="catalog-loading">Chargement des playlists…</p>}
 
-      {playlists && (
-        <>
-          <div className="catalog-controls">
-            <input
-              type="search"
-              placeholder="Rechercher une playlist…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              className="catalog-search"
-            />
-            {allTags.length > 0 && (
-              <div className="catalog-tags">
-                {allTags.map((tag) => (
-                  <button
-                    key={tag}
-                    type="button"
-                    className={activeTags.has(tag) ? 'tag-chip active' : 'tag-chip'}
-                    onClick={() => toggleTag(tag)}
-                  >
-                    {tag}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+        {playlists && (
+          <>
+            <div className="mixer" role="search">
+              <input
+                type="search"
+                placeholder="Rechercher une playlist…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                aria-label="Rechercher une playlist"
+              />
+              {allTags.length > 0 && (
+                <>
+                  <div className="mixer-divider" />
+                  {allTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      className={activeTags.has(tag) ? 'tag active' : 'tag'}
+                      onClick={() => toggleTag(tag)}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
 
-          <div className="catalog-grid">
-            {filtered.map((playlist) => (
-              <a key={playlist.id} href={playlist.externalUrl} target="_blank" rel="noreferrer" className="playlist-card">
-                {playlist.imageUrl ? (
-                  <img src={playlist.imageUrl} alt="" className="playlist-cover" />
-                ) : (
-                  <div className="playlist-cover playlist-cover-placeholder" />
-                )}
-                <div className="playlist-info">
-                  <h2>{playlist.name}</h2>
-                  {playlist.description && <p>{playlist.description}</p>}
-                  <div className="playlist-meta">
-                    <span>{playlist.trackCount} titres</span>
-                    {playlist.tags.map((tag) => (
-                      <span key={tag} className="tag-chip small">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </a>
-            ))}
-            {filtered.length === 0 && <p className="catalog-empty">Aucune playlist ne correspond à ta recherche.</p>}
-          </div>
-        </>
-      )}
-    </main>
+            <div className="tracklist">
+              {filtered.map((playlist, index) => (
+                <a key={playlist.id} href={playlist.externalUrl} target="_blank" rel="noreferrer" className="row">
+                  <span className="row-index">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="row-main">
+                    <p className="name">{playlist.name}</p>
+                    {playlist.description && <p className="desc">{playlist.description}</p>}
+                    <span className="row-tags">
+                      {playlist.tags.map((tag) => (
+                        <span key={tag} className={tag.toLowerCase() === 'vocals' ? 'chip voice' : 'chip'}>
+                          {tag}
+                        </span>
+                      ))}
+                    </span>
+                  </span>
+                  <span className="row-count">{playlist.trackCount} titres</span>
+                </a>
+              ))}
+              {filtered.length === 0 && <p className="catalog-empty">Aucune playlist ne correspond à ta recherche.</p>}
+            </div>
+          </>
+        )}
+      </main>
+    </>
   )
 }

@@ -1,19 +1,39 @@
 .admin {
-  max-width: 60rem;
+  max-width: 42rem;
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: 2.5rem 1.25rem 4rem;
   box-sizing: border-box;
+  font-family: var(--font-body);
 }
 
 @media (max-width: 480px) {
   .admin {
-    padding: 1.25rem 1rem 3rem;
+    padding: 1.5rem 1rem 3rem;
   }
 }
 
+.admin h1 {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 1rem;
+}
+
+.admin h2 {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.admin h3 {
+  font-size: 0.95rem;
+}
+
 .admin-intro {
-  opacity: 0.75;
-  font-size: 0.9rem;
+  color: var(--muted);
+  font-size: 0.85rem;
   margin-bottom: 2rem;
 }
 
@@ -36,14 +56,18 @@
   flex-direction: column;
   gap: 0.3rem;
   font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .admin-gate input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.5rem 0.7rem;
-  border-radius: 0.4rem;
-  border: 1px solid #ccc;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
   font-size: 0.95rem;
 }
 
@@ -52,10 +76,11 @@
 }
 
 .admin-section {
-  border: 1px solid #e2e2e2;
-  border-radius: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
   padding: 1.25rem 1.5rem;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .admin-field {
@@ -63,15 +88,19 @@
   flex-direction: column;
   gap: 0.35rem;
   font-size: 0.85rem;
+  color: var(--muted);
   margin-bottom: 1rem;
 }
 
 .admin-field input {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.5rem 0.7rem;
-  border-radius: 0.4rem;
-  border: 1px solid #ccc;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
   font-size: 0.95rem;
 }
 
@@ -84,7 +113,7 @@
 
 .admin-status {
   font-size: 0.85rem;
-  opacity: 0.8;
+  color: var(--muted);
   margin-bottom: 1rem;
 }
 
@@ -110,8 +139,8 @@
   padding: 0;
   max-height: 24rem;
   overflow-y: auto;
-  border: 1px solid #eee;
-  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
 }
 
 .admin-playlist-list li button {
@@ -122,22 +151,27 @@
   padding: 0.5rem 0.75rem;
   cursor: pointer;
   font-size: 0.85rem;
+  color: var(--ink);
   display: flex;
   justify-content: space-between;
   gap: 0.5rem;
 }
 
 .admin-playlist-list li button.selected {
-  background: #1db95422;
+  background: rgba(30, 215, 96, 0.14);
   font-weight: 600;
 }
 
 .badge-new,
 .badge-private {
-  font-size: 0.65rem;
-  padding: 0.1rem 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.45rem;
   border-radius: 999px;
-  background: #eee;
+  border: 1px solid var(--violet);
+  color: var(--violet);
   white-space: nowrap;
 }
 
@@ -152,16 +186,19 @@
   flex-direction: column;
   gap: 0.3rem;
   font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .admin-form input,
 .admin-form textarea {
   width: 100%;
   box-sizing: border-box;
-  padding: 0.5rem 0.7rem;
-  border-radius: 0.4rem;
-  border: 1px solid #ccc;
-  font-family: inherit;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
   font-size: 0.95rem;
 }
 
@@ -171,10 +208,39 @@
 
 .hint {
   font-size: 0.8rem;
-  opacity: 0.7;
+  color: var(--muted);
 }
 
 .admin-conflict {
   font-size: 0.85rem;
-  color: #b03030;
+  color: #ff6b6b;
+}
+
+/* Buttons — mono, uppercase, quiet by default; submit buttons (the main save
+   actions) pop in Spotify green. */
+button {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.75rem;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink);
+  padding: 0.5rem 0.9rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+}
+
+.admin input:focus-visible,
+.admin textarea:focus-visible,
+.admin button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.admin-form button[type='submit'] {
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--accent-ink);
+  font-weight: 700;
 }
