@@ -74,22 +74,34 @@ async function mapWithConcurrency(items, limit, fn) {
   return results
 }
 
+// Retries on 429 (respecting Retry-After when Spotify sends one) for ANY
+// Spotify call, not just the per-playlist track-count one — the list
+// endpoint (/v1/me/playlists) can 429 too. Note this only helps with a
+// short-window rate limit; a Development Mode *quota* exhaustion (a 429 with
+// reason "QUOTA_EXCEEDED") will just keep failing no matter how long it
+// waits within these 4 attempts — reducing total call volume is the only
+// real fix for that (see SKIP_LIVE_FETCH and the snapshot_id-gated cache).
+async function fetchWithRetry(url, accessToken, attempt = 0) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
+
+  if (res.status === 429 && attempt < 4) {
+    const retryAfterSeconds = Number(res.headers.get('retry-after')) || 2 ** attempt
+    console.warn(`[fetch-and-merge-playlists] 429 on ${url}, waiting ${retryAfterSeconds}s (attempt ${attempt + 1}/4)`)
+    await new Promise((resolve) => setTimeout(resolve, retryAfterSeconds * 1000))
+    return fetchWithRetry(url, accessToken, attempt + 1)
+  }
+
+  return res
+}
+
 // Since Spotify's February 2026 API changes, tracks.total on the playlist
 // object (both the /v1/me/playlists list and GET /v1/playlists/{id} itself)
 // no longer reliably reports a count — confirmed by 200 OK responses with the
 // field empty. The playlist-items endpoint (the old /tracks sub-resource,
 // renamed to /items) still returns an accurate `total` in its paging object,
 // so use that instead, asking for just 1 item to keep the payload tiny.
-async function fetchTrackCount(accessToken, playlistId, attempt = 0) {
-  const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}/items?limit=1&fields=total`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-
-  if (res.status === 429 && attempt < 4) {
-    const retryAfterSeconds = Number(res.headers.get('retry-after')) || 2 ** attempt
-    await new Promise((resolve) => setTimeout(resolve, retryAfterSeconds * 1000))
-    return fetchTrackCount(accessToken, playlistId, attempt + 1)
-  }
+async function fetchTrackCount(accessToken, playlistId) {
+  const res = await fetchWithRetry(`https://api.spotify.com/v1/playlists/${playlistId}/items?limit=1&fields=total`, accessToken)
 
   if (!res.ok) {
     console.warn(`[fetch-and-merge-playlists] track count fetch failed for ${playlistId}: ${res.status} ${await res.text()}`)
@@ -105,9 +117,7 @@ async function fetchTrackCount(accessToken, playlistId, attempt = 0) {
 }
 
 async function fetchOwnPublicPlaylists(accessToken) {
-  const authHeaders = { Authorization: `Bearer ${accessToken}` }
-
-  const meRes = await fetch('https://api.spotify.com/v1/me', { headers: authHeaders })
+  const meRes = await fetchWithRetry('https://api.spotify.com/v1/me', accessToken)
   if (!meRes.ok) {
     throw new Error(`Spotify /me request failed: ${meRes.status} ${await meRes.text()}`)
   }
@@ -118,7 +128,7 @@ async function fetchOwnPublicPlaylists(accessToken) {
   let url = 'https://api.spotify.com/v1/me/playlists?limit=50'
 
   while (url) {
-    const res = await fetch(url, { headers: authHeaders })
+    const res = await fetchWithRetry(url, accessToken)
     if (!res.ok) {
       throw new Error(`Spotify playlists request failed: ${res.status} ${await res.text()}`)
     }
