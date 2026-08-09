@@ -36,6 +36,22 @@ export async function fetchMyPlaylists(accessToken: string): Promise<SpotifyPlay
   return playlists
 }
 
+// Fetches a single playlist's current name/description fresh from Spotify —
+// used right before showing the edit form for a playlist picked from the
+// public catalog's static JSON, whose "description" field is the site's own
+// hand-written blurb, not the real Spotify-native description. One light
+// call per edit session, not one per playlist in the list.
+export async function fetchPlaylistDetails(accessToken: string, playlistId: string): Promise<{ name: string; description: string }> {
+  const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}?fields=name,description`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  })
+  if (!res.ok) {
+    throw new Error(`Spotify playlist details request failed: ${res.status} ${await res.text()}`)
+  }
+  const data = await res.json()
+  return { name: data.name ?? '', description: data.description ?? '' }
+}
+
 export async function updatePlaylistDetails(
   accessToken: string,
   playlistId: string,

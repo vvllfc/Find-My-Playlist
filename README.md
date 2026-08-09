@@ -102,9 +102,14 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
 - L'édition directe des playlists (nom/description, `#/modify`) utilise une connexion **séparée**,
   avec les scopes d'écriture — stockée uniquement dans le navigateur de la personne qui se connecte,
   jamais dans un secret CI. Un token capable de modifier le compte ne peut exister que si quelqu'un
-  s'y connecte avec les identifiants Spotify réels du compte. La liste de playlists y est aussi mise
-  en cache (`localStorage`, pas de secret) pour limiter les appels — rafraîchie uniquement via le
-  bouton "Rafraîchir la liste", jamais automatiquement.
+  s'y connecte avec les identifiants Spotify réels du compte.
+  `#/modify` affiche deux blocs : les playlists **publiques** viennent du même
+  `public/data/playlists.json` que le site public (iso par construction, aucun appel Spotify pour
+  juste les lister) ; les playlists **privées** viennent d'un fetch Spotify mis en cache à part
+  (`localStorage`), rafraîchi uniquement via le bouton "Rafraîchir la liste (privées)", jamais
+  automatiquement. Cliquer sur une playlist publique va chercher sa vraie description Spotify avant
+  affichage (celle du JSON public est la description **du site**, pas celle de Spotify — les deux
+  sont éditées à des endroits différents et ne doivent jamais s'écraser l'une l'autre).
 - Les écritures sur le repo (`#/admin`) passent par un token GitHub que seul le propriétaire (ou un
   collaborateur autorisé) peut générer avec accès en écriture à ce repo précis.
 - `#/admin` n'est jamais lié depuis la navigation publique — accessible seulement en tapant l'URL.
