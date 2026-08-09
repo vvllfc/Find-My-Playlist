@@ -17,6 +17,40 @@
   margin-bottom: 2rem;
 }
 
+.admin-gate {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.admin-gate form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(20rem, 100%);
+}
+
+.admin-gate label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+}
+
+.admin-gate input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.4rem;
+  border: 1px solid #ccc;
+  font-size: 0.95rem;
+}
+
+.admin-lock-button {
+  margin-bottom: 1.5rem;
+}
+
 .admin-section {
   border: 1px solid #e2e2e2;
   border-radius: 0.75rem;

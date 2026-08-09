@@ -63,6 +63,10 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
    GitHub Actions `SPOTIFY_REFRESH_TOKEN`, avec `SPOTIFY_CLIENT_ID` (Settings → Secrets and
    variables → Actions). Sans ça, le build utilise les données d'exemple à la place de tes vraies
    playlists.
+6. **Mot de passe admin (optionnel)** — dissuade les visiteurs curieux qui tomberaient sur l'URL
+   `#/admin` (voir "Sécurité" : ce n'est pas ce qui protège réellement tes données). Génère un hash
+   avec `node scripts/hash-password.mjs "ton-mot-de-passe"` et colle le résultat dans
+   [`src/config.ts`](src/config.ts) (`ADMIN_GATE_PASSWORD_HASH`). Laisser vide désactive l'écran.
 
 ## Sécurité
 
@@ -79,6 +83,10 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
 - Les écritures sur le repo (`#/admin`) passent par un token GitHub que seul le propriétaire (ou un
   collaborateur autorisé) peut générer avec accès en écriture à ce repo précis.
 - `#/admin` n'est jamais lié depuis la navigation publique — accessible seulement en tapant l'URL.
+- L'écran de mot de passe optionnel ([`src/lib/adminGate.ts`](src/lib/adminGate.ts)) n'est qu'un
+  déterrent : le hash est présent dans le bundle public comme tout le reste d'un site statique. Il
+  évite juste qu'un visiteur qui tombe sur l'URL ne se mette à explorer l'interface — la vraie
+  protection reste le token GitHub et la connexion Spotify ci-dessus.
 
 ## Taxonomie de genres
 

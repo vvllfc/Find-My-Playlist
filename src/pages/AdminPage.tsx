@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { usePlaylists } from '../lib/usePlaylists'
 import { deriveTagsFromName } from '../lib/genreTaxonomy.js'
 import taxonomy from '../../data/genre-taxonomy.json'
@@ -6,6 +6,7 @@ import { GithubConflictError, getFile, triggerRedeploy, updateFile } from '../li
 import { GITHUB_META_PATH, SPOTIFY_CLIENT_ID } from '../config'
 import { clearTokens, ensureFreshAccessToken, getStoredTokens, isLoggedIn, startLogin } from '../lib/spotifyAuth'
 import { fetchMyPlaylists, updatePlaylistDetails, type SpotifyPlaylistSummary } from '../lib/spotifyApi'
+import { isGateConfigured, isUnlocked, lock, tryUnlock } from '../lib/adminGate'
 import './AdminPage.css'
 
 const GH_TOKEN_KEY = 'github_pat'
@@ -13,6 +14,12 @@ const GH_TOKEN_KEY = 'github_pat'
 type MetaMap = Record<string, { description: string; tags: string[] }>
 
 export default function AdminPage() {
+  const [unlocked, setUnlocked] = useState(isUnlocked())
+
+  if (!unlocked) {
+    return <PasswordGate onUnlock={() => setUnlocked(true)} />
+  }
+
   return (
     <main className="admin">
       <h1>Admin</h1>
@@ -20,8 +27,55 @@ export default function AdminPage() {
         Page privée — visible uniquement à qui a l'URL, mais protégée pour de vrai par les tokens GitHub/Spotify
         ci-dessous : sans un token valide avec accès en écriture, aucune sauvegarde ne peut aboutir.
       </p>
+      {isGateConfigured() && (
+        <button
+          type="button"
+          className="admin-lock-button"
+          onClick={() => {
+            lock()
+            setUnlocked(false)
+          }}
+        >
+          Verrouiller
+        </button>
+      )}
       <GithubMetaEditor />
       <SpotifyEditor />
+    </main>
+  )
+}
+
+function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState(false)
+
+  async function submit(e: FormEvent) {
+    e.preventDefault()
+    if (await tryUnlock(password)) {
+      onUnlock()
+    } else {
+      setError(true)
+    }
+  }
+
+  return (
+    <main className="admin admin-gate">
+      <form onSubmit={submit}>
+        <label>
+          Mot de passe
+          <input
+            type="password"
+            autoFocus
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              setError(false)
+            }}
+          />
+        </label>
+        <button type="submit">Entrer</button>
+        {error && <p className="admin-conflict">Mot de passe incorrect.</p>}
+      </form>
     </main>
   )
 }
