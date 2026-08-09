@@ -53,12 +53,25 @@ async function mapWithConcurrency(items, limit, fn) {
 
 // Since Spotify's February 2026 API changes, tracks.total on the list endpoint
 // (/v1/me/playlists) is unreliable/always 0 — the accurate count now needs a
-// per-playlist follow-up call.
-async function fetchTrackCount(accessToken, playlistId) {
+// per-playlist follow-up call. With hundreds of playlists this can trip
+// Spotify's rate limit (429), so retry with backoff instead of silently
+// giving up — and log real failures instead of masking them as "0 tracks".
+async function fetchTrackCount(accessToken, playlistId, attempt = 0) {
   const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}?fields=tracks.total`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
-  if (!res.ok) return 0
+
+  if (res.status === 429 && attempt < 4) {
+    const retryAfterSeconds = Number(res.headers.get('retry-after')) || 2 ** attempt
+    await new Promise((resolve) => setTimeout(resolve, retryAfterSeconds * 1000))
+    return fetchTrackCount(accessToken, playlistId, attempt + 1)
+  }
+
+  if (!res.ok) {
+    console.warn(`[fetch-and-merge-playlists] track count fetch failed for ${playlistId}: ${res.status} ${await res.text()}`)
+    return 0
+  }
+
   const data = await res.json()
   return data.tracks?.total ?? 0
 }
@@ -97,9 +110,12 @@ async function fetchOwnPublicPlaylists(accessToken) {
     url = data.next
   }
 
-  await mapWithConcurrency(playlists, 8, async (playlist) => {
+  await mapWithConcurrency(playlists, 5, async (playlist) => {
     playlist.trackCount = await fetchTrackCount(accessToken, playlist.id)
   })
+  console.log(
+    `[fetch-and-merge-playlists] fetched track counts for ${playlists.length} playlists (${playlists.filter((p) => p.trackCount > 0).length} non-zero — see warnings above for any that failed).`,
+  )
 
   return playlists
 }
