@@ -1,4 +1,8 @@
 {
-  "folders": {},
+  "folders": {
+    "Boiler": {
+      "description": "test"
+    }
+  },
   "playlists": {}
 }
