@@ -1,26 +1,98 @@
 [
   {
-    "id": "feel-the-vibe-rock",
-    "match": { "type": "prefix", "value": "Feel The Vibe" },
-    "genre": "Rock",
-    "tempoTokens": {
-      "Much Higher": "energetic+",
-      "ChillFort": "chill+",
-      "Higher": "energetic",
-      "Chill": "chill"
-    }
-  },
-  {
-    "id": "feel-the-x",
-    "match": { "type": "prefix", "value": "Feel The" },
-    "genreFromRemainder": true
-  },
-  {
     "id": "techno",
     "match": { "type": "prefix", "value": "Techno" },
     "genre": "Techno",
     "subgenreTokens": ["Léctro", "Mélo", "Minimal", "Nappe", "Acide"],
     "eraTokens": ["AfterVNR160+", "AfterVNR", "Before", "Middle", "After"],
     "voiceToken": "Voice"
+  },
+  {
+    "id": "dnb",
+    "match": { "type": "prefix", "value": "D&B" },
+    "genre": "D&B",
+    "subgenreTokens": ["Nappe", "Rap", "Reggae", "Dance"],
+    "tempoTokens": { "chill": "chill", "higher": "energetic" },
+    "voiceToken": "Voice"
+  },
+  {
+    "id": "jazzy-soul",
+    "match": { "type": "prefix", "value": "Jazzy" },
+    "genre": "Jazzy Soul",
+    "subgenreTokens": ["All Season", "Summer", "Winter"],
+    "tempoTokens": { "chillfort": "chill+", "chill": "chill" },
+    "eraTokens": ["Very Old S", "Old S"]
+  },
+  {
+    "id": "raggameff",
+    "match": { "type": "prefix", "value": "Raggameff" },
+    "genre": "Raggameff",
+    "subgenreTokens": ["Dubbidub", "New Vibe", "Old Vibe"],
+    "tempoTokens": { "much higher": "energetic+", "chillfort": "chill+", "chill": "chill", "higher": "energetic" },
+    "voiceToken": "Voice"
+  },
+  {
+    "id": "rap-game",
+    "match": { "type": "prefix", "value": "Rap Game" },
+    "genre": "Rap Game",
+    "subgenreTokens": ["Old School", "New School", "New Gen", "Grime", "Instru"],
+    "tempoTokens": { "much higher": "energetic+", "higher": "energetic" },
+    "eraTokens": ["Now"]
+  },
+  {
+    "id": "reggaeton",
+    "match": { "type": "prefix", "value": "Reggaeton" },
+    "genre": "Reggaeton",
+    "tempoTokens": { "chillfort": "chill+", "chill": "chill" }
+  },
+  {
+    "id": "ska",
+    "match": { "type": "prefix", "value": "Ska" },
+    "genre": "Ska",
+    "tempoTokens": { "chillfort": "chill+", "chill": "chill" }
+  },
+  {
+    "id": "classique",
+    "match": { "type": "prefix", "value": "Classique" },
+    "genre": "Classique",
+    "subgenreTokens": ["Opera", "Piano Only"],
+    "tempoTokens": { "chillfort": "chill+", "chill": "chill" }
+  },
+  {
+    "id": "over-the-clouds",
+    "match": { "type": "prefix", "value": "Over The Clouds" },
+    "genre": "Over The Clouds",
+    "tempoTokens": { "chillfort": "chill+", "chill": "chill", "higher": "energetic" },
+    "voiceToken": "Voice"
+  },
+  {
+    "id": "over-the-sky",
+    "match": { "type": "prefix", "value": "Over The Sky" },
+    "genre": "Over The Sky",
+    "tempoTokens": { "chillfort": "chill+", "chill": "chill", "higher": "energetic" },
+    "voiceToken": "Voice"
+  },
+  {
+    "id": "wallabys",
+    "match": { "type": "prefix", "value": "Wallaby's" },
+    "genre": "Wallaby's",
+    "subgenreTokens": ["Deep Rave", "Deep Bass", "Frapcore", "Hard Tracks", "Raggatek", "Journey", "Rave", "Trance", "Acid"],
+    "tempoTokens": { "chillfort": "chill+", "chill": "chill", "hard": "energetic" },
+    "voiceToken": "Voice"
+  },
+  {
+    "id": "boiler",
+    "match": { "type": "prefix", "value": "Boiler" },
+    "genre": "Boiler"
+  },
+  {
+    "id": "futur-set",
+    "match": { "type": "prefix", "value": "Futur Set" },
+    "genre": "Boiler"
+  },
+  {
+    "id": "you-must-feel",
+    "match": { "type": "prefix", "value": "You Must Feel" },
+    "genre": "You Must Feel"
   }
 ]

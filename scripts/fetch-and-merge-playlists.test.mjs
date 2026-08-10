@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchWithRetry, loadSpotifyPlaylists, MAX_RETRY_WAIT_SECONDS } from './fetch-and-merge-playlists.mjs'
+import {
+  decodeHtmlEntities,
+  fetchWithRetry,
+  loadSpotifyPlaylists,
+  MAX_RETRY_WAIT_SECONDS,
+} from './fetch-and-merge-playlists.mjs'
 
 function headersWithRetryAfter(value) {
   return { get: (name) => (name === 'retry-after' ? value : null) }
@@ -99,5 +104,23 @@ describe('loadSpotifyPlaylists', () => {
     expect(fetchMock).not.toHaveBeenCalled()
     expect(Array.isArray(playlists)).toBe(true)
     expect(playlists.length).toBeGreaterThan(0)
+  })
+})
+
+describe('decodeHtmlEntities', () => {
+  it('decodes the entities Spotify actually returns in descriptions', () => {
+    expect(decodeHtmlEntities('Therapie par l&#x27;acidcore')).toBe("Therapie par l'acidcore")
+    expect(decodeHtmlEntities('Rock &amp; Roll')).toBe('Rock & Roll')
+    expect(decodeHtmlEntities('a &lt;b&gt; c')).toBe('a <b> c')
+    expect(decodeHtmlEntities('path&#x2F;here')).toBe('path/here')
+  })
+
+  it('decodes double-escaped text, which Spotify also returns', () => {
+    expect(decodeHtmlEntities('Le temps de l&amp;#x27;amour')).toBe("Le temps de l'amour")
+  })
+
+  it('leaves text without entities untouched', () => {
+    expect(decodeHtmlEntities('')).toBe('')
+    expect(decodeHtmlEntities('La melodía te lleva 160 BPM max')).toBe('La melodía te lleva 160 BPM max')
   })
 })

@@ -242,3 +242,85 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* Folder-grid landing view — big genre categories as clickable tiles,
+   mirroring the tracklist's solid-panel-over-oil-slick treatment. */
+.folder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 1rem;
+}
+/* Keep at least two folders per row on phones — the 11rem minimum above
+   drops to a single giant tile per row below ~400px. Must come after the
+   base rule: same specificity, so source order decides. */
+@media (max-width: 480px) {
+  .folder-grid {
+    grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    gap: 0.75rem;
+  }
+}
+.folder-tile {
+  display: block;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.85rem;
+  text-decoration: none;
+  color: inherit;
+}
+.folder-tile:hover,
+.folder-tile:focus-visible {
+  border-color: var(--accent-fill);
+  outline: none;
+}
+.folder-covers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 2px;
+  aspect-ratio: 1;
+  border-radius: 0.3rem;
+  overflow: hidden;
+  background: rgba(166, 107, 255, 0.12);
+}
+.folder-covers img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.folder-cover-empty {
+  background: rgba(166, 107, 255, 0.12);
+}
+.folder-name {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0.7rem 0 0.15rem;
+}
+.folder-count {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.back-link {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-decoration: none;
+  margin: 0 0 1rem;
+}
+.back-link:hover,
+.back-link:focus-visible {
+  color: var(--ink);
+}
+
+.search-summary {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0 0 1rem;
+}

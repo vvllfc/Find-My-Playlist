@@ -30,6 +30,35 @@ const TRACK_COUNT_CACHE_PATH = 'data/track-counts-cache.json'
 // no real data at all yet.
 const LAST_GOOD_PLAYLISTS_PATH = 'data/last-successful-playlists.json'
 
+// Keys are lowercase; lookups lowercase the match, since Spotify mixes
+// casing in hex entities (&#x27; but &#x2F;).
+const HTML_ENTITIES = {
+  '&amp;': '&',
+  '&lt;': '<',
+  '&gt;': '>',
+  '&quot;': '"',
+  '&#x27;': "'",
+  '&#39;': "'",
+  '&#x2f;': '/',
+}
+
+// Spotify returns playlist descriptions HTML-escaped, and some are escaped
+// twice ("l&amp;#x27;amour"), so decode until stable rather than once. React
+// escapes on render anyway, so storing the decoded text is what makes
+// apostrophes and & show up as themselves instead of entity codes.
+export function decodeHtmlEntities(text) {
+  let current = text
+  for (let pass = 0; pass < 3; pass++) {
+    const next = current.replace(
+      /&(amp|lt|gt|quot|#x27|#39|#x2f);/gi,
+      (match) => HTML_ENTITIES[match.toLowerCase()] ?? match,
+    )
+    if (next === current) break
+    current = next
+  }
+  return current
+}
+
 async function readJson(relPath) {
   const raw = await readFile(path.join(rootDir, relPath), 'utf-8')
   return JSON.parse(raw)
@@ -259,7 +288,7 @@ async function main() {
     if (entry) tagged += 1
     return {
       ...playlist,
-      description: playlist.description ?? '',
+      description: decodeHtmlEntities(playlist.description ?? ''),
       tags: entry?.tags ?? deriveTagsFromName(playlist.name, taxonomy),
     }
   })
