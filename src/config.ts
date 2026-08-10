@@ -3,7 +3,7 @@ export const GITHUB_OWNER = 'vvllfc'
 export const GITHUB_REPO = 'Find-My-Playlist'
 export const GITHUB_BRANCH = 'main'
 export const GITHUB_WORKFLOW_FILE = 'deploy.yml'
-export const GITHUB_META_PATH = 'data/playlists.meta.json'
+export const GITHUB_CONTENT_PATH = 'data/site-content.json'
 
 // localStorage key for the admin's GitHub PAT — shared between #/admin (which
 // sets it) and #/modify (which reuses it, if present, to auto-trigger a

@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
-import { usePlaylists } from '../lib/usePlaylists'
+import { useCatalog } from '../lib/useCatalog'
 import { deriveTagsFromName } from '../lib/genreTaxonomy.js'
 import taxonomy from '../../data/genre-taxonomy.json'
-import { GithubConflictError, getFile, triggerRedeploy, updateFile } from '../lib/github'
-import { GITHUB_META_PATH, GITHUB_TOKEN_STORAGE_KEY, SPOTIFY_CLIENT_ID } from '../config'
+import { GithubConflictError, triggerRedeploy } from '../lib/github'
+import { loadSiteContent, saveSiteContent, type LoadedSiteContent } from '../lib/siteContent'
+import { GITHUB_TOKEN_STORAGE_KEY, SPOTIFY_CLIENT_ID } from '../config'
 import { clearTokens, getStoredTokens, isLoggedIn, startLogin } from '../lib/spotifyAuth'
 import { isGateConfigured, isUnlocked, lock } from '../lib/adminGate'
 import PasswordGate from './PasswordGate'
 import './AdminShared.css'
-
-type MetaMap = Record<string, { tags: string[] }>
 
 export default function AdminPage() {
   const [unlocked, setUnlocked] = useState(isUnlocked())
@@ -24,7 +23,7 @@ export default function AdminPage() {
       <p className="admin-intro">
         Page privée — visible uniquement à qui a l'URL, mais protégée pour de vrai par les tokens GitHub/Spotify
         ci-dessous : sans un token valide avec accès en écriture, aucune sauvegarde ne peut aboutir. Pour éditer tes
-        playlists Spotify directement, c'est sur <code>#/modify</code>.
+        playlists Spotify et les dossiers du catalogue, c'est sur <code>#/modify</code>.
       </p>
       {isGateConfigured() && (
         <button
@@ -38,17 +37,17 @@ export default function AdminPage() {
           Verrouiller
         </button>
       )}
-      <GithubMetaEditor />
+      <GithubTagsEditor />
       <CiExportPanel />
     </main>
   )
 }
 
-function GithubMetaEditor() {
-  const { playlists } = usePlaylists()
+function GithubTagsEditor() {
+  const { catalog } = useCatalog()
+  const playlists = catalog?.playlists ?? null
   const [token, setToken] = useState(() => localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY) ?? '')
-  const [meta, setMeta] = useState<MetaMap | null>(null)
-  const [sha, setSha] = useState<string | null>(null)
+  const [loaded, setLoaded] = useState<LoadedSiteContent | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [tagsInput, setTagsInput] = useState('')
   const [status, setStatus] = useState<string | null>(null)
@@ -60,27 +59,25 @@ function GithubMetaEditor() {
     localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, trimmed)
   }
 
-  const loadMeta = useCallback(async () => {
+  const load = useCallback(async () => {
     if (!token) return
     setStatus('Chargement…')
     try {
-      const file = await getFile(token, GITHUB_META_PATH)
-      setMeta(JSON.parse(file.content))
-      setSha(file.sha)
+      setLoaded(await loadSiteContent(token))
       setConflict(false)
       setStatus(null)
     } catch {
-      setStatus('Impossible de charger data/playlists.meta.json — vérifie le token.')
+      setStatus('Impossible de charger le contenu du site — vérifie le token.')
     }
   }, [token])
 
   useEffect(() => {
-    if (token) loadMeta()
-  }, [token, loadMeta])
+    if (token) load()
+  }, [token, load])
 
   function selectPlaylist(id: string) {
     setSelectedId(id)
-    const entry = meta?.[id]
+    const entry = loaded?.content.playlists[id]
     if (entry) {
       setTagsInput(entry.tags.join(', '))
       return
@@ -91,21 +88,24 @@ function GithubMetaEditor() {
   }
 
   async function save() {
-    if (!token || !meta || !sha || !selectedId) return
-    const updatedMeta: MetaMap = {
-      ...meta,
-      [selectedId]: {
-        tags: tagsInput
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean),
+    if (!token || !loaded || !selectedId) return
+    const content = {
+      ...loaded.content,
+      playlists: {
+        ...loaded.content.playlists,
+        [selectedId]: {
+          tags: tagsInput
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean),
+        },
       },
     }
     setStatus('Enregistrement…')
     try {
-      await updateFile(token, GITHUB_META_PATH, JSON.stringify(updatedMeta, null, 2), sha, `Update metadata for ${selectedId}`)
+      await saveSiteContent(token, content, loaded.sha, `Update tags for ${selectedId}`)
       setStatus('Enregistré — un rebuild du site vient de se déclencher automatiquement.')
-      await loadMeta()
+      await load()
     } catch (err) {
       if (err instanceof GithubConflictError) {
         setConflict(true)
@@ -128,7 +128,7 @@ function GithubMetaEditor() {
   }
 
   const selectedPlaylist = playlists?.find((p) => p.id === selectedId)
-  const hasEntry = selectedId ? Boolean(meta?.[selectedId]) : false
+  const hasEntry = selectedId ? Boolean(loaded?.content.playlists[selectedId]) : false
 
   return (
     <section className="admin-section">
@@ -144,7 +144,7 @@ function GithubMetaEditor() {
 
       {token && (
         <div className="admin-toolbar">
-          <button type="button" onClick={loadMeta}>
+          <button type="button" onClick={load}>
             Recharger
           </button>
           <button type="button" onClick={refreshNow}>
@@ -155,7 +155,7 @@ function GithubMetaEditor() {
             onClick={() => {
               setToken('')
               localStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY)
-              setMeta(null)
+              setLoaded(null)
             }}
           >
             Déconnecter
@@ -165,14 +165,14 @@ function GithubMetaEditor() {
 
       {status && <p className="admin-status">{status}</p>}
 
-      {token && playlists && meta && (
+      {token && playlists && loaded && (
         <div className="admin-editor">
           <ul className="admin-playlist-list">
             {playlists.map((p) => (
               <li key={p.id}>
                 <button type="button" className={p.id === selectedId ? 'selected' : ''} onClick={() => selectPlaylist(p.id)}>
                   {p.name}
-                  {!meta[p.id] && <span className="badge-new">non taguée</span>}
+                  {!loaded.content.playlists[p.id] && <span className="badge-new">tags auto</span>}
                 </button>
               </li>
             ))}
@@ -187,7 +187,7 @@ function GithubMetaEditor() {
               }}
             >
               <h3>{selectedPlaylist.name}</h3>
-              {!hasEntry && <p className="hint">Pas encore taguée — tags suggérés pré-remplis, à valider.</p>}
+              {!hasEntry && <p className="hint">Tags dérivés du nom pré-remplis — enregistrer les fige à la main.</p>}
               <label>
                 Tags (séparés par des virgules)
                 <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} />
@@ -195,7 +195,7 @@ function GithubMetaEditor() {
               {conflict && (
                 <p className="admin-conflict">
                   Le fichier a changé depuis ton dernier chargement.{' '}
-                  <button type="button" onClick={loadMeta}>
+                  <button type="button" onClick={load}>
                     Recharger la dernière version
                   </button>
                 </p>

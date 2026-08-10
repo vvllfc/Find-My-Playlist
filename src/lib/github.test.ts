@@ -20,11 +20,11 @@ describe('getFile', () => {
     })
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await getFile('token', 'data/playlists.meta.json')
+    const result = await getFile('token', 'data/site-content.json')
 
     expect(result).toEqual({ content: '{"a":1}', sha: 'abc123' })
     const [url, init] = fetchMock.mock.calls[0]
-    expect(url).toContain('/repos/vvllfc/Find-My-Playlist/contents/data/playlists.meta.json')
+    expect(url).toContain('/repos/vvllfc/Find-My-Playlist/contents/data/site-content.json')
     expect(init.headers.Authorization).toBe('Bearer token')
   })
 
@@ -39,7 +39,7 @@ describe('updateFile', () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, text: async () => '' })
     vi.stubGlobal('fetch', fetchMock)
 
-    await updateFile('token', 'data/playlists.meta.json', '{"a":1}', 'abc123', 'Update meta')
+    await updateFile('token', 'data/site-content.json', '{"a":1}', 'abc123', 'Update content')
 
     const [, init] = fetchMock.mock.calls[0]
     expect(init.method).toBe('PUT')

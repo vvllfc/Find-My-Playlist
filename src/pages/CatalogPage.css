@@ -305,6 +305,35 @@
   margin: 0;
 }
 
+.folder-desc {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0.4rem 0 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Header shown inside a folder (and sub-folder) — name + the hand-written
+   description from site content. */
+.folder-header {
+  margin: 0 0 1.25rem;
+}
+.folder-header h2 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-weight: 900;
+  font-size: 1.5rem;
+  margin: 0;
+}
+.folder-header p {
+  margin: 0.35rem 0 0;
+  max-width: 44em;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 .back-link {
   display: inline-block;
   font-family: var(--font-mono);

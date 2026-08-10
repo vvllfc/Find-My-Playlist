@@ -47,7 +47,7 @@ npm run dev
 Le site est déployé automatiquement sur GitHub Pages : à chaque push sur `main`, tous les jours à
 6h UTC (pour capter les changements faits côté Spotify sans commit), ou manuellement via le bouton
 "Rafraîchir le site maintenant" de l'admin. Le workflow (`.github/workflows/deploy.yml`) régénère
-`public/data/playlists.json` avant de builder.
+`public/data/catalog.json` avant de builder.
 
 **Un simple push ne consomme aucun appel Spotify** — seuls le cron quotidien et le bouton
 "Rafraîchir le site maintenant" appellent réellement l'API (`SKIP_LIVE_FETCH` dans le workflow, basé
@@ -110,7 +110,7 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
   jamais dans un secret CI. Un token capable de modifier le compte ne peut exister que si quelqu'un
   s'y connecte avec les identifiants Spotify réels du compte.
   `#/modify` affiche deux blocs : les playlists **publiques** viennent du même
-  `public/data/playlists.json` que le site public (iso par construction, aucun appel Spotify pour
+  `public/data/catalog.json` que le site public (iso par construction, aucun appel Spotify pour
   juste les lister) ; les playlists **privées** viennent d'un fetch Spotify mis en cache à part
   (`localStorage`), rafraîchi uniquement via le bouton "Rafraîchir la liste (privées)", jamais
   automatiquement. Cliquer sur une playlist publique va quand même chercher son nom/description

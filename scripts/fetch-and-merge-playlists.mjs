@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { deriveTagsFromName } from '../src/lib/genreTaxonomy.js'
+import { classifyPlaylistName } from '../src/lib/genreTaxonomy.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '..')
@@ -273,34 +273,43 @@ async function loadSpotifyPlaylists() {
 }
 
 async function main() {
-  const [spotifyPlaylists, meta, taxonomy] = await Promise.all([
+  const [spotifyPlaylists, rawContent, taxonomy] = await Promise.all([
     loadSpotifyPlaylists(),
-    readJson('data/playlists.meta.json'),
+    readJson('data/site-content.json'),
     readJson('data/genre-taxonomy.json'),
   ])
+  // Same defaulting as src/lib/siteContent.ts — missing sections are fine.
+  const content = { folders: rawContent.folders ?? {}, playlists: rawContent.playlists ?? {} }
 
   // The description is the real Spotify one (already on `playlist`, fetched
-  // live above) — it just follows whatever's on Spotify. Only tags are a
-  // site-only concept, hand-authored in data/playlists.meta.json.
-  let tagged = 0
+  // live above) — it just follows whatever's on Spotify. Folder/category and
+  // sub-folder come from the name via the taxonomy; hand-written overrides
+  // (extra tags, folder descriptions) come from data/site-content.json.
+  let manuallyTagged = 0
   const merged = spotifyPlaylists.map((playlist) => {
-    const entry = meta[playlist.id]
-    if (entry) tagged += 1
+    const entry = content.playlists[playlist.id]
+    if (entry) manuallyTagged += 1
+    const { category, subcategory, tags } = classifyPlaylistName(playlist.name, taxonomy)
     return {
       ...playlist,
       description: decodeHtmlEntities(playlist.description ?? ''),
-      tags: entry?.tags ?? deriveTagsFromName(playlist.name, taxonomy),
+      category,
+      subcategory,
+      tags: entry?.tags ?? tags,
     }
   })
 
   merged.sort((a, b) => a.name.localeCompare(b.name))
 
+  const uncategorized = merged.filter((p) => p.category === null).length
+  const catalog = { playlists: merged, folders: content.folders }
+
   const outDir = path.join(rootDir, 'public', 'data')
   await mkdir(outDir, { recursive: true })
-  await writeFile(path.join(outDir, 'playlists.json'), JSON.stringify(merged, null, 2))
+  await writeFile(path.join(outDir, 'catalog.json'), JSON.stringify(catalog, null, 2))
 
   console.log(
-    `[fetch-and-merge-playlists] ${merged.length} playlists fetched, ${tagged} with saved tags, ${merged.length - tagged} awaiting tags.`,
+    `[fetch-and-merge-playlists] ${merged.length} playlists, ${uncategorized} uncategorized, ${manuallyTagged} with hand-written tags, ${Object.keys(content.folders).length} folder descriptions.`,
   )
 }
 

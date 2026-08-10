@@ -94,5 +94,10 @@
     "id": "you-must-feel",
     "match": { "type": "prefix", "value": "You Must Feel" },
     "genre": "You Must Feel"
+  },
+  {
+    "id": "dubstep",
+    "match": { "type": "prefix", "value": "Dubstep" },
+    "genre": "Dubstep"
   }
 ]

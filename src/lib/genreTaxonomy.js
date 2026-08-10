@@ -4,7 +4,7 @@
 
 // Source playlist names mix casing pretty freely (Chillfort/ChillFort/CHILLFORT,
 // Rockvibe/RockVibe, Fr/FR...) and two different apostrophe characters
-// (Wallaby's vs Wallaby's). None of that is meaningful, so normalize before
+// (Wallaby's vs Wallaby’s). None of that is meaningful, so normalize before
 // ever comparing — matching stays defensive against inconsistent naming
 // instead of requiring everything to be renamed first.
 function normalize(str) {
@@ -32,19 +32,24 @@ function findTokenMapped(remainder, tokenMap) {
   return matched ? tokenMap[matched] : null;
 }
 
+// "No Voice" is an explicit negation and always wins, even when the name also
+// carries a bare "Voice" earlier on ("...Rave Voice Melo Hard No Voice") —
+// those are playlists whose voice marker was retracted, not confirmed.
+function hasVoice(remainder, voiceToken) {
+  const normalized = normalize(remainder);
+  if (/no\s+voice/.test(normalized)) return false;
+  return normalized.includes(normalize(voiceToken));
+}
+
 function applyRule(rule, remainder) {
   const tags = [];
-
   if (rule.genre) tags.push(rule.genre);
-  if (rule.genreFromRemainder && remainder) tags.push(remainder);
+
+  const subcategory = rule.subgenreTokens ? findToken(remainder, rule.subgenreTokens) : null;
+  if (subcategory) tags.push(subcategory);
 
   if (rule.tempoTokens) {
     const matched = findTokenMapped(remainder, rule.tempoTokens);
-    if (matched) tags.push(matched);
-  }
-
-  if (rule.subgenreTokens) {
-    const matched = findToken(remainder, rule.subgenreTokens);
     if (matched) tags.push(matched);
   }
 
@@ -53,26 +58,20 @@ function applyRule(rule, remainder) {
     if (matched) tags.push(matched);
   }
 
-  if (rule.voiceToken) {
-    // "No Voice" is an explicit negation, not a match — strip it before
-    // testing, since some names contain both ("...Voice Melo Hard No Voice").
-    const withoutNegation = normalize(remainder).replace(/no\s+voice/g, '');
-    if (withoutNegation.includes(normalize(rule.voiceToken))) {
-      tags.push('vocals');
-    }
-  }
+  if (rule.voiceToken && hasVoice(remainder, rule.voiceToken)) tags.push('vocals');
 
-  return tags;
+  return { category: rule.genre ?? null, subcategory, tags };
 }
 
 // "Feel The X" is its own family of naming, not a single fixed vocabulary —
-// distinct from the declarative single-prefix rules below. The shape is
-// [nationality/language]? + genre-word + [intensity]? + [era]?, in any
-// spacing/order the family word and modifiers happen to appear. Nationality
-// is deliberately kept secondary (never the folder/category), per how the
-// playlists are actually organized — it's flavor info (~lyrics language),
-// not a genre.
+// distinct from the declarative single-prefix rules below. Everything named
+// "Feel The ..." belongs to one "Feel" folder, with the genre word inside the
+// name becoming the sub-folder. The shape is
+// [nationality/language]? + genre-word + [intensity]? + [era]?.
+// Nationality is deliberately never a folder of its own — it's flavour info
+// (roughly lyrics language), not a genre.
 const FEEL_THE_PREFIX = 'Feel The';
+const FEEL_CATEGORY = 'Feel';
 
 const NATIONALITIES = [
   'French',
@@ -88,7 +87,7 @@ const NATIONALITIES = [
 
 // Longer/more specific words first so e.g. "Rockvibe" wins over the bare
 // "Vibe" it contains. "Vibe"/"Rockvibe" both fold into the same "Rock"
-// category — everything else keeps its own literal genre name.
+// sub-folder — everything else keeps its own literal genre name.
 const GENRE_WORDS = {
   rockvibe: 'Rock',
   hardrock: 'HardRock',
@@ -99,6 +98,8 @@ const GENRE_WORDS = {
   electro: 'Electro',
   piano: 'Piano',
   country: 'Country',
+  latino: 'Latino',
+  dubstep: 'Dubstep',
 };
 
 const INTENSITY_TOKENS = {
@@ -126,44 +127,51 @@ function stripPrefixWord(remainder, words) {
   return null;
 }
 
-function deriveFeelTheXTags(remainder) {
+function classifyFeelThe(remainder) {
+  const tags = [FEEL_CATEGORY];
   let rest = remainder;
 
   const nationality = stripPrefixWord(rest, NATIONALITIES);
   if (nationality) rest = nationality.rest;
 
+  // Prefer a genre word at the start of what's left, but fall back to one
+  // anywhere in the name ("Netherlands Vibe" — unknown nationality, real
+  // genre word after it) rather than giving up on the sub-folder entirely.
   const genreWords = Object.keys(GENRE_WORDS).sort((a, b) => b.length - a.length);
-  const genreMatch = stripPrefixWord(rest, genreWords);
-  // Nationality/intensity/era are flavor info, never the category — if no
-  // genre word was recognized, there's no genre to hang them off of, so
-  // leave the whole name unrecognized (falls into "Non classées") instead
-  // of promoting one of those secondary words to tags[0].
-  if (!genreMatch) return [];
-  rest = genreMatch.rest;
+  const genreMatch = stripPrefixWord(rest, genreWords) ?? (() => {
+    const found = findToken(rest, genreWords);
+    return found ? { matched: found, rest } : null;
+  })();
 
-  const tags = [GENRE_WORDS[normalize(genreMatch.matched)]];
+  const subcategory = genreMatch ? GENRE_WORDS[normalize(genreMatch.matched)] : null;
+  if (subcategory) tags.push(subcategory);
   if (nationality) tags.push(nationality.matched);
 
-  const intensity = findTokenMapped(rest, INTENSITY_TOKENS);
+  const intensity = findTokenMapped(remainder, INTENSITY_TOKENS);
   if (intensity) tags.push(intensity);
 
-  const era = findToken(rest, ERA_TOKENS);
+  const era = findToken(remainder, ERA_TOKENS);
   if (era) tags.push(era);
 
-  return tags;
+  return { category: FEEL_CATEGORY, subcategory, tags };
 }
 
-export function deriveTagsFromName(name, taxonomy) {
+// Returns { category, subcategory, tags }. `category` is the top-level folder
+// on the public catalog and `subcategory` the folder inside it; both are null
+// when nothing matched, which lands the playlist in "Non classées".
+export function classifyPlaylistName(name, taxonomy) {
   if (matchesPrefix(name, FEEL_THE_PREFIX)) {
-    const remainder = name.slice(FEEL_THE_PREFIX.length).trim();
-    return deriveFeelTheXTags(remainder);
+    return classifyFeelThe(name.slice(FEEL_THE_PREFIX.length).trim());
   }
 
   for (const rule of taxonomy) {
     if (!matchesPrefix(name, rule.match.value)) continue;
-    const remainder = name.slice(rule.match.value.length).trim();
-    return applyRule(rule, remainder);
+    return applyRule(rule, name.slice(rule.match.value.length).trim());
   }
 
-  return [];
+  return { category: null, subcategory: null, tags: [] };
+}
+
+export function deriveTagsFromName(name, taxonomy) {
+  return classifyPlaylistName(name, taxonomy).tags;
 }
