@@ -1,14 +1,20 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { deriveTagsFromName } from '../src/lib/genreTaxonomy.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '..')
 
-const CLIENT_ID = process.env.SPOTIFY_CLIENT_ID
-const REFRESH_TOKEN = process.env.SPOTIFY_REFRESH_TOKEN
-const SKIP_LIVE_FETCH = process.env.SKIP_LIVE_FETCH === 'true'
+// Read at call time (not module load time) so tests can flip these via
+// process.env between calls without needing to bust the module cache.
+function getEnv() {
+  return {
+    clientId: process.env.SPOTIFY_CLIENT_ID,
+    refreshToken: process.env.SPOTIFY_REFRESH_TOKEN,
+    skipLiveFetch: process.env.SKIP_LIVE_FETCH === 'true',
+  }
+}
 
 // Gitignored, persisted between CI runs via actions/cache (see deploy.yml) —
 // not committed. Keyed by playlist ID to { trackCount, snapshotId }; a
@@ -43,14 +49,14 @@ async function readTrackCountCache() {
 // the admin page's "Connecter Spotify" PKCE login (src/lib/spotifyAuth.ts) and
 // stored as a repo secret. No client secret needed — same public-client
 // refresh grant the browser flow already uses.
-async function getAccessToken() {
+async function getAccessToken(clientId, refreshToken) {
   const res = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: REFRESH_TOKEN,
-      client_id: CLIENT_ID,
+      refresh_token: refreshToken,
+      client_id: clientId,
     }),
   })
   if (!res.ok) {
@@ -180,14 +186,16 @@ async function fetchOwnPublicPlaylists(accessToken) {
 }
 
 async function loadSpotifyPlaylists() {
-  if (!CLIENT_ID || !REFRESH_TOKEN) {
+  const { clientId, refreshToken, skipLiveFetch } = getEnv()
+
+  if (!clientId || !refreshToken) {
     console.warn(
       '[fetch-and-merge-playlists] SPOTIFY_CLIENT_ID/SPOTIFY_REFRESH_TOKEN not set — using sample fixture data instead of calling Spotify.',
     )
     return readJson('data/sample-spotify-fixture.json')
   }
 
-  if (SKIP_LIVE_FETCH) {
+  if (skipLiveFetch) {
     // A plain code push must NEVER call Spotify — reuse the last successful
     // fetch instead. Real refreshes only happen on the daily cron or the
     // admin's manual button (see deploy.yml, which only sets
@@ -210,7 +218,7 @@ async function loadSpotifyPlaylists() {
   }
 
   try {
-    const accessToken = await getAccessToken()
+    const accessToken = await getAccessToken(clientId, refreshToken)
     const playlists = await fetchOwnPublicPlaylists(accessToken)
     await writeFile(path.join(rootDir, LAST_GOOD_PLAYLISTS_PATH), JSON.stringify(playlists, null, 2))
     return playlists
@@ -267,7 +275,15 @@ async function main() {
   )
 }
 
-main().catch((err) => {
-  console.error(err)
-  process.exitCode = 1
-})
+// Only run when executed directly (`node scripts/fetch-and-merge-playlists.mjs`),
+// not when imported by tests. pathToFileURL handles Windows drive letters/spaces
+// correctly, unlike a hand-rolled `file://${path}` string.
+const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+if (isMain) {
+  main().catch((err) => {
+    console.error(err)
+    process.exitCode = 1
+  })
+}
+
+export { fetchWithRetry, loadSpotifyPlaylists, MAX_RETRY_WAIT_SECONDS }
