@@ -26,6 +26,8 @@ export const FOLDER_ZOOM_NAME = 'folder-zoom'
 export interface ZoomPivot {
   slug: string
   depth: number
+  /** 'in' when opening a folder, 'out' when coming back up. */
+  direction: 'in' | 'out'
 }
 
 let pivot: ZoomPivot | null = null
@@ -64,21 +66,35 @@ function canAnimate(): boolean {
   return !window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+// A little past edge-to-edge, so no sliver of the page shows around the cover
+// at full size.
+const COVER_OVERSHOOT = 1.15
+
 /**
- * Points the zoom at the viewer rather than at the corner the cover happens to
- * sit in. Scaling alone makes an off-centre tile swell off the edge of the
- * screen; pairing it with a nudge toward the middle is what turns it into
- * walking up to the artwork. Published as CSS variables the keyframes read.
+ * Aims the zoom at the viewer and sizes it to swallow the screen — the two
+ * things that make it read as stepping into the artwork rather than as a tile
+ * inflating in place. Scaling alone would swell an off-centre tile off the
+ * nearest edge, and a fixed scale would fall short: a tile is a very different
+ * size across two phone columns and four desktop ones. Published as CSS
+ * variables that the keyframes in index.css read.
  */
-function aimZoomAtViewportCentre(): void {
+function aimZoomAtViewport(): void {
   const cover = document.querySelector<HTMLElement>(`[style*="view-transition-name"]`)
   if (!cover) return
 
+  // Includes the hover transform, so the zoom continues from exactly the state
+  // on screen instead of jumping back to the resting size first.
   const box = cover.getBoundingClientRect()
+  if (box.width === 0 || box.height === 0) return
+
   const dx = window.innerWidth / 2 - (box.left + box.width / 2)
   const dy = window.innerHeight / 2 - (box.top + box.height / 2)
-  document.documentElement.style.setProperty('--zoom-dx', `${Math.round(dx)}px`)
-  document.documentElement.style.setProperty('--zoom-dy', `${Math.round(dy)}px`)
+  const scale = Math.max(window.innerWidth / box.width, window.innerHeight / box.height) * COVER_OVERSHOOT
+
+  const style = document.documentElement.style
+  style.setProperty('--zoom-dx', `${Math.round(dx)}px`)
+  style.setProperty('--zoom-dy', `${Math.round(dy)}px`)
+  style.setProperty('--zoom-scale', scale.toFixed(2))
 }
 
 let running = false
@@ -99,13 +115,16 @@ export function runWithZoom(next: ZoomPivot | null, update: () => void): void {
   flushSync(() => setPivot(next))
   // Going deeper, the cover lives in the page we're leaving, so it can be
   // measured now.
-  aimZoomAtViewportCentre()
+  aimZoomAtViewport()
+  // Lets the stylesheet time each direction on its own: arriving wants dwell,
+  // retreating wants to get out of the way.
+  document.documentElement.dataset.zoomDirection = next.direction
 
   running = true
   const transition = document.startViewTransition(() => {
     flushSync(update)
     // Coming back up, it only exists once the destination has rendered.
-    aimZoomAtViewportCentre()
+    aimZoomAtViewport()
   })
 
   // `finished` rejects when a transition is skipped (a second navigation, a
@@ -115,6 +134,7 @@ export function runWithZoom(next: ZoomPivot | null, update: () => void): void {
     .catch(() => {})
     .finally(() => {
       running = false
+      delete document.documentElement.dataset.zoomDirection
       setPivot(null)
     })
 }

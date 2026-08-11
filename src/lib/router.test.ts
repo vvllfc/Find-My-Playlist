@@ -23,13 +23,21 @@ describe('parseRoute', () => {
 
 describe('pivotBetween', () => {
   it('picks the folder being entered when going deeper', () => {
-    expect(pivotBetween('/', '/genre/feel')).toEqual({ slug: 'feel', depth: 1 })
-    expect(pivotBetween('/genre/feel', '/genre/feel/rock')).toEqual({ slug: 'rock', depth: 2 })
+    expect(pivotBetween('/', '/genre/feel')).toEqual({ slug: 'feel', depth: 1, direction: 'in' })
+    expect(pivotBetween('/genre/feel', '/genre/feel/rock')).toEqual({
+      slug: 'rock',
+      depth: 2,
+      direction: 'in',
+    })
   })
 
-  it('picks the folder being left when coming back up, so the effect reverses', () => {
-    expect(pivotBetween('/genre/feel', '/')).toEqual({ slug: 'feel', depth: 1 })
-    expect(pivotBetween('/genre/feel/rock', '/genre/feel')).toEqual({ slug: 'rock', depth: 2 })
+  it('picks the folder being left when coming back up, and reverses the effect', () => {
+    expect(pivotBetween('/genre/feel', '/')).toEqual({ slug: 'feel', depth: 1, direction: 'out' })
+    expect(pivotBetween('/genre/feel/rock', '/genre/feel')).toEqual({
+      slug: 'rock',
+      depth: 2,
+      direction: 'out',
+    })
   })
 
   it('has no pivot when the move is not a single step through the hierarchy', () => {

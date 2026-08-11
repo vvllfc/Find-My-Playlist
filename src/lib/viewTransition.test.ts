@@ -15,7 +15,7 @@ function setEnvironment({ supported, reduceMotion }: { supported: boolean; reduc
     // No cover to measure: aiming the zoom bails out early, which is also the
     // real behaviour on a navigation whose cover isn't on screen.
     querySelector: () => null,
-    documentElement: { style: { setProperty() {} } },
+    documentElement: { style: { setProperty() {} }, dataset: {} },
   })
   vi.stubGlobal('window', {
     innerWidth: 1200,
@@ -34,7 +34,7 @@ describe('runWithZoom', () => {
     setEnvironment({ supported: false, reduceMotion: false })
     const update = vi.fn()
 
-    runWithZoom({ slug: 'feel', depth: 1 }, update)
+    runWithZoom({ slug: 'feel', depth: 1, direction: 'in' as const }, update)
 
     expect(update).toHaveBeenCalledTimes(1)
   })
@@ -43,7 +43,7 @@ describe('runWithZoom', () => {
     const start = setEnvironment({ supported: true, reduceMotion: true })
     const update = vi.fn()
 
-    runWithZoom({ slug: 'feel', depth: 1 }, update)
+    runWithZoom({ slug: 'feel', depth: 1, direction: 'in' as const }, update)
 
     expect(update).toHaveBeenCalledTimes(1)
     expect(start).not.toHaveBeenCalled()
@@ -63,7 +63,7 @@ describe('runWithZoom', () => {
     const start = setEnvironment({ supported: true, reduceMotion: false })
     const update = vi.fn()
 
-    runWithZoom({ slug: 'feel', depth: 1 }, update)
+    runWithZoom({ slug: 'feel', depth: 1, direction: 'in' as const }, update)
 
     expect(start).toHaveBeenCalledTimes(1)
     expect(update).toHaveBeenCalledTimes(1)
@@ -72,7 +72,7 @@ describe('runWithZoom', () => {
 
 describe('isZoomPivot', () => {
   it('matches only the folder at the matching depth', () => {
-    const pivot = { slug: 'boiler', depth: 1 }
+    const pivot = { slug: 'boiler', depth: 1, direction: 'in' as const }
     expect(isZoomPivot(pivot, 'boiler', 1)).toBe(true)
     // Boiler contains a sub-folder repeating its slug: naming both covers would
     // make the browser morph between them instead of zooming through.

@@ -275,11 +275,44 @@
   padding: 0.85rem;
   text-decoration: none;
   color: inherit;
+  /* Clips the artwork as it swells past the card on hover. */
+  overflow: hidden;
 }
+
+/* Picking a genre out: a green frame marks the selection and the artwork
+   leans forward slightly. `:active` covers press-and-hold on touch, where
+   there is no hover to speak of. */
 .folder-tile:hover,
-.folder-tile:focus-visible {
-  border-color: var(--accent-fill);
+.folder-tile:focus-visible,
+.folder-tile:active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
   outline: none;
+}
+.folder-covers {
+  transition: transform 300ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+.folder-tile:active .folder-covers {
+  transform: scale(1.05);
+}
+/* Hover only where hovering is real — otherwise a tap leaves the state stuck
+   on the tile after navigating back. */
+@media (hover: hover) {
+  .folder-tile:hover .folder-covers,
+  .folder-tile:focus-visible .folder-covers {
+    transform: scale(1.05);
+  }
+}
+/* The frame is selection feedback, so it stays; only the movement goes. */
+@media (prefers-reduced-motion: reduce) {
+  .folder-covers {
+    transition: none;
+  }
+  .folder-tile:hover .folder-covers,
+  .folder-tile:focus-visible .folder-covers,
+  .folder-tile:active .folder-covers {
+    transform: none;
+  }
 }
 .folder-covers {
   display: grid;

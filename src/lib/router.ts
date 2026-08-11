@@ -47,9 +47,13 @@ export function pivotBetween(from: string, to: string): ZoomPivot | null {
 
   // Whichever side is deeper owns the cover being zoomed — going down it's the
   // folder we're entering, coming back up it's the one we're leaving.
-  const deeper = toDepth > fromDepth ? to : from
-  const segments = (parseRoute(deeper) as { segments: string[] }).segments
-  return { slug: segments[segments.length - 1], depth: Math.max(fromDepth, toDepth) }
+  const goingDeeper = toDepth > fromDepth
+  const segments = (parseRoute(goingDeeper ? to : from) as { segments: string[] }).segments
+  return {
+    slug: segments[segments.length - 1],
+    depth: Math.max(fromDepth, toDepth),
+    direction: goingDeeper ? 'in' : 'out',
+  }
 }
 
 function readLocation(): string {

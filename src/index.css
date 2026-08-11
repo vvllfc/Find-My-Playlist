@@ -48,28 +48,52 @@ h3 {
     z-index: 10;
   }
 
-  /* The translate is what aims the movement at the viewer: without it an
-     off-centre tile just swells off the nearest screen edge. The offsets are
-     measured per navigation in src/lib/viewTransition.ts. */
+  /* The cover travels toward the middle of the screen (--zoom-dx/dy) and grows
+     until it swallows it (--zoom-scale), both measured per navigation in
+     src/lib/viewTransition.ts.
+
+     Holding opacity at 1 until late is the whole trick: the artwork has to be
+     solid while it fills the screen, so the destination is genuinely hidden
+     behind it, and only dissolves once it's covering everything. Fading it
+     from the start just makes a ghost drift over the next page. */
+  /* The cover has to be at full size *and* still opaque before it dissolves —
+     that's the whole illusion. So the accelerating rush is front-loaded into
+     the first 70%, by which point the artwork covers the screen; it keeps
+     pushing past the viewer after that while fading out. Getting to full size
+     only at the very end (or fading from the start) just drags a ghost across
+     the next page. */
   @keyframes folder-zoom-through {
-    to {
-      transform: translate(var(--zoom-dx, 0px), var(--zoom-dy, 0px)) scale(2.6);
+    0% {
+      transform: translate(0, 0) scale(1);
+      opacity: 1;
+      animation-timing-function: cubic-bezier(0.45, 0, 0.7, 0.5);
+    }
+    70% {
+      transform: translate(var(--zoom-dx, 0px), var(--zoom-dy, 0px)) scale(var(--zoom-scale, 8));
+      opacity: 1;
+      animation-timing-function: ease-out;
+    }
+    100% {
+      transform: translate(var(--zoom-dx, 0px), var(--zoom-dy, 0px))
+        scale(calc(var(--zoom-scale, 8) * 1.35));
       opacity: 0;
     }
   }
 
-  /* Going deeper: the cover rushes past the viewer. Accelerating curve — it
-     picks up speed as it approaches, which is what sells the forward motion. */
-  ::view-transition-old(folder-zoom) {
-    animation: folder-zoom-through 420ms cubic-bezier(0.32, 0, 0.67, 0) both;
+  ::view-transition-old(folder-zoom),
+  ::view-transition-new(folder-zoom) {
     transform-origin: center;
   }
 
-  /* Coming back: same keyframes reversed, so the cover settles out of the
-     viewer's face back into its slot in the grid. Decelerating curve. */
-  ::view-transition-new(folder-zoom) {
-    animation: folder-zoom-through 380ms cubic-bezier(0.33, 1, 0.68, 1) both reverse;
-    transform-origin: center;
+  /* Opening a folder: the artwork comes at you and swallows the screen. */
+  :root[data-zoom-direction='in']::view-transition-old(folder-zoom) {
+    animation: folder-zoom-through 750ms linear both;
+  }
+  /* Coming back: the same movement rewound, so the cover pulls out of your
+     face and settles into its slot. Quicker — retreating doesn't need the
+     dwell that arriving does. */
+  :root[data-zoom-direction='out']::view-transition-new(folder-zoom) {
+    animation: folder-zoom-through 500ms linear both reverse;
   }
 
   @keyframes folder-page-leave {
@@ -77,19 +101,27 @@ h3 {
       opacity: 0;
     }
   }
+  /* Held at nothing until the cover is big enough to hide it, then brought up
+     to full behind it — so the destination is simply *there* once the artwork
+     dissolves, instead of cross-fading alongside it. */
   @keyframes folder-page-arrive {
-    from {
+    0%,
+    62% {
       opacity: 0;
-      transform: scale(1.03);
+    }
+    72%,
+    100% {
+      opacity: 1;
     }
   }
 
   ::view-transition-old(root) {
     animation: folder-page-leave 200ms ease-out both;
   }
-  /* Arriving slightly oversized and settling is what reads as "landing" on the
-     page you were moving toward. Delayed so the cover leads the movement. */
-  ::view-transition-new(root) {
-    animation: folder-page-arrive 300ms ease-out 80ms both;
+  :root[data-zoom-direction='in']::view-transition-new(root) {
+    animation: folder-page-arrive 750ms linear both;
+  }
+  :root[data-zoom-direction='out']::view-transition-new(root) {
+    animation: folder-page-arrive 500ms linear both;
   }
 }
