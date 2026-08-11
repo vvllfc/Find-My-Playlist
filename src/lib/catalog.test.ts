@@ -5,6 +5,7 @@ import {
   listAllFolders,
   OTHERS_SUBFOLDER,
   SUBFOLDER_MIN_PLAYLISTS,
+  genreLevelTags,
   UNCATEGORIZED,
   type CatalogPlaylist,
 } from './catalog'
@@ -95,6 +96,22 @@ describe('findFolder', () => {
     expect(sub?.subfolder?.key).toBe('Techno/Nappe')
     expect(findFolder(tree, 'techno', 'unknown')).toBeNull()
     expect(findFolder(tree, 'unknown', null)).toBeNull()
+  })
+})
+
+describe('genreLevelTags', () => {
+  it('offers the genre names plus the cross-cutting ones, and nothing else', () => {
+    const rock = { ...playlist('Vibes', 'English Vibe'), tags: ['Vibes', 'English', 'Rock', 'chill'] }
+    const techno = { ...playlist('Techno', 'Nappe'), tags: ['Techno', 'Nappe', 'vocals'] }
+    // Uncategorised playlists contribute no starting point at all.
+    const loose = { ...playlist(null), tags: [] }
+
+    expect(genreLevelTags([rock, techno, loose])).toEqual(['Rock', 'Techno', 'Vibes'])
+  })
+
+  it('leaves out a cross-cutting tag nothing carries', () => {
+    const techno = { ...playlist('Techno'), tags: ['Techno'] }
+    expect(genreLevelTags([techno])).toEqual(['Techno'])
   })
 })
 

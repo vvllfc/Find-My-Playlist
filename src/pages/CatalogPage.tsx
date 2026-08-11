@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
-import { buildFolderTree, findFolder, type CatalogPlaylist, type Folder } from '../lib/catalog'
+import { buildFolderTree, findFolder, genreLevelTags, type CatalogPlaylist, type Folder } from '../lib/catalog'
 import './CatalogPage.css'
 
 export default function CatalogPage({ segments }: { segments: string[] }) {
@@ -20,11 +20,16 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   const listedFolder = match ? (match.subfolder ?? (match.folder.subfolders ? null : match.folder)) : null
   const gridFolders = match ? (listedFolder ? null : match.folder.subfolders) : tree
 
-  // A typed search bypasses folders entirely and flattens across everything.
-  const scope = useMemo<CatalogPlaylist[]>(
-    () => (isSearching ? (catalog?.playlists ?? []) : (listedFolder?.playlists ?? [])),
-    [isSearching, catalog, listedFolder],
-  )
+  // Inside a folder we work from its playlists — including when it's showing a
+  // sub-grid rather than a list, otherwise its chips would be drawn from the
+  // whole catalog and offer tags no playlist here carries. Everywhere else —
+  // searching, or picking a genre from the home row — it's the full catalog.
+  const scope = useMemo<CatalogPlaylist[]>(() => {
+    if (isSearching) return catalog?.playlists ?? []
+    if (listedFolder) return listedFolder.playlists
+    if (match) return match.folder.playlists
+    return catalog?.playlists ?? []
+  }, [isSearching, catalog, listedFolder, match])
 
   // Reset the tag filter when moving between folders so a stale selection
   // can't silently hide everything in the next one.
@@ -32,37 +37,70 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
     setActiveTags(new Set())
   }, [slug, subslug])
 
-  // Tags redundant with where you already are: folder + sub-folder names.
+  // Tags redundant with where you already are: the folder and sub-folder
+  // names, plus anything already spelled out inside them — the "French" tag
+  // says nothing new on every row of the "French Vibe" folder.
   const impliedTags = useMemo(() => {
     if (isSearching || !match) return new Set<string>()
-    return new Set([match.folder.name, ...(match.subfolder ? [match.subfolder.name] : [])])
+    const names = [match.folder.name, ...(match.subfolder ? [match.subfolder.name] : [])]
+    const implied = new Set(names)
+    for (const name of names) for (const word of name.split(' ')) implied.add(word)
+    return implied
   }, [isSearching, match])
 
-  const scopeTags = useMemo(() => {
-    const tags = new Set<string>()
-    for (const playlist of scope) {
-      for (const tag of playlist.tags) {
-        if (!impliedTags.has(tag)) tags.add(tag)
-      }
-    }
-    return [...tags].sort()
-  }, [scope, impliedTags])
-
+  // Everything the current selection narrows down to. Selections combine with
+  // AND, which is what lets the chip row shrink as you go: a chip is only
+  // offered while something still carries it.
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     return scope.filter((playlist) => {
       const matchesQuery =
         !q || playlist.name.toLowerCase().includes(q) || playlist.description.toLowerCase().includes(q)
-      const matchesTags = activeTags.size === 0 || playlist.tags.some((tag) => activeTags.has(tag))
+      const matchesTags = [...activeTags].every((tag) => playlist.tags.includes(tag))
       return matchesQuery && matchesTags
     })
   }, [scope, query, activeTags])
 
+  // Inside a folder the genre is a given, so the row goes straight to the
+  // detail; at the top it starts with genres only and opens up from there.
+  const genreTags = useMemo(() => genreLevelTags(catalog?.playlists ?? []), [catalog])
+  const pickedGenre = [...activeTags].find((tag) => genreTags.includes(tag)) ?? null
+  const showGenreRow = !match && !pickedGenre
+
+  const chips = useMemo(() => {
+    // Narrowed to the genres actually reachable — a search for "techno" has no
+    // reason to still offer Ska.
+    if (showGenreRow) {
+      const reachable = new Set(filtered.flatMap((p) => p.tags))
+      return genreTags.filter((tag) => reachable.has(tag))
+    }
+    const tags = new Set<string>()
+    for (const playlist of filtered) {
+      for (const tag of playlist.tags) {
+        if (impliedTags.has(tag)) continue
+        if (genreTags.includes(tag) && tag !== pickedGenre) continue
+        tags.add(tag)
+      }
+    }
+    return [...tags].sort((a, b) => {
+      // The chosen genre leads the row, so it stays easy to click off.
+      if (a === pickedGenre) return -1
+      if (b === pickedGenre) return 1
+      return a.localeCompare(b, 'fr', { sensitivity: 'base' })
+    })
+  }, [showGenreRow, genreTags, filtered, impliedTags, pickedGenre])
+
   function toggleTag(tag: string) {
     setActiveTags((prev) => {
       const next = new Set(prev)
-      if (next.has(tag)) next.delete(tag)
-      else next.add(tag)
+      if (next.has(tag)) {
+        next.delete(tag)
+        // Dropping the genre drops what was refining it — those chips are
+        // about to disappear, and leaving them active would filter invisibly.
+        if (genreTags.includes(tag)) next.clear()
+      } else {
+        next.add(tag)
+      }
       return next
     })
   }
@@ -103,19 +141,32 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                 onChange={(e) => setQuery(e.target.value)}
                 aria-label="Rechercher une playlist"
               />
-              {(isSearching || listedFolder) && scopeTags.length > 0 && (
+              {chips.length > 0 && (
                 <>
                   <div className="mixer-divider" />
-                  {scopeTags.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      className={activeTags.has(tag) ? 'tag active' : 'tag'}
-                      onClick={() => toggleTag(tag)}
-                    >
-                      {tag}
-                    </button>
-                  ))}
+                  {chips.map((tag) => {
+                    const isGenre = genreTags.includes(tag)
+                    const selected = activeTags.has(tag)
+                    // Genres keep the green of a folder; refinements take the
+                    // violet already used by the tags under playlist names.
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        className={[
+                          'tag',
+                          isGenre ? 'tag-genre' : 'tag-detail',
+                          selected ? 'active' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                        aria-pressed={selected}
+                        onClick={() => toggleTag(tag)}
+                      >
+                        {tag}
+                      </button>
+                    )
+                  })}
                 </>
               )}
             </div>
@@ -140,7 +191,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
               </p>
             )}
 
-            {!isSearching && gridFolders && (
+            {!isSearching && gridFolders && activeTags.size === 0 && (
               <FolderGrid
                 // Remounts on each move so the arrival animation replays; React
                 // would otherwise reuse the same grid element between levels.
@@ -152,7 +203,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
               />
             )}
 
-            {(isSearching || listedFolder) && (
+            {(isSearching || listedFolder || activeTags.size > 0) && (
               <div className="tracklist" key={routeKey}>
                 {filtered.map((playlist, index) => (
                   <a

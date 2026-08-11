@@ -127,3 +127,25 @@ export function findFolder(tree: Folder[], slug: string, subslug: string | null)
 export function listAllFolders(tree: Folder[]): Folder[] {
   return tree.flatMap((folder) => [folder, ...(folder.subfolders ?? [])])
 }
+
+// Tags that behave like a genre without being a folder — they cut across one.
+// "Rock" marks the playlists actually named RockVibe, which live in several
+// language folders inside Vibes.
+export const CROSS_GENRE_TAGS = ['Rock']
+
+/**
+ * The handful of tags worth offering as a starting point: the genre names,
+ * plus the cross-cutting ones. Everything else (tempo, era, vocals, sub-genres)
+ * only appears once one of these has narrowed things down — otherwise the row
+ * is 75 chips deep and useless for finding anything.
+ */
+export function genreLevelTags(playlists: CatalogPlaylist[]): string[] {
+  const genres = new Set<string>()
+  for (const playlist of playlists) {
+    if (playlist.category) genres.add(playlist.category)
+    for (const tag of playlist.tags) {
+      if (CROSS_GENRE_TAGS.includes(tag)) genres.add(tag)
+    }
+  }
+  return [...genres].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+}

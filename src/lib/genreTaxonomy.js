@@ -77,7 +77,7 @@ const VIBES_CATEGORY = 'Vibes';
 // Genres that stand on their own rather than sitting inside Vibes, even though
 // their playlists are named "Feel The …". Being named that way is a naming
 // habit, not a reason to bury them a level down.
-const PROMOTED_GENRES = ['Country', 'Disco', 'HardRock', 'Metal', 'Punk'];
+const PROMOTED_GENRES = ['Country', 'Disco', 'Hard Rock', 'Metal', 'Punk'];
 
 const LANGUAGES = [
   'French',
@@ -96,13 +96,13 @@ const LANGUAGES = [
 // a French RockVibe belong together, and what separates them from a RussianVibe
 // is the language, not the music. Anything Vibe with no language named is
 // English by default.
-const VIBE_WORDS = ['electrovibe', 'rockvibe', 'vibe'];
+const VIBE_WORDS = ['electrovibe', 'pianovibe', 'rockvibe', 'vibe'];
 const DEFAULT_VIBE_LANGUAGE = 'English';
 
 // Everything outside the Vibe family keeps its own literal genre as the
 // sub-folder, with the language demoted to a tag ("French Punk" is Punk).
 const GENRE_WORDS = {
-  hardrock: 'HardRock',
+  hardrock: 'Hard Rock',
   metal: 'Metal',
   disco: 'Disco',
   punk: 'Punk',
@@ -173,10 +173,18 @@ function classifyFeelThe(remainder) {
   }
 
   const tags = [category];
-  if (subcategory) tags.push(subcategory);
-  // The language is already spelled out in a Vibe sub-folder's name, so
-  // repeating it as a tag would just clutter every row inside it.
-  if (language && !isVibe) tags.push(language.matched);
+  if (isVibe) {
+    // The sub-folder is already "<Language> Vibe", so tagging the language on
+    // its own says the same thing in fewer words — tagging both would put two
+    // chips carrying one piece of information on every row.
+    tags.push(language ? language.matched : DEFAULT_VIBE_LANGUAGE);
+    // Only the ones actually named RockVibe are rock; a bare "Feel The Vibe"
+    // makes no such claim.
+    if (normalize(match.matched) === 'rockvibe') tags.push('Rock');
+  } else {
+    if (subcategory) tags.push(subcategory);
+    if (language) tags.push(language.matched);
+  }
 
   const intensity = findTokenMapped(remainder, INTENSITY_TOKENS);
   if (intensity) tags.push(intensity);

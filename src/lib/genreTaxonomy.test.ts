@@ -9,9 +9,9 @@ describe('classifyPlaylistName', () => {
     expect(classify('Feel The FrenchVibe Chill')).toEqual({
       category: 'Vibes',
       subcategory: 'French Vibe',
-      // The language is in the sub-folder name already, so it isn't repeated
-      // as a tag on every row inside it.
-      tags: ['Vibes', 'French Vibe', 'chill'],
+      // Tagged with the bare language, not the sub-folder's name: "French" and
+      // "French Vibe" would be two chips saying one thing.
+      tags: ['Vibes', 'French', 'chill'],
     })
     expect(classify('Feel The RussianVibe')).toMatchObject({ subcategory: 'Russian Vibe' })
     expect(classify('Feel The Netherlands Vibe')).toMatchObject({ subcategory: 'Netherlands Vibe' })
@@ -20,20 +20,27 @@ describe('classifyPlaylistName', () => {
     expect(classify('Feel The Italian Vibe Chill')).toMatchObject({ subcategory: 'Italian Vibe' })
   })
 
-  it('files a Vibe with no language named as English, ElectroVibe included', () => {
+  it('files a Vibe with no language named as English, Electro and Piano included', () => {
     expect(classify('Feel The Vibe Chill')).toEqual({
       category: 'Vibes',
       subcategory: 'English Vibe',
-      tags: ['Vibes', 'English Vibe', 'chill'],
+      tags: ['Vibes', 'English', 'chill'],
     })
-    expect(classify('Feel The Rockvibe')).toMatchObject({ subcategory: 'English Vibe' })
-    expect(classify('Feel The ElectroVibe Higher')).toMatchObject({
-      category: 'Vibes',
-      subcategory: 'English Vibe',
-    })
-    expect(classify('Feel The RockVibe Much Higher')).toMatchObject({
-      tags: ['Vibes', 'English Vibe', 'energetic+'],
-    })
+    expect(classify('Feel The ElectroVibe Higher')).toMatchObject({ subcategory: 'English Vibe' })
+    expect(classify('Feel The PianoVibe Chill')).toMatchObject({ subcategory: 'English Vibe' })
+  })
+
+  it('tags Rock on the playlists actually named RockVibe, and only those', () => {
+    expect(classify('Feel The RockVibe Much Higher').tags).toEqual([
+      'Vibes',
+      'English',
+      'Rock',
+      'energetic+',
+    ])
+    expect(classify('Feel The Spanish Rockvibe Chill').tags).toEqual(['Vibes', 'Spanish', 'Rock', 'chill'])
+    // A bare "Vibe" makes no claim to being rock.
+    expect(classify('Feel The Vibe Chill').tags).not.toContain('Rock')
+    expect(classify('Feel The FrenchVibe').tags).not.toContain('Rock')
   })
 
   it('gives the promoted genres a folder of their own, language as a tag', () => {
@@ -47,7 +54,7 @@ describe('classifyPlaylistName', () => {
     })
     expect(classify('Feel The German Metal')).toMatchObject({ category: 'Metal', tags: ['Metal', 'German'] })
     expect(classify('Feel The Disco Now')).toMatchObject({ category: 'Disco' })
-    expect(classify('Feel The HardRock')).toMatchObject({ category: 'HardRock' })
+    expect(classify('Feel The HardRock')).toMatchObject({ category: 'Hard Rock' })
     expect(classify('Feel The Country')).toMatchObject({ category: 'Country' })
   })
 
@@ -57,7 +64,6 @@ describe('classifyPlaylistName', () => {
       subcategory: 'Latino',
       tags: ['Vibes', 'Latino', 'Spanish', 'chill'],
     })
-    expect(classify('Feel The PianoVibe Chill')).toMatchObject({ category: 'Vibes', subcategory: 'Piano' })
   })
 
   it('still files a Feel The… name with no recognized genre word under Vibes (Autres)', () => {
@@ -152,7 +158,7 @@ describe('classifyPlaylistName', () => {
 
 describe('deriveTagsFromName', () => {
   it('returns just the tags for tag-suggestion callers', () => {
-    expect(deriveTagsFromName('Feel The Vibe Chill', taxonomy)).toEqual(['Vibes', 'English Vibe', 'chill'])
+    expect(deriveTagsFromName('Feel The Vibe Chill', taxonomy)).toEqual(['Vibes', 'English', 'chill'])
     expect(deriveTagsFromName('Lost & Found', taxonomy)).toEqual([])
   })
 })
