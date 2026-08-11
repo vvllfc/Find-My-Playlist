@@ -72,7 +72,12 @@ function applyRule(rule, remainder) {
 // decides the sub-folder. The shape is
 // [language]? + genre-word + [intensity]? + [era]?.
 const FEEL_THE_PREFIX = 'Feel The';
-const FEEL_CATEGORY = 'Feel';
+const VIBES_CATEGORY = 'Vibes';
+
+// Genres that stand on their own rather than sitting inside Vibes, even though
+// their playlists are named "Feel The …". Being named that way is a naming
+// habit, not a reason to bury them a level down.
+const PROMOTED_GENRES = ['Country', 'Disco', 'HardRock', 'Metal', 'Punk'];
 
 const LANGUAGES = [
   'French',
@@ -91,7 +96,7 @@ const LANGUAGES = [
 // a French RockVibe belong together, and what separates them from a RussianVibe
 // is the language, not the music. Anything Vibe with no language named is
 // English by default.
-const VIBE_WORDS = ['rockvibe', 'vibe'];
+const VIBE_WORDS = ['electrovibe', 'rockvibe', 'vibe'];
 const DEFAULT_VIBE_LANGUAGE = 'English';
 
 // Everything outside the Vibe family keeps its own literal genre as the
@@ -142,7 +147,6 @@ function stripPrefixWord(remainder, words) {
 }
 
 function classifyFeelThe(remainder) {
-  const tags = [FEEL_CATEGORY];
   let rest = remainder;
 
   const language = stripPrefixWord(rest, LANGUAGES);
@@ -155,17 +159,24 @@ function classifyFeelThe(remainder) {
     return found ? { matched: found } : null;
   })();
 
+  const isVibe = Boolean(match) && isVibeWord(match.matched);
+  let category = VIBES_CATEGORY;
   let subcategory = null;
-  if (match && isVibeWord(match.matched)) {
+
+  if (isVibe) {
     subcategory = `${language ? language.matched : DEFAULT_VIBE_LANGUAGE} Vibe`;
   } else if (match) {
-    subcategory = GENRE_WORDS[normalize(match.matched)] ?? null;
+    const genre = GENRE_WORDS[normalize(match.matched)] ?? null;
+    // A promoted genre replaces the folder rather than nesting inside it.
+    if (genre && PROMOTED_GENRES.includes(genre)) category = genre;
+    else subcategory = genre;
   }
 
+  const tags = [category];
   if (subcategory) tags.push(subcategory);
   // The language is already spelled out in a Vibe sub-folder's name, so
   // repeating it as a tag would just clutter every row inside it.
-  if (language && !(match && isVibeWord(match.matched))) tags.push(language.matched);
+  if (language && !isVibe) tags.push(language.matched);
 
   const intensity = findTokenMapped(remainder, INTENSITY_TOKENS);
   if (intensity) tags.push(intensity);
@@ -173,7 +184,7 @@ function classifyFeelThe(remainder) {
   const era = findToken(remainder, ERA_TOKENS);
   if (era) tags.push(era);
 
-  return { category: FEEL_CATEGORY, subcategory, tags };
+  return { category, subcategory, tags };
 }
 
 // Returns { category, subcategory, tags }. `category` is the top-level folder
