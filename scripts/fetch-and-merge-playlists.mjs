@@ -2,6 +2,7 @@ import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { classifyPlaylistName } from '../src/lib/genreTaxonomy.js'
+import { compareNames } from '../src/lib/naturalSort.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const rootDir = path.resolve(__dirname, '..')
@@ -299,7 +300,7 @@ async function main() {
     }
   })
 
-  merged.sort((a, b) => a.name.localeCompare(b.name))
+  merged.sort((a, b) => compareNames(a.name, b.name))
 
   const uncategorized = merged.filter((p) => p.category === null).length
   const catalog = { playlists: merged, folders: content.folders }

@@ -45,8 +45,11 @@ function applyRule(rule, remainder) {
   const tags = [];
   if (rule.genre) tags.push(rule.genre);
 
-  const subcategory = rule.subgenreTokens ? findToken(remainder, rule.subgenreTokens) : null;
-  if (subcategory) tags.push(subcategory);
+  // `subgenre` is a fixed sub-folder for the whole rule (two naming families
+  // sharing one genre, e.g. Boiler / Futur Set); `subgenreTokens` picks one
+  // out of the name. A sub-folder repeating the genre name adds no tag.
+  const subcategory = rule.subgenre ?? (rule.subgenreTokens ? findToken(remainder, rule.subgenreTokens) : null);
+  if (subcategory && subcategory !== rule.genre) tags.push(subcategory);
 
   if (rule.tempoTokens) {
     const matched = findTokenMapped(remainder, rule.tempoTokens);

@@ -10,11 +10,11 @@ import {
 } from './catalog'
 
 let nextId = 0
-function playlist(category: string | null, subcategory: string | null = null): CatalogPlaylist {
+function playlist(category: string | null, subcategory: string | null = null, name?: string): CatalogPlaylist {
   nextId += 1
   return {
     id: `id-${nextId}`,
-    name: `Playlist ${nextId}`,
+    name: name ?? `Playlist ${String(nextId).padStart(4, '0')}`,
     imageUrl: null,
     trackCount: 10,
     externalUrl: 'https://open.spotify.com/playlist/x',
@@ -49,6 +49,26 @@ describe('buildFolderTree', () => {
     const techno = tree[0]
     expect(techno.subfolders?.map((f) => f.name)).toEqual(['Acide', 'Nappe', OTHERS_SUBFOLDER])
     expect(techno.subfolders?.map((f) => f.key)).toEqual(['Techno/Acide', 'Techno/Nappe', `Techno/${OTHERS_SUBFOLDER}`])
+  })
+
+  it('orders playlists inside a folder letters-first, numbers by value', () => {
+    const tree = buildFolderTree([
+      playlist('Boiler', 'Boiler', 'Boiler 12.0'),
+      playlist('Boiler', 'Boiler', 'Boiler 8.0'),
+      playlist('Boiler', 'Boiler', 'Boiler After'),
+    ])
+    expect(tree[0].playlists.map((p) => p.name)).toEqual(['Boiler After', 'Boiler 8.0', 'Boiler 12.0'])
+  })
+
+  it('keeps a category flat when its sub-genres would each hold almost nothing', () => {
+    // 25 playlists across 9 sub-genres — past the size bar, but ~3 per folder.
+    const scattered = Array.from({ length: 9 }, (_, i) => many(i < 7 ? 3 : 2, "Wallaby's", `Sub${i}`)).flat()
+    expect(scattered).toHaveLength(25)
+    expect(buildFolderTree(scattered)[0].subfolders).toBeNull()
+
+    // Same size, two sub-genres — worth opening.
+    const grouped = [...many(16, 'Boiler', 'Boiler'), ...many(5, 'Boiler', 'Futur Set')]
+    expect(buildFolderTree(grouped)[0].subfolders?.map((f) => f.name)).toEqual(['Boiler', 'Futur Set'])
   })
 
   it('keeps small or single-subgenre categories flat', () => {

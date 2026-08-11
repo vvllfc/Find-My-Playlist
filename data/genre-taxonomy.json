@@ -83,12 +83,14 @@
   {
     "id": "boiler",
     "match": { "type": "prefix", "value": "Boiler" },
-    "genre": "Boiler"
+    "genre": "Boiler",
+    "subgenre": "Boiler"
   },
   {
     "id": "futur-set",
     "match": { "type": "prefix", "value": "Futur Set" },
-    "genre": "Boiler"
+    "genre": "Boiler",
+    "subgenre": "Futur Set"
   },
   {
     "id": "you-must-feel",

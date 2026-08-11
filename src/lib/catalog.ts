@@ -1,4 +1,5 @@
 import { slugify } from './slug'
+import { compareNames } from './naturalSort.js'
 
 // The public catalog artifact built by scripts/fetch-and-merge-playlists.mjs
 // and served as /data/catalog.json — playlists plus the hand-written folder
@@ -34,9 +35,12 @@ export const OTHERS_SUBFOLDER = 'Autres'
 
 // A category only splits into sub-folders when it's big enough for a flat
 // list to be unpleasant AND its names actually carry sub-genres. Applies to
-// any genre that grows past the bar — nothing is hardcoded to Techno/Feel.
-export const SUBFOLDER_MIN_PLAYLISTS = 40
+// any genre that grows past the bar — nothing is hardcoded to a genre name.
+export const SUBFOLDER_MIN_PLAYLISTS = 20
 const SUBFOLDER_MIN_DISTINCT = 2
+// …and the sub-folders have to be worth opening: splitting 25 playlists across
+// 9 sub-genres leaves ~3 behind each click, which costs more than the flat list.
+const SUBFOLDER_MIN_AVERAGE = 4
 
 export interface Folder {
   name: string
@@ -66,6 +70,11 @@ function groupBy(playlists: CatalogPlaylist[], keyOf: (p: CatalogPlaylist) => st
     items.push(playlist)
     groups.set(key, items)
   }
+  // Sorted here rather than relying on the order the catalog arrived in, so a
+  // folder listing is right regardless of how the artifact was built.
+  for (const items of groups.values()) {
+    items.sort((a, b) => compareNames(a.name, b.name))
+  }
   return groups
 }
 
@@ -75,6 +84,8 @@ function buildSubfolders(categoryName: string, playlists: CatalogPlaylist[]): Fo
   if (distinct.size < SUBFOLDER_MIN_DISTINCT) return null
 
   const groups = groupBy(playlists, (p) => p.subcategory ?? OTHERS_SUBFOLDER)
+  if (playlists.length / groups.size < SUBFOLDER_MIN_AVERAGE) return null
+
   return [...groups.entries()]
     .map(([name, items]) => ({
       name,

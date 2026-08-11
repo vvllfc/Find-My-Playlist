@@ -84,9 +84,21 @@ describe('classifyPlaylistName', () => {
     expect(classify('Reggaeton Chill')).toMatchObject({ category: 'Reggaeton' })
     expect(classify('Classique Opera')).toMatchObject({ category: 'Classique', subcategory: 'Opera' })
     expect(classify('Dubstep')).toMatchObject({ category: 'Dubstep' })
-    expect(classify('Boiler Room Set')).toMatchObject({ category: 'Boiler' })
-    expect(classify('Futur Set 2026')).toMatchObject({ category: 'Boiler' })
     expect(classify('You Must Feel This')).toMatchObject({ category: 'You Must Feel' })
+  })
+
+  it('splits the Boiler genre into its two naming families as sub-folders', () => {
+    // The sub-folder repeating the genre name must not duplicate the tag.
+    expect(classify('Boiler 8.0')).toEqual({
+      category: 'Boiler',
+      subcategory: 'Boiler',
+      tags: ['Boiler'],
+    })
+    expect(classify('Futur Set 17')).toEqual({
+      category: 'Boiler',
+      subcategory: 'Futur Set',
+      tags: ['Boiler', 'Futur Set'],
+    })
   })
 
   it('returns no category for names matching no family', () => {
