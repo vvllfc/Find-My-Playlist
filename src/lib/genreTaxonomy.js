@@ -68,15 +68,13 @@ function applyRule(rule, remainder) {
 
 // "Feel The X" is its own family of naming, not a single fixed vocabulary —
 // distinct from the declarative single-prefix rules below. Everything named
-// "Feel The ..." belongs to one "Feel" folder, with the genre word inside the
-// name becoming the sub-folder. The shape is
-// [nationality/language]? + genre-word + [intensity]? + [era]?.
-// Nationality is deliberately never a folder of its own — it's flavour info
-// (roughly lyrics language), not a genre.
+// "Feel The ..." belongs to one "Feel" folder, and the word inside the name
+// decides the sub-folder. The shape is
+// [language]? + genre-word + [intensity]? + [era]?.
 const FEEL_THE_PREFIX = 'Feel The';
 const FEEL_CATEGORY = 'Feel';
 
-const NATIONALITIES = [
+const LANGUAGES = [
   'French',
   'Spanish',
   'Italian',
@@ -86,15 +84,20 @@ const NATIONALITIES = [
   'Swedish',
   'Arabic',
   'African',
+  'Netherlands',
 ];
 
-// Longer/more specific words first so e.g. "Rockvibe" wins over the bare
-// "Vibe" it contains. "Vibe"/"Rockvibe" both fold into the same "Rock"
-// sub-folder — everything else keeps its own literal genre name.
+// The "Vibe" family splits by language rather than by genre: a FrenchVibe and
+// a French RockVibe belong together, and what separates them from a RussianVibe
+// is the language, not the music. Anything Vibe with no language named is
+// English by default.
+const VIBE_WORDS = ['rockvibe', 'vibe'];
+const DEFAULT_VIBE_LANGUAGE = 'English';
+
+// Everything outside the Vibe family keeps its own literal genre as the
+// sub-folder, with the language demoted to a tag ("French Punk" is Punk).
 const GENRE_WORDS = {
-  rockvibe: 'Rock',
   hardrock: 'HardRock',
-  vibe: 'Rock',
   metal: 'Metal',
   disco: 'Disco',
   punk: 'Punk',
@@ -104,6 +107,14 @@ const GENRE_WORDS = {
   latino: 'Latino',
   dubstep: 'Dubstep',
 };
+
+// Longest first, so "Rockvibe" wins over the bare "Vibe" inside it and
+// "ElectroVibe" is read as Electro rather than as a Vibe.
+const FEEL_WORDS = [...VIBE_WORDS, ...Object.keys(GENRE_WORDS)].sort((a, b) => b.length - a.length);
+
+function isVibeWord(word) {
+  return VIBE_WORDS.includes(normalize(word));
+}
 
 const INTENSITY_TOKENS = {
   'much higher': 'energetic+',
@@ -134,21 +145,27 @@ function classifyFeelThe(remainder) {
   const tags = [FEEL_CATEGORY];
   let rest = remainder;
 
-  const nationality = stripPrefixWord(rest, NATIONALITIES);
-  if (nationality) rest = nationality.rest;
+  const language = stripPrefixWord(rest, LANGUAGES);
+  if (language) rest = language.rest;
 
   // Prefer a genre word at the start of what's left, but fall back to one
-  // anywhere in the name ("Netherlands Vibe" — unknown nationality, real
-  // genre word after it) rather than giving up on the sub-folder entirely.
-  const genreWords = Object.keys(GENRE_WORDS).sort((a, b) => b.length - a.length);
-  const genreMatch = stripPrefixWord(rest, genreWords) ?? (() => {
-    const found = findToken(rest, genreWords);
-    return found ? { matched: found, rest } : null;
+  // anywhere in the name rather than giving up on the sub-folder entirely.
+  const match = stripPrefixWord(rest, FEEL_WORDS) ?? (() => {
+    const found = findToken(rest, FEEL_WORDS);
+    return found ? { matched: found } : null;
   })();
 
-  const subcategory = genreMatch ? GENRE_WORDS[normalize(genreMatch.matched)] : null;
+  let subcategory = null;
+  if (match && isVibeWord(match.matched)) {
+    subcategory = `${language ? language.matched : DEFAULT_VIBE_LANGUAGE} Vibe`;
+  } else if (match) {
+    subcategory = GENRE_WORDS[normalize(match.matched)] ?? null;
+  }
+
   if (subcategory) tags.push(subcategory);
-  if (nationality) tags.push(nationality.matched);
+  // The language is already spelled out in a Vibe sub-folder's name, so
+  // repeating it as a tag would just clutter every row inside it.
+  if (language && !(match && isVibeWord(match.matched))) tags.push(language.matched);
 
   const intensity = findTokenMapped(remainder, INTENSITY_TOKENS);
   if (intensity) tags.push(intensity);
