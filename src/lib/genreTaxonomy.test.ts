@@ -82,7 +82,18 @@ describe('classifyPlaylistName', () => {
     expect(classify('Rap Game Old School Now')).toMatchObject({ category: 'Rap Game', subcategory: 'Old School' })
     expect(classify('Raggameff Dubbidub Much Higher')).toMatchObject({ category: 'Raggameff', subcategory: 'Dubbidub' })
     expect(classify('Reggaeton Chill')).toMatchObject({ category: 'Reggaeton' })
-    expect(classify('Classique Opera')).toMatchObject({ category: 'Classique', subcategory: 'Opera' })
+    // Classique carries no tags of its own — too few playlists for chips to
+    // be worth anything, so the genre is the only thing derived from the name.
+    expect(classify('Classique Opera')).toEqual({
+      category: 'Classique',
+      subcategory: null,
+      tags: ['Classique'],
+    })
+    expect(classify('Classique Chillfort')).toEqual({
+      category: 'Classique',
+      subcategory: null,
+      tags: ['Classique'],
+    })
     expect(classify('Dubstep')).toMatchObject({ category: 'Dubstep' })
     expect(classify('You Must Feel This')).toMatchObject({ category: 'You Must Feel' })
   })

@@ -54,9 +54,7 @@
   {
     "id": "classique",
     "match": { "type": "prefix", "value": "Classique" },
-    "genre": "Classique",
-    "subgenreTokens": ["Opera", "Piano Only"],
-    "tempoTokens": { "chillfort": "chill+", "chill": "chill" }
+    "genre": "Classique"
   },
   {
     "id": "over-the-clouds",

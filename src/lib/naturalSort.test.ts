@@ -52,3 +52,73 @@ describe('compareNames', () => {
     expect(sorted(['techno Mélo', 'Techno Acide'])).toEqual(['Techno Acide', 'techno Mélo'])
   })
 })
+
+describe('compareNames — intensity ladder', () => {
+  it('orders a family from calmest to most energetic, not alphabetically', () => {
+    expect(
+      sorted([
+        'Feel The ArabicVibe Higher',
+        'Feel The ArabicVibe',
+        'Feel The ArabicVibe Chillfort',
+        'Feel The ArabicVibe Chill',
+        'Feel The ArabicVibe Much Higher',
+      ]),
+    ).toEqual([
+      'Feel The ArabicVibe Chillfort',
+      'Feel The ArabicVibe Chill',
+      'Feel The ArabicVibe',
+      'Feel The ArabicVibe Higher',
+      'Feel The ArabicVibe Much Higher',
+    ])
+  })
+
+  it('reads the suffix whatever its casing', () => {
+    // The real catalog spells it both ways.
+    expect(sorted(['Feel The ElectroVibe Chill', 'Feel The ElectroVibe ChillFort'])).toEqual([
+      'Feel The ElectroVibe ChillFort',
+      'Feel The ElectroVibe Chill',
+    ])
+  })
+
+  it('keeps any other suffix after the whole ladder, alphabetically', () => {
+    expect(
+      sorted(['Wallaby’s Rave Dance', 'Wallaby’s Rave Much Higher', 'Wallaby’s Rave Chill', 'Wallaby’s Rave Acid']),
+    ).toEqual([
+      'Wallaby’s Rave Chill',
+      'Wallaby’s Rave Much Higher',
+      'Wallaby’s Rave Acid',
+      'Wallaby’s Rave Dance',
+    ])
+  })
+
+  it('only ladders names sharing exactly the same base', () => {
+    // "Feel The Disco" and "Feel The Disco Like Before" are separate families,
+    // so each keeps its own ladder rather than being interleaved.
+    expect(
+      sorted([
+        'Feel The Disco Like Before Chill',
+        'Feel The Disco',
+        'Feel The Disco Like Before',
+        'Feel The Disco Chill',
+      ]),
+    ).toEqual([
+      'Feel The Disco Chill',
+      'Feel The Disco',
+      'Feel The Disco Like Before Chill',
+      'Feel The Disco Like Before',
+    ])
+  })
+
+  it('leaves names without an intensity suffix exactly as before', () => {
+    expect(sorted(['Boiler 12.0', 'Boiler 8.0', 'Boiler After'])).toEqual([
+      'Boiler After',
+      'Boiler 8.0',
+      'Boiler 12.0',
+    ])
+  })
+
+  it('never treats the suffix as part of a longer word', () => {
+    // "Chilling" is not "Chill", so it stays in plain alphabetical order.
+    expect(sorted(['X Chilling', 'X Chill'])).toEqual(['X Chill', 'X Chilling'])
+  })
+})
