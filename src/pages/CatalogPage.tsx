@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCatalog } from '../lib/useCatalog'
-import { useHashRoute } from '../lib/hashRoute'
+import { Link } from '../lib/Link'
 import { buildFolderTree, findFolder, type CatalogPlaylist, type Folder } from '../lib/catalog'
 import './CatalogPage.css'
 
-export default function CatalogPage() {
+export default function CatalogPage({ segments }: { segments: string[] }) {
   const { catalog, error } = useCatalog()
-  const route = useHashRoute()
   const [query, setQuery] = useState('')
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set())
 
-  const routeMatch = /^\/genre\/([^/]+)(?:\/([^/]+))?$/.exec(route)
-  const [slug, subslug] = [routeMatch?.[1] ?? null, routeMatch?.[2] ?? null]
+  const [slug, subslug] = segments[0] === 'genre' ? [segments[1] ?? null, segments[2] ?? null] : [null, null]
 
   const tree = useMemo(() => buildFolderTree(catalog?.playlists ?? []), [catalog])
   const match = slug ? findFolder(tree, slug, subslug) : null
@@ -69,9 +67,9 @@ export default function CatalogPage() {
     })
   }
 
-  const currentFolder = isSearching ? null : (listedFolder ?? (match?.folder ?? null))
+  const currentFolder = isSearching ? null : (listedFolder ?? match?.folder ?? null)
   const folderDescription = currentFolder ? catalog?.folders[currentFolder.key]?.description : undefined
-  const backTarget = match?.subfolder ? `#/genre/${match.folder.slug}` : '#/'
+  const backTarget = match?.subfolder ? `/genre/${match.folder.slug}` : '/'
   const backLabel = match?.subfolder ? `← ${match.folder.name}` : '← Tous les genres'
 
   return (
@@ -120,9 +118,9 @@ export default function CatalogPage() {
             </div>
 
             {!isSearching && match && (
-              <a href={backTarget} className="back-link">
+              <Link to={backTarget} className="back-link">
                 {backLabel}
-              </a>
+              </Link>
             )}
             {!isSearching && currentFolder && (
               <header className="folder-header">
@@ -143,7 +141,7 @@ export default function CatalogPage() {
               <FolderGrid
                 folders={gridFolders}
                 folderMeta={catalog.folders}
-                hrefOf={(f) => (match ? `#/genre/${match.folder.slug}/${f.slug}` : `#/genre/${f.slug}`)}
+                hrefOf={(f) => (match ? `/genre/${match.folder.slug}/${f.slug}` : `/genre/${f.slug}`)}
               />
             )}
 
@@ -186,6 +184,37 @@ export default function CatalogPage() {
   )
 }
 
+// Below four playlists a 2×2 mosaic is mostly empty squares, so a single
+// full-size cover reads better. Either way, only playlists that actually have
+// artwork are used — skipping the blanks rather than leaving holes in the grid.
+function FolderCovers({ folder }: { folder: Folder }) {
+  const covers = folder.playlists.filter((p) => p.imageUrl)
+
+  if (folder.playlists.length < 4) {
+    return (
+      <div className="folder-covers single">
+        {covers[0] ? (
+          <img src={covers[0].imageUrl ?? ''} alt="" loading="lazy" />
+        ) : (
+          <div className="folder-cover-empty" />
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="folder-covers">
+      {Array.from({ length: 4 }).map((_, i) =>
+        covers[i] ? (
+          <img key={i} src={covers[i].imageUrl ?? ''} alt="" loading="lazy" />
+        ) : (
+          <div key={i} className="folder-cover-empty" />
+        ),
+      )}
+    </div>
+  )
+}
+
 function FolderGrid({
   folders,
   folderMeta,
@@ -198,26 +227,16 @@ function FolderGrid({
   return (
     <div className="folder-grid">
       {folders.map((folder) => (
-        <a key={folder.slug} href={hrefOf(folder)} className="folder-tile">
-          <div className="folder-covers">
-            {Array.from({ length: 4 }).map((_, i) => {
-              const cover = folder.playlists[i]
-              return cover?.imageUrl ? (
-                <img key={i} src={cover.imageUrl} alt="" loading="lazy" />
-              ) : (
-                <div key={i} className="folder-cover-empty" />
-              )
-            })}
-          </div>
+        <Link key={folder.slug} to={hrefOf(folder)} className="folder-tile">
+          <FolderCovers folder={folder} />
           <p className="folder-name">{folder.name}</p>
-          <p className="folder-count">
-            {folder.playlists.length} playlist{folder.playlists.length > 1 ? 's' : ''}
-            {folder.subfolders ? ` · ${folder.subfolders.length} dossiers` : ''}
-          </p>
           {folderMeta[folder.key]?.description && (
             <p className="folder-desc">{folderMeta[folder.key].description}</p>
           )}
-        </a>
+          <p className="folder-count">
+            {folder.playlists.length} playlist{folder.playlists.length > 1 ? 's' : ''}
+          </p>
+        </Link>
       ))}
     </div>
   )

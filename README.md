@@ -49,6 +49,13 @@ Le site est déployé automatiquement sur GitHub Pages : à chaque push sur `mai
 "Rafraîchir le site maintenant" de l'admin. Le workflow (`.github/workflows/deploy.yml`) régénère
 `public/data/catalog.json` avant de builder.
 
+Les pages publiques utilisent de vraies URLs (`/genre/techno`, `/genre/feel/rock`). GitHub Pages
+n'ayant pas de réécriture SPA, le build publie `dist/404.html` en copie de `index.html` (plugin
+`spa-404-fallback` dans `vite.config.ts`) : un lien profond ouvert à froid reçoit cette copie et
+l'app se route sur le chemin. Seule conséquence, invisible pour les visiteurs : ces pages sont
+servies avec un statut HTTP 404. Les pages privées restent volontairement sur des routes en `#`,
+qui ne sont jamais envoyées au serveur.
+
 **Un simple push ne consomme aucun appel Spotify** — seuls le cron quotidien et le bouton
 "Rafraîchir le site maintenant" appellent réellement l'API (`SKIP_LIVE_FETCH` dans le workflow, basé
 sur `github.event_name`) ; un push de code réutilise juste la dernière liste de playlists mise en
