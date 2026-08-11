@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { runWithZoom, type ZoomPivot } from './viewTransition'
+import { runFolderTransition, type FolderPivot } from './folderTransition'
 
 // Public pages use real paths (/genre/techno) so shared links stay clean.
 // The two private pages deliberately stay on hash routes — they're never part
@@ -35,18 +35,19 @@ function depthOf(route: Route): number | null {
 }
 
 /**
- * The folder a navigation pivots around, or null when the move isn't a single
- * step up or down the hierarchy (search, private pages, a two-level jump) and
- * so has no single cover to zoom through.
+ * The folder a navigation pivots around — the tile the grid pushes away from,
+ * or settles back around. Null when the move isn't a single step up or down
+ * the hierarchy (search, private pages, a two-level jump), which leaves no
+ * single tile to anchor the movement.
  */
-export function pivotBetween(from: string, to: string): ZoomPivot | null {
+export function pivotBetween(from: string, to: string): FolderPivot | null {
   const fromDepth = depthOf(parseRoute(from))
   const toDepth = depthOf(parseRoute(to))
   if (fromDepth === null || toDepth === null) return null
   if (Math.abs(toDepth - fromDepth) !== 1) return null
 
-  // Whichever side is deeper owns the cover being zoomed — going down it's the
-  // folder we're entering, coming back up it's the one we're leaving.
+  // Whichever side is deeper names the anchor tile — going down it's the folder
+  // we're entering, coming back up it's the one we're leaving.
   const goingDeeper = toDepth > fromDepth
   const segments = (parseRoute(goingDeeper ? to : from) as { segments: string[] }).segments
   return {
@@ -60,10 +61,10 @@ function readLocation(): string {
   return window.location.pathname + window.location.hash
 }
 
-// Cached rather than read straight from window on every render. A transition
-// names the outgoing cover with a synchronous render *before* swapping pages,
-// and on a popstate window.location has already moved — reading it live there
-// would render the new route into the snapshot meant to capture the old one.
+// Cached rather than read straight from window on every render. Opening a
+// folder holds the page swap back until the grid has slid away, and on a
+// back/forward navigation window.location has already moved by then — reading
+// it live would swap the page instantly and there'd be nothing left to animate.
 let currentLocation = typeof window === 'undefined' ? '/' : readLocation()
 
 const listeners = new Set<() => void>()
@@ -82,7 +83,7 @@ function getSnapshot(): string {
 }
 
 function commit(to: string, before?: () => void): void {
-  runWithZoom(pivotBetween(currentLocation, to), () => {
+  runFolderTransition(pivotBetween(currentLocation, to), () => {
     before?.()
     currentLocation = to
     notify()

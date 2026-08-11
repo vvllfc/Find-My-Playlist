@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
-import { FOLDER_ZOOM_NAME, isZoomPivot, useZoomPivot } from '../lib/viewTransition'
 import { buildFolderTree, findFolder, type CatalogPlaylist, type Folder } from '../lib/catalog'
 import './CatalogPage.css'
 
@@ -68,6 +67,9 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
     })
   }
 
+  // Route only, deliberately not the query — otherwise every keystroke in the
+  // search box would replay the arrival animation.
+  const routeKey = `${slug ?? ''}/${subslug ?? ''}`
   const currentFolder = isSearching ? null : (listedFolder ?? match?.folder ?? null)
   const folderDescription = currentFolder ? catalog?.folders[currentFolder.key]?.description : undefined
   const backTarget = match?.subfolder ? `/genre/${match.folder.slug}` : '/'
@@ -140,6 +142,9 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
 
             {!isSearching && gridFolders && (
               <FolderGrid
+                // Remounts on each move so the arrival animation replays; React
+                // would otherwise reuse the same grid element between levels.
+                key={routeKey}
                 folders={gridFolders}
                 folderMeta={catalog.folders}
                 depth={match ? 2 : 1}
@@ -148,7 +153,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
             )}
 
             {(isSearching || listedFolder) && (
-              <div className="tracklist">
+              <div className="tracklist" key={routeKey}>
                 {filtered.map((playlist, index) => (
                   <a
                     key={playlist.id}
@@ -189,14 +194,12 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
 // Below four playlists a 2×2 mosaic is mostly empty squares, so a single
 // full-size cover reads better. Either way, only playlists that actually have
 // artwork are used — skipping the blanks rather than leaving holes in the grid.
-function FolderCovers({ folder, zooming }: { folder: Folder; zooming: boolean }) {
+function FolderCovers({ folder }: { folder: Folder }) {
   const covers = folder.playlists.filter((p) => p.imageUrl)
-  // Set on exactly one cover per navigation — see src/lib/viewTransition.ts.
-  const style = zooming ? { viewTransitionName: FOLDER_ZOOM_NAME } : undefined
 
   if (folder.playlists.length < 4) {
     return (
-      <div className="folder-covers single" style={style}>
+      <div className="folder-covers single">
         {covers[0] ? (
           <img src={covers[0].imageUrl ?? ''} alt="" loading="lazy" />
         ) : (
@@ -207,7 +210,7 @@ function FolderCovers({ folder, zooming }: { folder: Folder; zooming: boolean })
   }
 
   return (
-    <div className="folder-covers" style={style}>
+    <div className="folder-covers">
       {Array.from({ length: 4 }).map((_, i) =>
         covers[i] ? (
           <img key={i} src={covers[i].imageUrl ?? ''} alt="" loading="lazy" />
@@ -230,13 +233,20 @@ function FolderGrid({
   depth: number
   hrefOf: (folder: Folder) => string
 }) {
-  const pivot = useZoomPivot()
-
   return (
     <div className="folder-grid">
       {folders.map((folder) => (
-        <Link key={folder.slug} to={hrefOf(folder)} className="folder-tile">
-          <FolderCovers folder={folder} zooming={isZoomPivot(pivot, folder.slug, depth)} />
+        <Link
+          key={folder.slug}
+          to={hrefOf(folder)}
+          className="folder-tile"
+          // How the transition finds the tile the grid pushes away from. Depth
+          // is part of it because a folder can contain a sub-folder repeating
+          // its own slug (Boiler does).
+          data-folder-slug={folder.slug}
+          data-folder-depth={depth}
+        >
+          <FolderCovers folder={folder} />
           <p className="folder-name">{folder.name}</p>
           {folderMeta[folder.key]?.description && (
             <p className="folder-desc">{folderMeta[folder.key].description}</p>

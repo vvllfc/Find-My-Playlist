@@ -6,6 +6,10 @@
 .catalog-page {
   position: relative;
   background: #0a0a0d;
+  /* Tiles flying off sideways during a folder transition would otherwise
+     stretch the scrollable area and flash a horizontal scrollbar. `clip`
+     rather than `hidden` so this never becomes a scroll container. */
+  overflow-x: clip;
 }
 .catalog-page::before {
   /* diagonal iridescent streaks, screened together for that oil-sheen glow */
@@ -245,6 +249,26 @@
 
 /* Folder-grid landing view — big genre categories as clickable tiles,
    mirroring the tracklist's solid-panel-over-oil-slick treatment. */
+/* The destination easing in once the grid has pushed aside. Keyed on the route
+   in CatalogPage.tsx so it replays on each move through the hierarchy rather
+   than only on first mount. */
+@keyframes content-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.folder-grid,
+.tracklist {
+  animation: content-arrive 260ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .folder-grid,
+  .tracklist {
+    animation: none;
+  }
+}
+
 .folder-grid {
   display: grid;
   /* Four across on desktop, two on phones — minmax(0,…) so a long folder
