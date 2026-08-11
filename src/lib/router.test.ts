@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseRoute } from './router'
+import { parseRoute, pivotBetween } from './router'
 
 describe('parseRoute', () => {
   it('routes public pages from the pathname, with no hash involved', () => {
@@ -18,5 +18,29 @@ describe('parseRoute', () => {
 
   it('treats an unknown hash as a public route rather than a private one', () => {
     expect(parseRoute('/#/whatever')).toEqual({ kind: 'catalog', segments: [] })
+  })
+})
+
+describe('pivotBetween', () => {
+  it('picks the folder being entered when going deeper', () => {
+    expect(pivotBetween('/', '/genre/feel')).toEqual({ slug: 'feel', depth: 1 })
+    expect(pivotBetween('/genre/feel', '/genre/feel/rock')).toEqual({ slug: 'rock', depth: 2 })
+  })
+
+  it('picks the folder being left when coming back up, so the effect reverses', () => {
+    expect(pivotBetween('/genre/feel', '/')).toEqual({ slug: 'feel', depth: 1 })
+    expect(pivotBetween('/genre/feel/rock', '/genre/feel')).toEqual({ slug: 'rock', depth: 2 })
+  })
+
+  it('has no pivot when the move is not a single step through the hierarchy', () => {
+    // Two levels at once — no single cover to travel through.
+    expect(pivotBetween('/genre/feel/rock', '/')).toBeNull()
+    expect(pivotBetween('/', '/')).toBeNull()
+    expect(pivotBetween('/genre/feel', '/genre/techno')).toBeNull()
+  })
+
+  it('has no pivot for the private pages', () => {
+    expect(pivotBetween('/', '/#/admin')).toBeNull()
+    expect(pivotBetween('/#/modify', '/')).toBeNull()
   })
 })

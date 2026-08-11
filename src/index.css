@@ -35,3 +35,61 @@ h3 {
   color: var(--ink);
   font-weight: 600;
 }
+
+/* Walking into a folder's artwork.
+   These pseudo-elements are created on the document root by the View
+   Transitions API, which is why they live here and not in a page stylesheet.
+   The cover carrying `view-transition-name: folder-zoom` is chosen per
+   navigation in src/lib/viewTransition.ts; browsers without the API just swap
+   pages instantly, as before. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-group(folder-zoom) {
+    /* Travel over the page being left rather than through it. */
+    z-index: 10;
+  }
+
+  /* The translate is what aims the movement at the viewer: without it an
+     off-centre tile just swells off the nearest screen edge. The offsets are
+     measured per navigation in src/lib/viewTransition.ts. */
+  @keyframes folder-zoom-through {
+    to {
+      transform: translate(var(--zoom-dx, 0px), var(--zoom-dy, 0px)) scale(2.6);
+      opacity: 0;
+    }
+  }
+
+  /* Going deeper: the cover rushes past the viewer. Accelerating curve — it
+     picks up speed as it approaches, which is what sells the forward motion. */
+  ::view-transition-old(folder-zoom) {
+    animation: folder-zoom-through 420ms cubic-bezier(0.32, 0, 0.67, 0) both;
+    transform-origin: center;
+  }
+
+  /* Coming back: same keyframes reversed, so the cover settles out of the
+     viewer's face back into its slot in the grid. Decelerating curve. */
+  ::view-transition-new(folder-zoom) {
+    animation: folder-zoom-through 380ms cubic-bezier(0.33, 1, 0.68, 1) both reverse;
+    transform-origin: center;
+  }
+
+  @keyframes folder-page-leave {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes folder-page-arrive {
+    from {
+      opacity: 0;
+      transform: scale(1.03);
+    }
+  }
+
+  ::view-transition-old(root) {
+    animation: folder-page-leave 200ms ease-out both;
+  }
+  /* Arriving slightly oversized and settling is what reads as "landing" on the
+     page you were moving toward. Delayed so the cover leads the movement. */
+  ::view-transition-new(root) {
+    animation: folder-page-arrive 300ms ease-out 80ms both;
+  }
+}

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react'
+import { runWithZoom, type ZoomPivot } from './viewTransition'
 
 // Public pages use real paths (/genre/techno) so shared links stay clean.
 // The two private pages deliberately stay on hash routes — they're never part
@@ -7,30 +8,6 @@ import { useSyncExternalStore } from 'react'
 // GitHub Pages has no SPA rewrite setting, so the build ships dist/404.html as
 // a copy of index.html (see vite.config.ts): a cold deep link to /genre/techno
 // is served that copy and boots the app, which then routes on the pathname.
-
-const listeners = new Set<() => void>()
-
-function subscribe(callback: () => void): () => void {
-  listeners.add(callback)
-  window.addEventListener('popstate', callback)
-  window.addEventListener('hashchange', callback)
-  return () => {
-    listeners.delete(callback)
-    window.removeEventListener('popstate', callback)
-    window.removeEventListener('hashchange', callback)
-  }
-}
-
-function snapshot(): string {
-  return window.location.pathname + window.location.hash
-}
-
-// pushState alone doesn't notify anything, so nudge subscribers by hand.
-export function navigate(to: string): void {
-  if (to === snapshot()) return
-  window.history.pushState(null, '', to)
-  for (const listener of listeners) listener()
-}
 
 export type Route =
   | { kind: 'admin' }
@@ -47,6 +24,86 @@ export function parseRoute(location: string): Route {
   return { kind: 'catalog', segments: pathname.split('/').filter(Boolean) }
 }
 
+// How deep into the folder hierarchy a catalog route sits: the folder grid is
+// 0, a folder is 1, a sub-folder is 2. Anything that isn't a catalog route has
+// no depth of its own.
+function depthOf(route: Route): number | null {
+  if (route.kind !== 'catalog') return null
+  if (route.segments[0] !== 'genre') return route.segments.length === 0 ? 0 : null
+  const depth = route.segments.length - 1
+  return depth === 1 || depth === 2 ? depth : null
+}
+
+/**
+ * The folder a navigation pivots around, or null when the move isn't a single
+ * step up or down the hierarchy (search, private pages, a two-level jump) and
+ * so has no single cover to zoom through.
+ */
+export function pivotBetween(from: string, to: string): ZoomPivot | null {
+  const fromDepth = depthOf(parseRoute(from))
+  const toDepth = depthOf(parseRoute(to))
+  if (fromDepth === null || toDepth === null) return null
+  if (Math.abs(toDepth - fromDepth) !== 1) return null
+
+  // Whichever side is deeper owns the cover being zoomed — going down it's the
+  // folder we're entering, coming back up it's the one we're leaving.
+  const deeper = toDepth > fromDepth ? to : from
+  const segments = (parseRoute(deeper) as { segments: string[] }).segments
+  return { slug: segments[segments.length - 1], depth: Math.max(fromDepth, toDepth) }
+}
+
+function readLocation(): string {
+  return window.location.pathname + window.location.hash
+}
+
+// Cached rather than read straight from window on every render. A transition
+// names the outgoing cover with a synchronous render *before* swapping pages,
+// and on a popstate window.location has already moved — reading it live there
+// would render the new route into the snapshot meant to capture the old one.
+let currentLocation = typeof window === 'undefined' ? '/' : readLocation()
+
+const listeners = new Set<() => void>()
+
+function notify(): void {
+  for (const listener of listeners) listener()
+}
+
+function subscribe(callback: () => void): () => void {
+  listeners.add(callback)
+  return () => listeners.delete(callback)
+}
+
+function getSnapshot(): string {
+  return currentLocation
+}
+
+function commit(to: string, before?: () => void): void {
+  runWithZoom(pivotBetween(currentLocation, to), () => {
+    before?.()
+    currentLocation = to
+    notify()
+  })
+}
+
+export function navigate(to: string): void {
+  if (to === currentLocation) return
+  commit(to, () => {
+    window.history.pushState(null, '', to)
+    window.scrollTo(0, 0)
+  })
+}
+
+// One listener for the whole app rather than one per subscriber, so back/forward
+// navigation runs through the same transition path as an in-page link.
+if (typeof window !== 'undefined') {
+  const onLocationChange = () => {
+    const next = readLocation()
+    if (next !== currentLocation) commit(next)
+  }
+  window.addEventListener('popstate', onLocationChange)
+  window.addEventListener('hashchange', onLocationChange)
+}
+
 export function useRoute(): Route {
-  return parseRoute(useSyncExternalStore(subscribe, snapshot))
+  return parseRoute(useSyncExternalStore(subscribe, getSnapshot, () => currentLocation))
 }

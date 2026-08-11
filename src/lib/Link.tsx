@@ -17,8 +17,9 @@ export function Link({
       if (event.defaultPrevented) return
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
       event.preventDefault()
+      // Scrolling happens inside navigate(), so it lands in the same commit as
+      // the page swap rather than shifting the outgoing view transition.
       navigate(to)
-      window.scrollTo(0, 0)
     },
     [to],
   )

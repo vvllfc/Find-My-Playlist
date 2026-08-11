@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
+import { FOLDER_ZOOM_NAME, isZoomPivot, useZoomPivot } from '../lib/viewTransition'
 import { buildFolderTree, findFolder, type CatalogPlaylist, type Folder } from '../lib/catalog'
 import './CatalogPage.css'
 
@@ -141,6 +142,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
               <FolderGrid
                 folders={gridFolders}
                 folderMeta={catalog.folders}
+                depth={match ? 2 : 1}
                 hrefOf={(f) => (match ? `/genre/${match.folder.slug}/${f.slug}` : `/genre/${f.slug}`)}
               />
             )}
@@ -187,12 +189,14 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
 // Below four playlists a 2×2 mosaic is mostly empty squares, so a single
 // full-size cover reads better. Either way, only playlists that actually have
 // artwork are used — skipping the blanks rather than leaving holes in the grid.
-function FolderCovers({ folder }: { folder: Folder }) {
+function FolderCovers({ folder, zooming }: { folder: Folder; zooming: boolean }) {
   const covers = folder.playlists.filter((p) => p.imageUrl)
+  // Set on exactly one cover per navigation — see src/lib/viewTransition.ts.
+  const style = zooming ? { viewTransitionName: FOLDER_ZOOM_NAME } : undefined
 
   if (folder.playlists.length < 4) {
     return (
-      <div className="folder-covers single">
+      <div className="folder-covers single" style={style}>
         {covers[0] ? (
           <img src={covers[0].imageUrl ?? ''} alt="" loading="lazy" />
         ) : (
@@ -203,7 +207,7 @@ function FolderCovers({ folder }: { folder: Folder }) {
   }
 
   return (
-    <div className="folder-covers">
+    <div className="folder-covers" style={style}>
       {Array.from({ length: 4 }).map((_, i) =>
         covers[i] ? (
           <img key={i} src={covers[i].imageUrl ?? ''} alt="" loading="lazy" />
@@ -218,17 +222,21 @@ function FolderCovers({ folder }: { folder: Folder }) {
 function FolderGrid({
   folders,
   folderMeta,
+  depth,
   hrefOf,
 }: {
   folders: Folder[]
   folderMeta: Record<string, { description?: string }>
+  depth: number
   hrefOf: (folder: Folder) => string
 }) {
+  const pivot = useZoomPivot()
+
   return (
     <div className="folder-grid">
       {folders.map((folder) => (
         <Link key={folder.slug} to={hrefOf(folder)} className="folder-tile">
-          <FolderCovers folder={folder} />
+          <FolderCovers folder={folder} zooming={isZoomPivot(pivot, folder.slug, depth)} />
           <p className="folder-name">{folder.name}</p>
           {folderMeta[folder.key]?.description && (
             <p className="folder-desc">{folderMeta[folder.key].description}</p>
