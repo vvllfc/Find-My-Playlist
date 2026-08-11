@@ -77,7 +77,13 @@ describe('classifyPlaylistName', () => {
   })
 
   it('classifies the remaining declarative families', () => {
-    expect(classify('D&B Nappe Chill Voice')).toMatchObject({ category: 'D&B', subcategory: 'Nappe' })
+    // Like Classique: too few playlists for chips to earn their place, so the
+    // genre is all that's derived — not the sub-genre, tempo or voice marker.
+    expect(classify('D&B Nappe Chill Voice')).toEqual({
+      category: 'D&B',
+      subcategory: null,
+      tags: ['D&B'],
+    })
     expect(classify('Jazzy Summer ChillFort')).toMatchObject({ category: 'Jazzy Soul', subcategory: 'Summer' })
     expect(classify('Rap Game Old School Now')).toMatchObject({ category: 'Rap Game', subcategory: 'Old School' })
     expect(classify('Raggameff Dubbidub Much Higher')).toMatchObject({ category: 'Raggameff', subcategory: 'Dubbidub' })

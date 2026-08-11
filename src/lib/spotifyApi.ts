@@ -36,36 +36,36 @@ export async function fetchMyPlaylists(accessToken: string): Promise<SpotifyPlay
   return playlists
 }
 
-// Fetches a single playlist's current name/description fresh from Spotify —
-// used right before showing the edit form for a playlist picked from the
-// public catalog's static JSON, whose "description" field is the site's own
-// hand-written blurb, not the real Spotify-native description. One light
-// call per edit session, not one per playlist in the list.
-export async function fetchPlaylistDetails(accessToken: string, playlistId: string): Promise<{ name: string; description: string }> {
-  const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}?fields=name,description`, {
+// Fetches a playlist's current name fresh from Spotify, right before offering
+// it for editing: the public catalog's static JSON is a snapshot from the last
+// build and the name may have moved since. One light call per edit, not one
+// per playlist in the list.
+export async function fetchPlaylistName(accessToken: string, playlistId: string): Promise<string> {
+  const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}?fields=name`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) {
-    throw new Error(`Spotify playlist details request failed: ${res.status} ${await res.text()}`)
+    throw new Error(`Spotify playlist name request failed: ${res.status} ${await res.text()}`)
   }
   const data = await res.json()
-  return { name: data.name ?? '', description: data.description ?? '' }
+  return data.name ?? ''
 }
 
-export async function updatePlaylistDetails(
-  accessToken: string,
-  playlistId: string,
-  details: { name?: string; description?: string },
-): Promise<void> {
+// Sends `name` and nothing else, deliberately. Spotify's change-details
+// endpoint only touches the fields present in the body, so leaving description
+// out is what keeps the descriptions on the Spotify account untouched — the
+// site sources its own from data/site-content.json now, but that must not
+// reach back and clear what's on Spotify.
+export async function renamePlaylist(accessToken: string, playlistId: string, name: string): Promise<void> {
   const res = await fetch(`https://api.spotify.com/v1/playlists/${playlistId}`, {
     method: 'PUT',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(details),
+    body: JSON.stringify({ name }),
   })
   if (!res.ok) {
-    throw new Error(`Spotify playlist update failed: ${res.status} ${await res.text()}`)
+    throw new Error(`Spotify playlist rename failed: ${res.status} ${await res.text()}`)
   }
 }

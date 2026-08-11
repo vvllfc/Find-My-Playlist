@@ -31,35 +31,6 @@ const TRACK_COUNT_CACHE_PATH = 'data/track-counts-cache.json'
 // no real data at all yet.
 const LAST_GOOD_PLAYLISTS_PATH = 'data/last-successful-playlists.json'
 
-// Keys are lowercase; lookups lowercase the match, since Spotify mixes
-// casing in hex entities (&#x27; but &#x2F;).
-const HTML_ENTITIES = {
-  '&amp;': '&',
-  '&lt;': '<',
-  '&gt;': '>',
-  '&quot;': '"',
-  '&#x27;': "'",
-  '&#39;': "'",
-  '&#x2f;': '/',
-}
-
-// Spotify returns playlist descriptions HTML-escaped, and some are escaped
-// twice ("l&amp;#x27;amour"), so decode until stable rather than once. React
-// escapes on render anyway, so storing the decoded text is what makes
-// apostrophes and & show up as themselves instead of entity codes.
-export function decodeHtmlEntities(text) {
-  let current = text
-  for (let pass = 0; pass < 3; pass++) {
-    const next = current.replace(
-      /&(amp|lt|gt|quot|#x27|#39|#x2f);/gi,
-      (match) => HTML_ENTITIES[match.toLowerCase()] ?? match,
-    )
-    if (next === current) break
-    current = next
-  }
-  return current
-}
-
 async function readJson(relPath) {
   const raw = await readFile(path.join(rootDir, relPath), 'utf-8')
   return JSON.parse(raw)
@@ -181,7 +152,6 @@ async function fetchOwnPublicPlaylists(accessToken) {
       playlists.push({
         id: item.id,
         name: item.name,
-        description: item.description ?? '',
         imageUrl: item.images?.[0]?.url ?? null,
         trackCount: 0,
         externalUrl: item.external_urls?.spotify ?? `https://open.spotify.com/playlist/${item.id}`,
@@ -282,18 +252,20 @@ async function main() {
   // Same defaulting as src/lib/siteContent.ts — missing sections are fine.
   const content = { folders: rawContent.folders ?? {}, playlists: rawContent.playlists ?? {} }
 
-  // The description is the real Spotify one (already on `playlist`, fetched
-  // live above) — it just follows whatever's on Spotify. Folder/category and
-  // sub-folder come from the name via the taxonomy; hand-written overrides
-  // (extra tags, folder descriptions) come from data/site-content.json.
+  // Names come from Spotify; everything editorial is ours. The description
+  // shown on the site is hand-written in data/site-content.json and no longer
+  // mirrors the Spotify one — the descriptions on the Spotify account are left
+  // alone, they're simply not what the site displays.
+  let described = 0
   let manuallyTagged = 0
   const merged = spotifyPlaylists.map((playlist) => {
     const entry = content.playlists[playlist.id]
-    if (entry) manuallyTagged += 1
+    if (entry?.tags) manuallyTagged += 1
+    if (entry?.description) described += 1
     const { category, subcategory, tags } = classifyPlaylistName(playlist.name, taxonomy)
     return {
       ...playlist,
-      description: decodeHtmlEntities(playlist.description ?? ''),
+      description: entry?.description ?? '',
       category,
       subcategory,
       tags: entry?.tags ?? tags,
@@ -310,7 +282,7 @@ async function main() {
   await writeFile(path.join(outDir, 'catalog.json'), JSON.stringify(catalog, null, 2))
 
   console.log(
-    `[fetch-and-merge-playlists] ${merged.length} playlists, ${uncategorized} uncategorized, ${manuallyTagged} with hand-written tags, ${Object.keys(content.folders).length} folder descriptions.`,
+    `[fetch-and-merge-playlists] ${merged.length} playlists, ${uncategorized} uncategorized, ${described} with a written description, ${manuallyTagged} with hand-written tags, ${Object.keys(content.folders).length} folder descriptions.`,
   )
 }
 

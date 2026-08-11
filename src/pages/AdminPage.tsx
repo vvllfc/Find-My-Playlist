@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useCatalog } from '../lib/useCatalog'
 import { deriveTagsFromName } from '../lib/genreTaxonomy.js'
 import taxonomy from '../../data/genre-taxonomy.json'
-import { GithubConflictError, triggerRedeploy } from '../lib/github'
-import { loadSiteContent, saveSiteContent, type LoadedSiteContent } from '../lib/siteContent'
-import { GITHUB_TOKEN_STORAGE_KEY, SPOTIFY_CLIENT_ID } from '../config'
+import { triggerRedeploy } from '../lib/github'
+import { useSiteContentStore, withPlaylistMeta } from '../lib/siteContent'
+import { SPOTIFY_CLIENT_ID } from '../config'
 import { clearTokens, getStoredTokens, isLoggedIn, startLogin } from '../lib/spotifyAuth'
 import { isGateConfigured, isUnlocked, lock } from '../lib/adminGate'
 import PasswordGate from './PasswordGate'
@@ -46,39 +46,16 @@ export default function AdminPage() {
 function GithubTagsEditor() {
   const { catalog } = useCatalog()
   const playlists = catalog?.playlists ?? null
-  const [token, setToken] = useState(() => localStorage.getItem(GITHUB_TOKEN_STORAGE_KEY) ?? '')
-  const [loaded, setLoaded] = useState<LoadedSiteContent | null>(null)
+  const store = useSiteContentStore()
+  const { token, setToken, loaded, status, conflict } = store
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [tagsInput, setTagsInput] = useState('')
-  const [status, setStatus] = useState<string | null>(null)
-  const [conflict, setConflict] = useState(false)
-
-  function saveToken(value: string) {
-    const trimmed = value.trim()
-    setToken(trimmed)
-    localStorage.setItem(GITHUB_TOKEN_STORAGE_KEY, trimmed)
-  }
-
-  const load = useCallback(async () => {
-    if (!token) return
-    setStatus('Chargement…')
-    try {
-      setLoaded(await loadSiteContent(token))
-      setConflict(false)
-      setStatus(null)
-    } catch {
-      setStatus('Impossible de charger le contenu du site — vérifie le token.')
-    }
-  }, [token])
-
-  useEffect(() => {
-    if (token) load()
-  }, [token, load])
+  const [dispatchStatus, setDispatchStatus] = useState<string | null>(null)
 
   function selectPlaylist(id: string) {
     setSelectedId(id)
     const entry = loaded?.content.playlists[id]
-    if (entry) {
+    if (entry?.tags) {
       setTagsInput(entry.tags.join(', '))
       return
     }
@@ -88,82 +65,58 @@ function GithubTagsEditor() {
   }
 
   async function save() {
-    if (!token || !loaded || !selectedId) return
-    const content = {
-      ...loaded.content,
-      playlists: {
-        ...loaded.content.playlists,
-        [selectedId]: {
-          tags: tagsInput
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean),
-        },
-      },
-    }
-    setStatus('Enregistrement…')
-    try {
-      await saveSiteContent(token, content, loaded.sha, `Update tags for ${selectedId}`)
-      setStatus('Enregistré — un rebuild du site vient de se déclencher automatiquement.')
-      await load()
-    } catch (err) {
-      if (err instanceof GithubConflictError) {
-        setConflict(true)
-        setStatus('Conflit : le fichier a changé depuis ton dernier chargement.')
-      } else {
-        setStatus("Échec de l'enregistrement — vérifie que le token a la permission Contents: Read and write.")
-      }
-    }
+    if (!selectedId) return
+    const tags = tagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+    // Merged into the entry, never replacing it: the same key also holds the
+    // playlist's site description, edited on the other private page.
+    await store.save((content) => withPlaylistMeta(content, selectedId, { tags }), `Update tags for ${selectedId}`)
   }
 
   async function refreshNow() {
     if (!token) return
-    setStatus('Déclenchement du redéploiement…')
+    setDispatchStatus('Déclenchement du redéploiement…')
     try {
       await triggerRedeploy(token)
-      setStatus('Redéploiement déclenché — le site sera à jour dans quelques minutes.')
+      setDispatchStatus('Redéploiement déclenché — le site sera à jour dans quelques minutes.')
     } catch {
-      setStatus('Échec du déclenchement — vérifie que le token a la permission Actions: Read and write.')
+      setDispatchStatus('Échec du déclenchement — vérifie que le token a la permission Actions: Read and write.')
     }
   }
 
   const selectedPlaylist = playlists?.find((p) => p.id === selectedId)
-  const hasEntry = selectedId ? Boolean(loaded?.content.playlists[selectedId]) : false
+  const hasEntry = selectedId ? Boolean(loaded?.content.playlists[selectedId]?.tags) : false
 
   return (
     <section className="admin-section">
       <h2>Tags du site</h2>
       <p className="hint">
-        Les descriptions affichées sur le site suivent directement celles de tes playlists sur Spotify (éditables sur{' '}
-        <code>#/modify</code>) — seuls les tags sont gérés ici, à la main.
+        Les descriptions des playlists et des dossiers s'écrivent sur <code>#/modify</code> — seuls les tags
+        sont gérés ici, à la main.
       </p>
       <label className="admin-field">
         Token GitHub (fine-grained, Contents + Actions: Read and write, scopé à ce repo)
-        <input type="password" value={token} onChange={(e) => saveToken(e.target.value)} placeholder="github_pat_…" />
+        <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder="github_pat_…" />
       </label>
 
       {token && (
         <div className="admin-toolbar">
-          <button type="button" onClick={load}>
+          <button type="button" onClick={store.reload}>
             Recharger
           </button>
           <button type="button" onClick={refreshNow}>
             Rafraîchir le site maintenant
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setToken('')
-              localStorage.removeItem(GITHUB_TOKEN_STORAGE_KEY)
-              setLoaded(null)
-            }}
-          >
+          <button type="button" onClick={() => setToken('')}>
             Déconnecter
           </button>
         </div>
       )}
 
       {status && <p className="admin-status">{status}</p>}
+      {dispatchStatus && <p className="admin-status">{dispatchStatus}</p>}
 
       {token && playlists && loaded && (
         <div className="admin-editor">
@@ -172,7 +125,7 @@ function GithubTagsEditor() {
               <li key={p.id}>
                 <button type="button" className={p.id === selectedId ? 'selected' : ''} onClick={() => selectPlaylist(p.id)}>
                   {p.name}
-                  {!loaded.content.playlists[p.id] && <span className="badge-new">tags auto</span>}
+                  {!loaded.content.playlists[p.id]?.tags && <span className="badge-new">tags auto</span>}
                 </button>
               </li>
             ))}
@@ -195,7 +148,7 @@ function GithubTagsEditor() {
               {conflict && (
                 <p className="admin-conflict">
                   Le fichier a changé depuis ton dernier chargement.{' '}
-                  <button type="button" onClick={load}>
+                  <button type="button" onClick={store.reload}>
                     Recharger la dernière version
                   </button>
                 </p>

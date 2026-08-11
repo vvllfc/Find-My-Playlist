@@ -10,10 +10,7 @@
   {
     "id": "dnb",
     "match": { "type": "prefix", "value": "D&B" },
-    "genre": "D&B",
-    "subgenreTokens": ["Nappe", "Rap", "Reggae", "Dance"],
-    "tempoTokens": { "chill": "chill", "higher": "energetic" },
-    "voiceToken": "Voice"
+    "genre": "D&B"
   },
   {
     "id": "jazzy-soul",
