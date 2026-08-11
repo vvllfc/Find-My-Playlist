@@ -2,6 +2,9 @@
   "folders": {
     "Boiler": {
       "description": "test"
+    },
+    "Classique": {
+      "description": "Salut"
     }
   },
   "playlists": {}
