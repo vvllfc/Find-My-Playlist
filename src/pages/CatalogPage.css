@@ -159,6 +159,44 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* The one chip that's always there, opening the rest. Deliberately larger and
+   in the page's own ink rather than the violet of a filter — it doesn't filter
+   anything, it just unfolds. */
+.tag-toggle {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.42rem 0.9rem;
+  border-color: var(--border);
+  background: var(--surface);
+}
+.tag-toggle::after {
+  content: ' ▾';
+  opacity: 0.6;
+}
+.tag-toggle.open::after {
+  content: ' ▴';
+}
+
+/* The choices, unfolded under the search bar. Capped and scrollable so a long
+   vocabulary can never push the playlists off screen — the whole point of
+   folding it away in the first place. */
+.tag-panel {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: flex-start;
+  background: rgba(26, 26, 26, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 0.85rem 1rem;
+  margin: -1.25rem 0 2rem;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
 /* Two levels of filter, told apart by colour: a genre picks up the green used
    for folders, a refinement the violet already worn by the tags under playlist
    names. */

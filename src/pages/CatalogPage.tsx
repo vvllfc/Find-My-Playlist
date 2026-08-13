@@ -8,6 +8,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   const { catalog, error } = useCatalog()
   const [query, setQuery] = useState('')
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set())
+  const [tagsOpen, setTagsOpen] = useState(false)
 
   const [slug, subslug] = segments[0] === 'genre' ? [segments[1] ?? null, segments[2] ?? null] : [null, null]
 
@@ -90,6 +91,25 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
     })
   }, [showGenreRow, genreTags, filtered, impliedTags, pickedGenre])
 
+  // Genres keep the green already used for folders; refinements take the
+  // violet already worn by the tags under playlist names.
+  function renderChip(tag: string) {
+    const selected = activeTags.has(tag)
+    return (
+      <button
+        key={tag}
+        type="button"
+        className={['tag', genreTags.includes(tag) ? 'tag-genre' : 'tag-detail', selected ? 'active' : '']
+          .filter(Boolean)
+          .join(' ')}
+        aria-pressed={selected}
+        onClick={() => toggleTag(tag)}
+      >
+        {tag}
+      </button>
+    )
+  }
+
   function toggleTag(tag: string) {
     setActiveTags((prev) => {
       const next = new Set(prev)
@@ -144,32 +164,26 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
               {chips.length > 0 && (
                 <>
                   <div className="mixer-divider" />
-                  {chips.map((tag) => {
-                    const isGenre = genreTags.includes(tag)
-                    const selected = activeTags.has(tag)
-                    // Genres keep the green of a folder; refinements take the
-                    // violet already used by the tags under playlist names.
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        className={[
-                          'tag',
-                          isGenre ? 'tag-genre' : 'tag-detail',
-                          selected ? 'active' : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                        aria-pressed={selected}
-                        onClick={() => toggleTag(tag)}
-                      >
-                        {tag}
-                      </button>
-                    )
-                  })}
+                  {/* Folded away by default: laid out flat, twenty-odd genres
+                      filled the screen on a phone before any playlist showed. */}
+                  <button
+                    type="button"
+                    className={tagsOpen ? 'tag tag-toggle open' : 'tag tag-toggle'}
+                    aria-expanded={tagsOpen}
+                    onClick={() => setTagsOpen((open) => !open)}
+                  >
+                    Tags{activeTags.size > 0 ? ` · ${activeTags.size}` : ''}
+                  </button>
+                  {/* What's filtering stays visible even when folded, so the
+                      list is never quietly narrowed by something off screen. */}
+                  {chips.filter((tag) => activeTags.has(tag)).map((tag) => renderChip(tag))}
                 </>
               )}
             </div>
+
+            {tagsOpen && chips.some((tag) => !activeTags.has(tag)) && (
+              <div className="tag-panel">{chips.filter((tag) => !activeTags.has(tag)).map((tag) => renderChip(tag))}</div>
+            )}
 
             {!isSearching && match && (
               <Link to={backTarget} className="back-link">
