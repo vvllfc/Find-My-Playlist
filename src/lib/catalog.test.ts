@@ -11,7 +11,12 @@ import {
 } from './catalog'
 
 let nextId = 0
-function playlist(category: string | null, subcategory: string | null = null, name?: string): CatalogPlaylist {
+function playlist(
+  category: string | null,
+  subcategory: string | null = null,
+  name?: string,
+  subsubcategory: string | null = null,
+): CatalogPlaylist {
   nextId += 1
   return {
     id: `id-${nextId}`,
@@ -22,12 +27,18 @@ function playlist(category: string | null, subcategory: string | null = null, na
     description: '',
     category,
     subcategory,
+    subsubcategory,
     tags: category ? [category] : [],
   }
 }
 
-function many(count: number, category: string | null, subcategory: string | null = null): CatalogPlaylist[] {
-  return Array.from({ length: count }, () => playlist(category, subcategory))
+function many(
+  count: number,
+  category: string | null,
+  subcategory: string | null = null,
+  subsubcategory: string | null = null,
+): CatalogPlaylist[] {
+  return Array.from({ length: count }, () => playlist(category, subcategory, undefined, subsubcategory))
 }
 
 describe('buildFolderTree', () => {
@@ -85,6 +96,33 @@ describe('buildFolderTree', () => {
     expect(tree[0].name).toBe(UNCATEGORIZED)
     expect(tree[0].subfolders).toBeNull()
   })
+
+  it('recurses a third level inside a sub-folder, only where it is worth it', () => {
+    // Mirrors Rap Game: split by language, then — only inside the languages
+    // that actually name one, and only once there's enough to bother — split
+    // again by school.
+    const tree = buildFolderTree([
+      ...many(4, 'Rap Game', 'FR', 'Old School'),
+      ...many(8, 'Rap Game', 'FR', 'New Gen'),
+      ...many(13, 'Rap Game', 'FR', null),
+      ...many(2, 'Rap Game', 'ES', null),
+      ...many(5, 'Rap Game', 'EN', 'Old School'),
+      ...many(22, 'Rap Game', 'EN', 'New School'),
+    ])
+    const rapGame = tree[0]
+    expect(rapGame.subfolders?.map((f) => f.name)).toEqual(['EN', 'ES', 'FR'])
+
+    const en = rapGame.subfolders?.find((f) => f.name === 'EN')
+    expect(en?.subfolders?.map((f) => f.name)).toEqual(['New School', 'Old School'])
+    expect(en?.subfolders?.map((f) => f.key)).toEqual(['Rap Game/EN/New School', 'Rap Game/EN/Old School'])
+
+    const fr = rapGame.subfolders?.find((f) => f.name === 'FR')
+    expect(fr?.subfolders?.map((f) => f.name)).toEqual(['New Gen', 'Old School', OTHERS_SUBFOLDER])
+
+    // Too few playlists to be worth a third level at all — stays a flat list.
+    const es = rapGame.subfolders?.find((f) => f.name === 'ES')
+    expect(es?.subfolders).toBeNull()
+  })
 })
 
 describe('findFolder', () => {
@@ -96,6 +134,20 @@ describe('findFolder', () => {
     expect(sub?.subfolder?.key).toBe('Techno/Nappe')
     expect(findFolder(tree, 'techno', 'unknown')).toBeNull()
     expect(findFolder(tree, 'unknown', null)).toBeNull()
+  })
+
+  it('resolves a third level by slug', () => {
+    const deepTree = buildFolderTree([
+      ...many(5, 'Rap Game', 'EN', 'Old School'),
+      ...many(22, 'Rap Game', 'EN', 'New School'),
+      ...many(4, 'Rap Game', 'FR', 'Old School'),
+      ...many(8, 'Rap Game', 'FR', 'New Gen'),
+      ...many(13, 'Rap Game', 'FR', null),
+    ])
+    const deep = findFolder(deepTree, 'rap-game', 'en', 'new-school')
+    expect(deep?.subsubfolder?.key).toBe('Rap Game/EN/New School')
+    // A sub-slug that resolves but has no third level of its own to descend into.
+    expect(findFolder(deepTree, 'rap-game', 'en', 'unknown')).toBeNull()
   })
 })
 
@@ -119,5 +171,20 @@ describe('listAllFolders', () => {
   it('lists parents before their sub-folders, for editor listings', () => {
     const tree = buildFolderTree([...many(30, 'Techno', 'Nappe'), ...many(15, 'Techno', 'Acide'), ...many(3, 'Ska')])
     expect(listAllFolders(tree).map((f) => f.key)).toEqual(['Ska', 'Techno', 'Techno/Acide', 'Techno/Nappe'])
+  })
+
+  it('recurses all the way down to a third level', () => {
+    const tree = buildFolderTree([
+      ...many(5, 'Rap Game', 'EN', 'Old School'),
+      ...many(22, 'Rap Game', 'EN', 'New School'),
+      ...many(5, 'Rap Game', 'ES', null),
+    ])
+    expect(listAllFolders(tree).map((f) => f.key)).toEqual([
+      'Rap Game',
+      'Rap Game/EN',
+      'Rap Game/EN/New School',
+      'Rap Game/EN/Old School',
+      'Rap Game/ES',
+    ])
   })
 })

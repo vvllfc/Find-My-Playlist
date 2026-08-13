@@ -29,14 +29,6 @@
     "voiceToken": "Voice"
   },
   {
-    "id": "rap-game",
-    "match": { "type": "prefix", "value": "Rap Game" },
-    "genre": "Rap Game",
-    "subgenreTokens": ["Old School", "New School", "New Gen", "Grime", "Instru"],
-    "tempoTokens": { "much higher": "energetic+", "higher": "energetic" },
-    "eraTokens": ["Now"]
-  },
-  {
     "id": "reggaeton",
     "match": { "type": "prefix", "value": "Reggaeton" },
     "genre": "Reggaeton",

@@ -10,16 +10,27 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set())
   const [tagsOpen, setTagsOpen] = useState(false)
 
-  const [slug, subslug] = segments[0] === 'genre' ? [segments[1] ?? null, segments[2] ?? null] : [null, null]
+  const [slug, subslug, subsubslug] =
+    segments[0] === 'genre' ? [segments[1] ?? null, segments[2] ?? null, segments[3] ?? null] : [null, null, null]
 
   const tree = useMemo(() => buildFolderTree(catalog?.playlists ?? []), [catalog])
-  const match = slug ? findFolder(tree, slug, subslug) : null
+  const match = slug ? findFolder(tree, slug, subslug, subsubslug) : null
   const isSearching = query.trim().length > 0
 
+  // Every folder resolved by the route, root first — the last one is the
+  // deepest point reached, however many levels deep that is.
+  const matchedFolders = useMemo(
+    () => (match ? [match.folder, match.subfolder, match.subsubfolder].filter((f): f is Folder => f !== null) : []),
+    [match],
+  )
+  const current = matchedFolders.length > 0 ? matchedFolders[matchedFolders.length - 1] : null
+
   // The folder whose playlists are listed (null → we're on a folder grid).
-  // A sub-foldered category shows its sub-grid, not a flat list.
-  const listedFolder = match ? (match.subfolder ?? (match.folder.subfolders ? null : match.folder)) : null
-  const gridFolders = match ? (listedFolder ? null : match.folder.subfolders) : tree
+  // A sub-foldered folder shows its sub-grid, not a flat list, however deep
+  // it sits — Rap Game / FR still opens onto Old School / New Gen rather than
+  // straight to a list.
+  const listedFolder = current && !current.subfolders ? current : null
+  const gridFolders = current ? current.subfolders : tree
 
   // Inside a folder we work from its playlists — including when it's showing a
   // sub-grid rather than a list, otherwise its chips would be drawn from the
@@ -27,27 +38,26 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   // searching, or picking a genre from the home row — it's the full catalog.
   const scope = useMemo<CatalogPlaylist[]>(() => {
     if (isSearching) return catalog?.playlists ?? []
-    if (listedFolder) return listedFolder.playlists
-    if (match) return match.folder.playlists
+    if (current) return current.playlists
     return catalog?.playlists ?? []
-  }, [isSearching, catalog, listedFolder, match])
+  }, [isSearching, catalog, current])
 
   // Reset the tag filter when moving between folders so a stale selection
   // can't silently hide everything in the next one.
   useEffect(() => {
     setActiveTags(new Set())
-  }, [slug, subslug])
+  }, [slug, subslug, subsubslug])
 
-  // Tags redundant with where you already are: the folder and sub-folder
-  // names, plus anything already spelled out inside them — the "French" tag
-  // says nothing new on every row of the "French Vibe" folder.
+  // Tags redundant with where you already are: the names of every folder on
+  // the path here, plus anything already spelled out inside them — the
+  // "French" tag says nothing new on every row of the "French Vibe" folder.
   const impliedTags = useMemo(() => {
-    if (isSearching || !match) return new Set<string>()
-    const names = [match.folder.name, ...(match.subfolder ? [match.subfolder.name] : [])]
+    if (isSearching || matchedFolders.length === 0) return new Set<string>()
+    const names = matchedFolders.map((f) => f.name)
     const implied = new Set(names)
     for (const name of names) for (const word of name.split(' ')) implied.add(word)
     return implied
-  }, [isSearching, match])
+  }, [isSearching, matchedFolders])
 
   // Everything the current selection narrows down to. Selections combine with
   // AND, which is what lets the chip row shrink as you go: a chip is only
@@ -127,11 +137,15 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
 
   // Route only, deliberately not the query — otherwise every keystroke in the
   // search box would replay the arrival animation.
-  const routeKey = `${slug ?? ''}/${subslug ?? ''}`
-  const currentFolder = isSearching ? null : (listedFolder ?? match?.folder ?? null)
+  const routeKey = `${slug ?? ''}/${subslug ?? ''}/${subsubslug ?? ''}`
+  const currentFolder = isSearching ? null : (listedFolder ?? current)
   const folderDescription = currentFolder ? catalog?.folders[currentFolder.key]?.description : undefined
-  const backTarget = match?.subfolder ? `/genre/${match.folder.slug}` : '/'
-  const backLabel = match?.subfolder ? `← ${match.folder.name}` : '← Tous les genres'
+  // One level up from wherever the route currently sits, however deep that is.
+  const ancestorFolders = matchedFolders.slice(0, -1)
+  const backTarget =
+    ancestorFolders.length > 0 ? `/genre/${ancestorFolders.map((f) => f.slug).join('/')}` : '/'
+  const backLabel = ancestorFolders.length > 0 ? `← ${ancestorFolders[ancestorFolders.length - 1].name}` : '← Tous les genres'
+  const breadcrumbPrefix = ancestorFolders.map((f) => f.name).join(' — ')
 
   return (
     <div className="catalog-page">
@@ -177,13 +191,16 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                   {/* What's filtering stays visible even when folded, so the
                       list is never quietly narrowed by something off screen. */}
                   {chips.filter((tag) => activeTags.has(tag)).map((tag) => renderChip(tag))}
+                  {/* Unfolds inside the same mixer box rather than a second
+                      one underneath — it's still one filter strip. */}
+                  {tagsOpen && chips.some((tag) => !activeTags.has(tag)) && (
+                    <div className="tag-panel">
+                      {chips.filter((tag) => !activeTags.has(tag)).map((tag) => renderChip(tag))}
+                    </div>
+                  )}
                 </>
               )}
             </div>
-
-            {tagsOpen && chips.some((tag) => !activeTags.has(tag)) && (
-              <div className="tag-panel">{chips.filter((tag) => !activeTags.has(tag)).map((tag) => renderChip(tag))}</div>
-            )}
 
             {!isSearching && match && (
               <Link to={backTarget} className="back-link">
@@ -193,7 +210,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
             {!isSearching && currentFolder && (
               <header className="folder-header">
                 <h2>
-                  {match?.subfolder ? `${match.folder.name} — ` : ''}
+                  {breadcrumbPrefix ? `${breadcrumbPrefix} — ` : ''}
                   {currentFolder.name}
                 </h2>
                 {folderDescription && <p>{folderDescription}</p>}
@@ -212,8 +229,8 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                 key={routeKey}
                 folders={gridFolders}
                 folderMeta={catalog.folders}
-                depth={match ? 2 : 1}
-                hrefOf={(f) => (match ? `/genre/${match.folder.slug}/${f.slug}` : `/genre/${f.slug}`)}
+                depth={matchedFolders.length + 1}
+                hrefOf={(f) => ['', 'genre', ...matchedFolders.map((m) => m.slug), f.slug].join('/')}
               />
             )}
 

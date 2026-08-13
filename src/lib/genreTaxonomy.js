@@ -63,7 +63,44 @@ function applyRule(rule, remainder) {
 
   if (rule.voiceToken && hasVoice(remainder, rule.voiceToken)) tags.push('vocals');
 
-  return { category: rule.genre ?? null, subcategory, tags };
+  return { category: rule.genre ?? null, subcategory, subsubcategory: null, tags };
+}
+
+// "Rap Game" is its own three-level family: language first (FR / ES, with EN
+// as the default when no marker is found), then which "school" the playlist
+// belongs to — only for the languages that actually name one. A vocabulary of
+// extra tags is only settled for New School EN so far; the rest stay on the
+// structural tags (genre, language, school) until that's worked out too.
+const RAP_GAME_PREFIX = 'Rap Game';
+const RAP_GAME_DEFAULT_LANGUAGE = 'EN';
+const RAP_GAME_SCHOOLS = ['Old School', 'New School', 'New Gen'];
+const RAP_GAME_NEW_SCHOOL_EN_TAGS = ['Zepo', 'Instru', 'Feel It', 'Grime', 'Hood', 'Party', 'Deep', 'Wake Up'];
+const RAP_GAME_TEMPO_TOKENS = { 'much higher': 'energetic+', higher: 'energetic' };
+const RAP_GAME_ERA_TOKENS = ['Now'];
+
+function classifyRapGame(remainder) {
+  const language = stripPrefixWord(remainder, ['Fr']) ?? stripPrefixWord(remainder, ['ES']);
+  const rest = language ? language.rest : remainder;
+  const languageTag = language ? (normalize(language.matched) === 'fr' ? 'FR' : 'ES') : RAP_GAME_DEFAULT_LANGUAGE;
+
+  const school = findToken(rest, RAP_GAME_SCHOOLS);
+
+  const tags = ['Rap Game', languageTag];
+  if (school) tags.push(school);
+
+  if (languageTag === 'EN' && school === 'New School') {
+    for (const word of RAP_GAME_NEW_SCHOOL_EN_TAGS) {
+      if (normalize(rest).includes(normalize(word))) tags.push(word);
+    }
+  }
+
+  const tempo = findTokenMapped(remainder, RAP_GAME_TEMPO_TOKENS);
+  if (tempo) tags.push(tempo);
+
+  const era = findToken(remainder, RAP_GAME_ERA_TOKENS);
+  if (era) tags.push(era);
+
+  return { category: 'Rap Game', subcategory: languageTag, subsubcategory: school, tags };
 }
 
 // "Feel The X" is its own family of naming, not a single fixed vocabulary —
@@ -192,15 +229,21 @@ function classifyFeelThe(remainder) {
   const era = findToken(remainder, ERA_TOKENS);
   if (era) tags.push(era);
 
-  return { category, subcategory, tags };
+  return { category, subcategory, subsubcategory: null, tags };
 }
 
-// Returns { category, subcategory, tags }. `category` is the top-level folder
-// on the public catalog and `subcategory` the folder inside it; both are null
-// when nothing matched, which lands the playlist in "Non classées".
+// Returns { category, subcategory, subsubcategory, tags }. `category` is the
+// top-level folder on the public catalog, `subcategory` the folder inside it
+// and `subsubcategory` a folder inside that (Rap Game only, for now); all
+// three are null when nothing matched, which lands the playlist in "Non
+// classées".
 export function classifyPlaylistName(name, taxonomy) {
   if (matchesPrefix(name, FEEL_THE_PREFIX)) {
     return classifyFeelThe(name.slice(FEEL_THE_PREFIX.length).trim());
+  }
+
+  if (matchesPrefix(name, RAP_GAME_PREFIX)) {
+    return classifyRapGame(name.slice(RAP_GAME_PREFIX.length).trim());
   }
 
   for (const rule of taxonomy) {
@@ -208,7 +251,7 @@ export function classifyPlaylistName(name, taxonomy) {
     return applyRule(rule, name.slice(rule.match.value.length).trim());
   }
 
-  return { category: null, subcategory: null, tags: [] };
+  return { category: null, subcategory: null, subsubcategory: null, tags: [] };
 }
 
 export function deriveTagsFromName(name, taxonomy) {

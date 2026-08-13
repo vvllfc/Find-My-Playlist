@@ -178,21 +178,17 @@
   content: ' ▴';
 }
 
-/* The choices, unfolded under the search bar. Capped and scrollable so a long
-   vocabulary can never push the playlists off screen — the whole point of
-   folding it away in the first place. */
+/* The choices, unfolded inside the mixer itself rather than a second box
+   underneath it. Forced onto its own row (full width) so it wraps under the
+   search bar and toggle instead of squeezing in beside them; capped and
+   scrollable on its own so a long vocabulary can never push the playlists off
+   screen without dragging the search input out of view with it. */
 .tag-panel {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
   align-items: flex-start;
-  background: rgba(26, 26, 26, 0.55);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid var(--border);
-  border-radius: 0.4rem;
-  padding: 0.85rem 1rem;
-  margin: -1.25rem 0 2rem;
+  width: 100%;
   max-height: 40vh;
   overflow-y: auto;
 }

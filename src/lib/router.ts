@@ -25,13 +25,13 @@ export function parseRoute(location: string): Route {
 }
 
 // How deep into the folder hierarchy a catalog route sits: the folder grid is
-// 0, a folder is 1, a sub-folder is 2. Anything that isn't a catalog route has
-// no depth of its own.
+// 0, a folder is 1, a sub-folder is 2, a sub-sub-folder (Rap Game's language →
+// school) is 3. Anything that isn't a catalog route has no depth of its own.
 function depthOf(route: Route): number | null {
   if (route.kind !== 'catalog') return null
   if (route.segments[0] !== 'genre') return route.segments.length === 0 ? 0 : null
   const depth = route.segments.length - 1
-  return depth === 1 || depth === 2 ? depth : null
+  return depth >= 1 && depth <= 3 ? depth : null
 }
 
 /**

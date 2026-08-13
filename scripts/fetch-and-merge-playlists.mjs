@@ -262,12 +262,13 @@ async function main() {
     const entry = content.playlists[playlist.id]
     if (entry?.tags) manuallyTagged += 1
     if (entry?.description) described += 1
-    const { category, subcategory, tags } = classifyPlaylistName(playlist.name, taxonomy)
+    const { category, subcategory, subsubcategory, tags } = classifyPlaylistName(playlist.name, taxonomy)
     return {
       ...playlist,
       description: entry?.description ?? '',
       category,
       subcategory,
+      subsubcategory,
       tags: entry?.tags ?? tags,
     }
   })

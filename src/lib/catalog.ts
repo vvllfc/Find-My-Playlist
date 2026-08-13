@@ -17,6 +17,8 @@ export interface CatalogPlaylist {
   category: string | null
   /** Folder inside the category (large genres only); null lands in "Autres". */
   subcategory: string | null
+  /** Folder inside the subcategory (Rap Game only, for now); null lands in "Autres". */
+  subsubcategory: string | null
   tags: string[]
 }
 
@@ -78,22 +80,37 @@ function groupBy(playlists: CatalogPlaylist[], keyOf: (p: CatalogPlaylist) => st
   return groups
 }
 
-function buildSubfolders(categoryName: string, playlists: CatalogPlaylist[]): Folder[] | null {
-  if (categoryName === UNCATEGORIZED || playlists.length < SUBFOLDER_MIN_PLAYLISTS) return null
-  const distinct = new Set(playlists.map((p) => p.subcategory).filter((s): s is string => s !== null))
+// One level of grouping, applied recursively: `levelsOf` is the chain of
+// extractors still to try, this level's folder name off the front, the rest
+// tried one level deeper inside each group. Only Rap Game has a third level
+// today — everyone else's second extractor groups on a field that's always
+// null, which the distinct-values check below turns into "no further split"
+// on its own.
+function buildSubfolders(
+  keyPrefix: string,
+  playlists: CatalogPlaylist[],
+  levelsOf: Array<(p: CatalogPlaylist) => string | null>,
+): Folder[] | null {
+  const [levelOf, ...restLevels] = levelsOf
+  if (!levelOf) return null
+  if (keyPrefix === UNCATEGORIZED || playlists.length < SUBFOLDER_MIN_PLAYLISTS) return null
+  const distinct = new Set(playlists.map(levelOf).filter((s): s is string => s !== null))
   if (distinct.size < SUBFOLDER_MIN_DISTINCT) return null
 
-  const groups = groupBy(playlists, (p) => p.subcategory ?? OTHERS_SUBFOLDER)
+  const groups = groupBy(playlists, (p) => levelOf(p) ?? OTHERS_SUBFOLDER)
   if (playlists.length / groups.size < SUBFOLDER_MIN_AVERAGE) return null
 
   return [...groups.entries()]
-    .map(([name, items]) => ({
-      name,
-      slug: slugify(name),
-      key: `${categoryName}/${name}`,
-      playlists: items,
-      subfolders: null,
-    }))
+    .map(([name, items]) => {
+      const key = `${keyPrefix}/${name}`
+      return {
+        name,
+        slug: slugify(name),
+        key,
+        playlists: items,
+        subfolders: buildSubfolders(key, items, restLevels),
+      }
+    })
     .sort(byNameWithCatchAllLast(OTHERS_SUBFOLDER))
 }
 
@@ -105,7 +122,7 @@ export function buildFolderTree(playlists: CatalogPlaylist[]): Folder[] {
       slug: slugify(name),
       key: name,
       playlists: items,
-      subfolders: buildSubfolders(name, items),
+      subfolders: buildSubfolders(name, items, [(p) => p.subcategory, (p) => p.subsubcategory]),
     }))
     .sort(byNameWithCatchAllLast(UNCATEGORIZED))
 }
@@ -113,19 +130,28 @@ export function buildFolderTree(playlists: CatalogPlaylist[]): Folder[] {
 export interface FolderMatch {
   folder: Folder
   subfolder: Folder | null
+  subsubfolder: Folder | null
 }
 
-export function findFolder(tree: Folder[], slug: string, subslug: string | null): FolderMatch | null {
+export function findFolder(
+  tree: Folder[],
+  slug: string,
+  subslug: string | null,
+  subsubslug: string | null = null,
+): FolderMatch | null {
   const folder = tree.find((f) => f.slug === slug)
   if (!folder) return null
-  if (!subslug) return { folder, subfolder: null }
+  if (!subslug) return { folder, subfolder: null, subsubfolder: null }
   const subfolder = folder.subfolders?.find((f) => f.slug === subslug) ?? null
-  return subfolder ? { folder, subfolder } : null
+  if (!subfolder) return null
+  if (!subsubslug) return { folder, subfolder, subsubfolder: null }
+  const subsubfolder = subfolder.subfolders?.find((f) => f.slug === subsubslug) ?? null
+  return subsubfolder ? { folder, subfolder, subsubfolder } : null
 }
 
 /** Every folder in the tree, parents before children — for editor listings. */
 export function listAllFolders(tree: Folder[]): Folder[] {
-  return tree.flatMap((folder) => [folder, ...(folder.subfolders ?? [])])
+  return tree.flatMap((folder) => [folder, ...listAllFolders(folder.subfolders ?? [])])
 }
 
 // Tags that behave like a genre without being a folder — they cut across one.
