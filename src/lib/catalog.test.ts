@@ -23,7 +23,7 @@ function playlist(
   return {
     id: `id-${nextId}`,
     name: playlistName,
-    displayName: playlistName,
+    displayNames: [playlistName, playlistName, playlistName],
     imageUrl: null,
     trackCount: 10,
     totalDurationMs: 0,

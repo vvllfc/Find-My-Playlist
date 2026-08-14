@@ -114,9 +114,13 @@ function applyRule(rule, remainder) {
 
   if (rule.voiceToken && hasVoice(remainder, rule.voiceToken)) tags.push('vocals');
 
-  const displayRemainder = stripLeadingToken(stripLeadingToken(remainder, subcategory), subsubcategory);
+  // One name per depth you could be reading this from — see displayLevels in
+  // classifyPlaylistName. A sub-genre only stops being worth showing once it
+  // is the folder you are standing in.
+  const afterSubcategory = stripLeadingToken(remainder, subcategory);
+  const displayLevels = [remainder, afterSubcategory, stripLeadingToken(afterSubcategory, subsubcategory)];
 
-  return { category: rule.genre ?? null, subcategory, subsubcategory, tags, displayRemainder };
+  return { category: rule.genre ?? null, subcategory, subsubcategory, tags, displayLevels };
 }
 
 // "Rap Game" is its own three-level family: language first (FR / ES, with EN
@@ -137,7 +141,7 @@ function classifyRapGame(remainder) {
   const languageTag = language ? (normalize(language.matched) === 'fr' ? 'FR' : 'ES') : RAP_GAME_DEFAULT_LANGUAGE;
 
   const school = findToken(rest, RAP_GAME_SCHOOLS);
-  const displayRemainder = stripLeadingToken(rest, school);
+  const displayLevels = [remainder, rest, stripLeadingToken(rest, school)];
 
   const tags = ['Rap Game', languageTag];
   if (school) tags.push(school);
@@ -154,7 +158,7 @@ function classifyRapGame(remainder) {
   const era = findToken(remainder, RAP_GAME_ERA_TOKENS);
   if (era) tags.push(era);
 
-  return { category: 'Rap Game', subcategory: languageTag, subsubcategory: school, tags, displayRemainder };
+  return { category: 'Rap Game', subcategory: languageTag, subsubcategory: school, tags, displayLevels };
 }
 
 // "Feel The X" is its own family of naming, not a single fixed vocabulary —
@@ -315,7 +319,10 @@ function classifyFeelThe(remainder) {
     displayRemainder = `${language.matched} ${rest}`.trim();
   }
 
-  return { category, subcategory, subsubcategory: null, tags, displayRemainder };
+  // The genre word is the folder here (Disco, Punk, or the language that names
+  // a Vibe folder), so it is already gone at every depth — this family has no
+  // shallower reading to fall back to.
+  return { category, subcategory, subsubcategory: null, tags, displayLevels: [displayRemainder, displayRemainder, displayRemainder] };
 }
 
 // ---------------------------------------------------------------------------
@@ -391,27 +398,34 @@ export function energyRankOf(name, category) {
   return unmarked === -1 ? null : unmarked;
 }
 
-// `displayRemainder` is whatever's left of the name once the genre/sub-folder
-// words a classifier recognized are cut off the front — e.g. "Rap Game New
-// School Feel It" inside Rap Game / EN / New School becomes "Feel It". When
-// that leaves nothing at all (a playlist literally named "Rap Game New
-// School"), the full original name is shown instead of a blank row.
+// `displayLevels` holds one reading of the name per depth it could be listed
+// at: [inside the genre, inside its sub-folder, inside the sub-sub-folder].
+// Each level cuts one more of the folder's own words off the front, so "Rap
+// Game New School Feel It" reads "Feel It" inside Rap Game / EN / New School.
+//
+// Three of them rather than one because a sub-genre is only redundant once it
+// is the folder you are standing in. Wallaby's never splits into sub-folders,
+// so cutting "Frapcore" and "Journey" there left three separate playlists all
+// showing as "Hard"; the page picks the level matching where it actually is.
 function finalizeDisplayName(name, result) {
-  const { displayRemainder, ...rest } = result;
+  const { displayLevels, ...rest } = result;
+  const levels = displayLevels ?? [name, name, name];
   return {
     ...rest,
-    displayName: (displayRemainder ?? '').trim() || name,
-    // Ranked on what's left after the folder's own words, not the whole name:
-    // "Wallaby's Hard Tracks Fast" is a Fast playlist in the Hard Tracks
-    // sub-genre, and matching the raw name would read that "Hard" as a tempo
-    // and file it above the Fast it actually is. The empty remainder of a
-    // playlist named exactly after its folder is deliberately *not* replaced
-    // by the full name here — it carries no tempo word, which is the point.
-    energyRank: energyRankOf(displayRemainder ?? name, result.category),
+    // Anything cut down to nothing falls back to the full name rather than
+    // leaving a blank row.
+    displayNames: levels.map((level) => (level ?? '').trim() || name),
+    // Ranked on the deepest reading, not the whole name: "Wallaby's Hard
+    // Tracks Fast" is a Fast playlist in the Hard Tracks sub-genre, and
+    // matching the raw name would read that "Hard" as a tempo and file it
+    // above the Fast it actually is. The empty remainder of a playlist named
+    // exactly after its folder is deliberately *not* replaced by the full name
+    // here — it carries no tempo word, which is the point.
+    energyRank: energyRankOf(levels[levels.length - 1] ?? name, result.category),
   };
 }
 
-// Returns { category, subcategory, subsubcategory, tags, displayName }.
+// Returns { category, subcategory, subsubcategory, tags, displayNames }.
 // `category` is the top-level folder on the public catalog, `subcategory` the
 // folder inside it and `subsubcategory` a folder inside that (Rap Game only,
 // for now); all three are null when nothing matched, which lands the
@@ -430,7 +444,14 @@ export function classifyPlaylistName(name, taxonomy) {
     return finalizeDisplayName(name, applyRule(rule, name.slice(rule.match.value.length).trim()));
   }
 
-  return { category: null, subcategory: null, subsubcategory: null, tags: [], displayName: name, energyRank: null };
+  return {
+    category: null,
+    subcategory: null,
+    subsubcategory: null,
+    tags: [],
+    displayNames: [name, name, name],
+    energyRank: null,
+  };
 }
 
 export function deriveTagsFromName(name, taxonomy) {

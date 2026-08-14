@@ -3,6 +3,7 @@ import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
 import {
   buildFolderTree,
+  displayNameAtDepth,
   findFolder,
   formatListeningTime,
   genreLevelTags,
@@ -254,13 +255,14 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                     <div key={playlist.id} className="row">
                       <span className="row-index">{String(index + 1).padStart(2, '0')}</span>
                       <span className="row-main">
-                        {/* Full name only while searching, where finding the exact
-                            match matters; browsing a folder shows just what's left
-                            once its own words (genre, language, school…) are cut,
-                            so the same text doesn't repeat on every row. */}
+                        {/* Cut back by how deep the folder actually is: its own
+                            words say nothing new, but a sub-genre that never
+                            became a folder still tells them apart. A search or
+                            a catalog-wide tag filter spans everything, so
+                            there the full name is what's meaningful. */}
                         <p className="name">
                           <a href={playlist.externalUrl} target="_blank" rel="noreferrer" className="row-link">
-                            {isSearching ? playlist.name : playlist.displayName}
+                            {displayNameAtDepth(playlist, isSearching ? 0 : matchedFolders.length)}
                           </a>
                         </p>
                         {playlist.description && <p className="desc">{playlist.description}</p>}

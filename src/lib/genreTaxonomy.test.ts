@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { classifyPlaylistName, deriveTagsFromName, energyRankOf } from './genreTaxonomy.js'
+import { displayNameAtDepth, type CatalogPlaylist } from './catalog'
 import taxonomy from '../../data/genre-taxonomy.json'
 
-const classify = (name: string) => classifyPlaylistName(name, taxonomy)
+// Most assertions here care about the deepest reading of the name — the one
+// shown in the folder furthest down. The per-depth readings get their own test.
+const classify = (name: string) => {
+  const { displayNames, ...rest } = classifyPlaylistName(name, taxonomy)
+  return { ...rest, displayName: displayNames[displayNames.length - 1] }
+}
 
 describe('classifyPlaylistName', () => {
   it('splits the Vibe family by language, one sub-folder each', () => {
@@ -370,6 +376,67 @@ describe('classifyPlaylistName', () => {
       displayName: 'Lost & Found',
       energyRank: null,
     })
+  })
+})
+
+describe('displayNames', () => {
+  const levels = (name: string) => classifyPlaylistName(name, taxonomy).displayNames
+
+  it('keeps a sub-genre in the name until it is the folder you are in', () => {
+    // Wallaby's never splits into sub-folders, so its listing sits at depth 1
+    // and has to keep Frapcore/Journey/Raggatek — cutting them left three
+    // separate playlists all reading "Hard".
+    expect(levels("Wallaby's Frapcore Hard")[0]).toBe('Frapcore Hard')
+    expect(levels("Wallaby's Journey Hard")[0]).toBe('Journey Hard')
+    expect(levels("Wallaby's Raggatek Hard")[0]).toBe('Raggatek Hard')
+    // Techno does split, so inside Techno / Nappe the sub-genre goes.
+    expect(levels('Techno Nappe AfterVNR Voice')[0]).toBe('Nappe AfterVNR Voice')
+    expect(levels('Techno Nappe AfterVNR Voice')[1]).toBe('AfterVNR Voice')
+  })
+
+  it('cuts one more level for each folder deeper', () => {
+    expect(levels('Rap Game Fr Old School Now Zepo')).toEqual([
+      'Fr Old School Now Zepo',
+      'Old School Now Zepo',
+      'Now Zepo',
+    ])
+    expect(levels('Techno House Sunrise Middle')).toEqual(['House Sunrise Middle', 'Sunrise Middle', 'Middle'])
+  })
+
+  it('falls back to the full name at any level cut down to nothing', () => {
+    expect(levels('Rap Game New School')[2]).toBe('Rap Game New School')
+    expect(levels("Wallaby's Trance")[1]).toBe("Wallaby's Trance")
+  })
+})
+
+describe('displayNameAtDepth', () => {
+  const playlistNamed = (name: string): CatalogPlaylist => ({
+    id: 'x',
+    name,
+    displayNames: classifyPlaylistName(name, taxonomy).displayNames,
+    imageUrl: null,
+    trackCount: 0,
+    totalDurationMs: 0,
+    externalUrl: '',
+    description: '',
+    category: null,
+    subcategory: null,
+    subsubcategory: null,
+    energyRank: null,
+    tags: [],
+  })
+
+  it('shows the whole name outside any folder, and cuts back inside one', () => {
+    const wallabys = playlistNamed("Wallaby's Frapcore Hard")
+    // A search or a catalog-wide tag filter spans everything: nothing is implied.
+    expect(displayNameAtDepth(wallabys, 0)).toBe("Wallaby's Frapcore Hard")
+    expect(displayNameAtDepth(wallabys, 1)).toBe('Frapcore Hard')
+
+    const rap = playlistNamed('Rap Game Fr Old School Now Zepo')
+    expect(displayNameAtDepth(rap, 2)).toBe('Old School Now Zepo')
+    expect(displayNameAtDepth(rap, 3)).toBe('Now Zepo')
+    // Deeper than the readings go — the deepest one still stands.
+    expect(displayNameAtDepth(rap, 9)).toBe('Now Zepo')
   })
 })
 

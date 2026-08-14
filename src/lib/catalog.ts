@@ -17,10 +17,12 @@ export interface CatalogPlaylist {
   totalDurationMs: number
   externalUrl: string
   description: string
-  /** Name with the current folder's own words cut off the front, e.g. "Feel It"
-   *  inside Rap Game / EN / New School. Falls back to the full name when that
-   *  would otherwise be blank. */
-  displayName: string
+  /** One reading of the name per depth it can be listed at — inside the genre,
+   *  its sub-folder, its sub-sub-folder — each cutting one more of the folder's
+   *  own words off the front ("Feel It" inside Rap Game / EN / New School).
+   *  A sub-genre that never becomes a folder stays in the name at every depth.
+   *  Falls back to the full name where a level would otherwise be blank. */
+  displayNames: string[]
   /** Top-level folder on the public catalog; null lands in "Non classées". */
   category: string | null
   /** Folder inside the category (large genres only); null lands in "Autres". */
@@ -203,6 +205,16 @@ export function genreLevelTags(playlists: CatalogPlaylist[]): string[] {
     }
   }
   return [...genres].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+}
+
+/**
+ * How a playlist's name reads inside a folder `depth` levels down — 0 being
+ * a flat listing (a search, or a tag filter spanning the whole catalog),
+ * where nothing is redundant and the full name is shown.
+ */
+export function displayNameAtDepth(playlist: CatalogPlaylist, depth: number): string {
+  if (depth <= 0) return playlist.name
+  return playlist.displayNames[Math.min(depth, playlist.displayNames.length) - 1] ?? playlist.name
 }
 
 /**
