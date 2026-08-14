@@ -109,6 +109,15 @@ async function fetchWithRetry(url, accessToken, attempt = 0) {
   return res
 }
 
+// A playlist item wraps the actual track under a key that has moved around
+// with Spotify's renames (the sub-resource itself went /tracks → /items), and
+// entries for unavailable tracks come back as null. Reading whichever wrapper
+// is present beats hardcoding one and silently summing zeroes.
+function itemDurationMs(item) {
+  const track = item?.track ?? item?.item ?? item
+  return typeof track?.duration_ms === 'number' ? track.duration_ms : 0
+}
+
 // Since Spotify's February 2026 API changes, tracks.total on the playlist
 // object (both the /v1/me/playlists list and GET /v1/playlists/{id} itself)
 // no longer reliably reports a count — confirmed by 200 OK responses with the
@@ -119,10 +128,21 @@ async function fetchWithRetry(url, accessToken, attempt = 0) {
 // max page size) to keep the call count close to what the count-only fetch
 // used to cost. Across the real catalog only ~30 playlists break 100 tracks,
 // so this adds a handful of extra calls overall, not one per playlist.
+//
+// Deliberately no `fields` projection on the items: an earlier version asked
+// for `items(track(duration_ms))` and every playlist came back with a correct
+// `total` but zero duration, so the projection was filtering the durations
+// away. Whole item objects are heavier, but they're only fetched when a
+// playlist's snapshot_id actually changed, and being right matters more here
+// than the payload size.
+let loggedUnknownItemShape = false
+
 async function fetchPlaylistStats(accessToken, playlistId) {
   let trackCount = 0
   let totalDurationMs = 0
-  let url = `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=100&fields=items(track(duration_ms)),total,next`
+  let itemsSeen = 0
+  let sampleItem = null
+  let url = `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=100`
 
   while (url) {
     const res = await fetchWithRetry(url, accessToken)
@@ -134,9 +154,22 @@ async function fetchPlaylistStats(accessToken, playlistId) {
     const data = await res.json()
     if (typeof data.total === 'number') trackCount = data.total
     for (const item of data.items ?? []) {
-      totalDurationMs += item?.track?.duration_ms ?? 0
+      itemsSeen += 1
+      sampleItem ??= item
+      totalDurationMs += itemDurationMs(item)
     }
     url = data.next
+  }
+
+  // Items came back but none carried a duration — the shape changed again.
+  // Logging one real sample (once for the whole run, not 480 times) makes the
+  // next CI run say exactly what the response looks like, instead of leaving
+  // another round of guessing at the format.
+  if (itemsSeen > 0 && totalDurationMs === 0 && !loggedUnknownItemShape) {
+    loggedUnknownItemShape = true
+    console.warn(
+      `[fetch-and-merge-playlists] ${playlistId}: ${itemsSeen} items but no duration_ms found. Sample item keys: ${JSON.stringify(Object.keys(sampleItem ?? {}))}. Sample: ${JSON.stringify(sampleItem).slice(0, 500)}`,
+    )
   }
 
   return { trackCount, totalDurationMs }
@@ -185,10 +218,13 @@ async function fetchOwnPublicPlaylists(accessToken) {
   await mapWithConcurrency(playlists, 5, async (playlist) => {
     const cached = cache[playlist.id]
     const snapshotId = snapshotIds[playlist.id]
-    // A cache entry from before totalDurationMs existed still counts as a
-    // miss — the whole point of the field is to have a real value everywhere,
-    // not to leave old playlists silently stuck at 0.
-    if (cached && cached.snapshotId === snapshotId && typeof cached.totalDurationMs === 'number') {
+    // A playlist with tracks but no duration was cached by a run that failed
+    // to read duration_ms, so it counts as a miss and gets refetched — same
+    // for an entry predating the field. Only a genuinely empty playlist is
+    // allowed to sit at zero.
+    const cachedDurationUsable =
+      cached?.totalDurationMs > 0 || (cached?.trackCount === 0 && typeof cached?.totalDurationMs === 'number')
+    if (cached && cached.snapshotId === snapshotId && cachedDurationUsable) {
       playlist.trackCount = cached.trackCount
       playlist.totalDurationMs = cached.totalDurationMs
       cacheHits += 1
@@ -201,7 +237,7 @@ async function fetchOwnPublicPlaylists(accessToken) {
   })
   await writeFile(path.join(rootDir, TRACK_COUNT_CACHE_PATH), JSON.stringify(cache, null, 2))
   console.log(
-    `[fetch-and-merge-playlists] playlist stats: ${cacheHits} unchanged (skipped), ${playlists.length - cacheHits} fetched from Spotify (${playlists.filter((p) => p.trackCount > 0).length} non-zero total).`,
+    `[fetch-and-merge-playlists] playlist stats: ${cacheHits} unchanged (skipped), ${playlists.length - cacheHits} fetched from Spotify (${playlists.filter((p) => p.trackCount > 0).length} with tracks, ${playlists.filter((p) => p.totalDurationMs > 0).length} with a listening time).`,
   )
 
   return playlists
