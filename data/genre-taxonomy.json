@@ -4,7 +4,7 @@
     "match": { "type": "prefix", "value": "Techno" },
     "genre": "Techno",
     "subgenreTokens": ["Léctro", "Mélo", "Minimal", "Nappe", "Acide"],
-    "eraTokens": ["AfterVNR160+", "AfterVNR", "Before", "Middle", "After"],
+    "eraTokens": ["AfterVNR160+", "AfterVNR", "GoodNight", "Before", "Middle", "After"],
     "voiceToken": "Voice"
   },
   {

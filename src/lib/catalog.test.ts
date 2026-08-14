@@ -32,6 +32,7 @@ function playlist(
     category,
     subcategory,
     subsubcategory,
+    energyRank: null,
     tags: category ? [category] : [],
   }
 }
@@ -65,6 +66,26 @@ describe('buildFolderTree', () => {
     const techno = tree[0]
     expect(techno.subfolders?.map((f) => f.name)).toEqual(['Acide', 'Nappe', OTHERS_SUBFOLDER])
     expect(techno.subfolders?.map((f) => f.key)).toEqual(['Techno/Acide', 'Techno/Nappe', `Techno/${OTHERS_SUBFOLDER}`])
+  })
+
+  it('orders a folder by energy first, name only breaking ties', () => {
+    const at = (rank: number | null, name: string) => ({ ...playlist('Techno', null, name), energyRank: rank })
+    const tree = buildFolderTree([
+      at(null, 'Techno Brasil'),
+      at(3, 'Techno After'),
+      at(0, 'Techno GoodNight'),
+      at(3, 'Techno After Voice'),
+      at(1, 'Techno Before'),
+    ])
+    expect(tree[0].playlists.map((p) => p.name)).toEqual([
+      'Techno GoodNight',
+      'Techno Before',
+      // Same rung, so the name decides between these two.
+      'Techno After',
+      'Techno After Voice',
+      // Off the ladder entirely — closes the list rather than leading it.
+      'Techno Brasil',
+    ])
   })
 
   it('orders playlists inside a folder letters-first, numbers by value', () => {

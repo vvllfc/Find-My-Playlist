@@ -27,6 +27,8 @@ export interface CatalogPlaylist {
   subcategory: string | null
   /** Folder inside the subcategory (Rap Game only, for now); null lands in "Autres". */
   subsubcategory: string | null
+  /** Rung on the genre's calmest-to-most-energetic ladder; null sorts last. */
+  energyRank: number | null
   tags: string[]
 }
 
@@ -81,9 +83,17 @@ function groupBy(playlists: CatalogPlaylist[], keyOf: (p: CatalogPlaylist) => st
     groups.set(key, items)
   }
   // Sorted here rather than relying on the order the catalog arrived in, so a
-  // folder listing is right regardless of how the artifact was built.
+  // folder listing is right regardless of how the artifact was built. Every
+  // folder reads calmest first, climbing its genre's own ladder; the name
+  // only breaks ties inside a rung. Playlists off the ladder entirely (null)
+  // close the list rather than sitting in the middle of it.
   for (const items of groups.values()) {
-    items.sort((a, b) => compareNames(a.name, b.name))
+    items.sort((a, b) => {
+      const rankA = a.energyRank ?? Number.MAX_SAFE_INTEGER
+      const rankB = b.energyRank ?? Number.MAX_SAFE_INTEGER
+      if (rankA !== rankB) return rankA - rankB
+      return compareNames(a.name, b.name)
+    })
   }
   return groups
 }

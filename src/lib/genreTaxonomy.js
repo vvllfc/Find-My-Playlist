@@ -251,6 +251,79 @@ function classifyFeelThe(remainder) {
   return { category, subcategory, subsubcategory: null, tags, displayRemainder: rest };
 }
 
+// ---------------------------------------------------------------------------
+// Energy ladders — the order playlists are listed in, calmest first.
+//
+// Each genre reads as its own scale, so the ladder is per-category rather than
+// one global vocabulary: Techno climbs through the hours of a night
+// (GoodNight → … → AfterVNR+) while Over The Clouds climbs through tempo
+// (ChillFort → … → VeryFast). A rung holds every spelling that means the same
+// step, and NO_MARKER is where playlists carrying none of the words land —
+// mid-ladder for tempo scales, absent for Techno, where an unmarked playlist
+// isn't a quieter hour, it's simply not part of the night.
+const NO_MARKER = '*';
+
+const ENERGY_LADDERS = {
+  Techno: ['GoodNight', 'Before', 'Middle', 'After', 'AfterVNR', 'AfterVNRPlus'],
+  'Over The Clouds': ['ChillFort', 'Chill', NO_MARKER, 'Higher', 'Fast', 'Speed', 'VeryFast'],
+  'Over The Sky': ['ChillFort', 'Chill', NO_MARKER, 'Higher', 'Speed'],
+  "Wallaby's": ['ChillFort', ['Chill', 'SlowTempo', 'Slow'], NO_MARKER, 'Dance', 'Hard', 'Fast', 'DanceVNR'],
+  Raggameff: ['ChillFort', ['Chill', 'Zepo'], NO_MARKER, 'Higher', 'Much Higher', 'Speed', 'SpeedVNR'],
+  'Rap Game': [['Chill', 'Zepo'], NO_MARKER, 'Dance', 'Higher', 'Faster', 'Much Higher'],
+  Vibes: ['ChillFort', 'Chill', NO_MARKER, 'Dance', 'Higher', 'Speed', 'Much Higher'],
+  'Jazzy Soul': ['ChillFort', 'Chill', NO_MARKER],
+  Reggaeton: ['ChillFort', 'Chill', NO_MARKER],
+  Classique: ['ChillFort', NO_MARKER],
+  Ska: ['ChillFort', NO_MARKER],
+  'D&B': ['Chill', NO_MARKER, 'Dance', 'Higher'],
+  Punk: ['ChillFort', 'Chill', NO_MARKER, 'Higher'],
+  'Hard Rock': ['Chill', NO_MARKER, 'Higher'],
+  Disco: ['Chill', NO_MARKER, 'Dance'],
+  Metal: [['SlowTempo', 'Slow'], NO_MARKER],
+};
+
+// The top Techno rung is written at least seven ways — AfterVNR160+,
+// AfterVNR 160+, After VNR150+, AfterVnr+, "AfterVNR Voice 160+" — and the
+// number differs per sub-family (140+ for House Sunrise, 150+ for Indus, 160+
+// elsewhere) while meaning the same thing: the fastest hour. Folding all of
+// them onto one canonical token keeps the ladder itself plain strings instead
+// of a regex per rung.
+function canonicalizeEnergy(normalized) {
+  const joined = normalized.replace(/after\s*vnr/g, 'aftervnr');
+  if (!joined.includes('aftervnr') || !joined.includes('+')) return joined;
+  return joined.replace('aftervnr', 'aftervnrplus');
+}
+
+/**
+ * Which rung of its genre's ladder a name sits on, or null when the genre has
+ * no ladder — or has one the name doesn't reach (Techno's unmarked handful),
+ * which the catalog lists last.
+ */
+export function energyRankOf(name, category) {
+  const ladder = ENERGY_LADDERS[category];
+  if (!ladder) return null;
+
+  const haystack = canonicalizeEnergy(normalize(name));
+  const candidates = [];
+  ladder.forEach((rung, index) => {
+    if (rung === NO_MARKER) return;
+    for (const token of Array.isArray(rung) ? rung : [rung]) {
+      candidates.push({ token: canonicalizeEnergy(normalize(token)), index });
+    }
+  });
+
+  // Longest first, so "ChillFort" wins over the "Chill" inside it and
+  // "AfterVNRPlus" over "AfterVNR" over "After" — the more specific spelling
+  // is always the rung actually meant.
+  candidates.sort((a, b) => b.token.length - a.token.length);
+  for (const candidate of candidates) {
+    if (haystack.includes(candidate.token)) return candidate.index;
+  }
+
+  const unmarked = ladder.indexOf(NO_MARKER);
+  return unmarked === -1 ? null : unmarked;
+}
+
 // `displayRemainder` is whatever's left of the name once the genre/sub-folder
 // words a classifier recognized are cut off the front — e.g. "Rap Game New
 // School Feel It" inside Rap Game / EN / New School becomes "Feel It". When
@@ -258,7 +331,17 @@ function classifyFeelThe(remainder) {
 // School"), the full original name is shown instead of a blank row.
 function finalizeDisplayName(name, result) {
   const { displayRemainder, ...rest } = result;
-  return { ...rest, displayName: (displayRemainder ?? '').trim() || name };
+  return {
+    ...rest,
+    displayName: (displayRemainder ?? '').trim() || name,
+    // Ranked on what's left after the folder's own words, not the whole name:
+    // "Wallaby's Hard Tracks Fast" is a Fast playlist in the Hard Tracks
+    // sub-genre, and matching the raw name would read that "Hard" as a tempo
+    // and file it above the Fast it actually is. The empty remainder of a
+    // playlist named exactly after its folder is deliberately *not* replaced
+    // by the full name here — it carries no tempo word, which is the point.
+    energyRank: energyRankOf(displayRemainder ?? name, result.category),
+  };
 }
 
 // Returns { category, subcategory, subsubcategory, tags, displayName }.
@@ -280,7 +363,7 @@ export function classifyPlaylistName(name, taxonomy) {
     return finalizeDisplayName(name, applyRule(rule, name.slice(rule.match.value.length).trim()));
   }
 
-  return { category: null, subcategory: null, subsubcategory: null, tags: [], displayName: name };
+  return { category: null, subcategory: null, subsubcategory: null, tags: [], displayName: name, energyRank: null };
 }
 
 export function deriveTagsFromName(name, taxonomy) {
