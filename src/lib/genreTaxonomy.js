@@ -32,6 +32,18 @@ function findTokenMapped(remainder, tokenMap) {
   return matched ? tokenMap[matched] : null;
 }
 
+// Drops `token` off the front of `text` when it's actually there — used to
+// build the name shown inside a genre/sub-folder, where the folder's own
+// words (genre, sub-genre, language, school…) would otherwise repeat on every
+// single row. Only strips a *leading* match: a token found mid-name (the
+// "genre word buried in the name" fallback some callers use) isn't safe to
+// cut out without risking a mangled result, so it's left alone.
+function stripLeadingToken(text, token) {
+  if (!token) return text;
+  if (!normalize(text).startsWith(normalize(token))) return text;
+  return text.slice(token.length).trim();
+}
+
 // "No Voice" is an explicit negation and always wins, even when the name also
 // carries a bare "Voice" earlier on ("...Rave Voice Melo Hard No Voice") —
 // those are playlists whose voice marker was retracted, not confirmed.
@@ -63,7 +75,9 @@ function applyRule(rule, remainder) {
 
   if (rule.voiceToken && hasVoice(remainder, rule.voiceToken)) tags.push('vocals');
 
-  return { category: rule.genre ?? null, subcategory, subsubcategory: null, tags };
+  const displayRemainder = stripLeadingToken(remainder, subcategory);
+
+  return { category: rule.genre ?? null, subcategory, subsubcategory: null, tags, displayRemainder };
 }
 
 // "Rap Game" is its own three-level family: language first (FR / ES, with EN
@@ -84,6 +98,7 @@ function classifyRapGame(remainder) {
   const languageTag = language ? (normalize(language.matched) === 'fr' ? 'FR' : 'ES') : RAP_GAME_DEFAULT_LANGUAGE;
 
   const school = findToken(rest, RAP_GAME_SCHOOLS);
+  const displayRemainder = stripLeadingToken(rest, school);
 
   const tags = ['Rap Game', languageTag];
   if (school) tags.push(school);
@@ -100,7 +115,7 @@ function classifyRapGame(remainder) {
   const era = findToken(remainder, RAP_GAME_ERA_TOKENS);
   if (era) tags.push(era);
 
-  return { category: 'Rap Game', subcategory: languageTag, subsubcategory: school, tags };
+  return { category: 'Rap Game', subcategory: languageTag, subsubcategory: school, tags, displayRemainder };
 }
 
 // "Feel The X" is its own family of naming, not a single fixed vocabulary —
@@ -191,10 +206,14 @@ function classifyFeelThe(remainder) {
 
   // Prefer a genre word at the start of what's left, but fall back to one
   // anywhere in the name rather than giving up on the sub-folder entirely.
-  const match = stripPrefixWord(rest, FEEL_WORDS) ?? (() => {
+  const leadingMatch = stripPrefixWord(rest, FEEL_WORDS);
+  const match = leadingMatch ?? (() => {
     const found = findToken(rest, FEEL_WORDS);
     return found ? { matched: found } : null;
   })();
+  // Only a leading match tells us exactly what to cut for display — a match
+  // found mid-name (the fallback above) has no safe position to strip from.
+  if (leadingMatch) rest = leadingMatch.rest;
 
   const isVibe = Boolean(match) && isVibeWord(match.matched);
   let category = VIBES_CATEGORY;
@@ -229,29 +248,39 @@ function classifyFeelThe(remainder) {
   const era = findToken(remainder, ERA_TOKENS);
   if (era) tags.push(era);
 
-  return { category, subcategory, subsubcategory: null, tags };
+  return { category, subcategory, subsubcategory: null, tags, displayRemainder: rest };
 }
 
-// Returns { category, subcategory, subsubcategory, tags }. `category` is the
-// top-level folder on the public catalog, `subcategory` the folder inside it
-// and `subsubcategory` a folder inside that (Rap Game only, for now); all
-// three are null when nothing matched, which lands the playlist in "Non
-// classées".
+// `displayRemainder` is whatever's left of the name once the genre/sub-folder
+// words a classifier recognized are cut off the front — e.g. "Rap Game New
+// School Feel It" inside Rap Game / EN / New School becomes "Feel It". When
+// that leaves nothing at all (a playlist literally named "Rap Game New
+// School"), the full original name is shown instead of a blank row.
+function finalizeDisplayName(name, result) {
+  const { displayRemainder, ...rest } = result;
+  return { ...rest, displayName: (displayRemainder ?? '').trim() || name };
+}
+
+// Returns { category, subcategory, subsubcategory, tags, displayName }.
+// `category` is the top-level folder on the public catalog, `subcategory` the
+// folder inside it and `subsubcategory` a folder inside that (Rap Game only,
+// for now); all three are null when nothing matched, which lands the
+// playlist in "Non classées".
 export function classifyPlaylistName(name, taxonomy) {
   if (matchesPrefix(name, FEEL_THE_PREFIX)) {
-    return classifyFeelThe(name.slice(FEEL_THE_PREFIX.length).trim());
+    return finalizeDisplayName(name, classifyFeelThe(name.slice(FEEL_THE_PREFIX.length).trim()));
   }
 
   if (matchesPrefix(name, RAP_GAME_PREFIX)) {
-    return classifyRapGame(name.slice(RAP_GAME_PREFIX.length).trim());
+    return finalizeDisplayName(name, classifyRapGame(name.slice(RAP_GAME_PREFIX.length).trim()));
   }
 
   for (const rule of taxonomy) {
     if (!matchesPrefix(name, rule.match.value)) continue;
-    return applyRule(rule, name.slice(rule.match.value.length).trim());
+    return finalizeDisplayName(name, applyRule(rule, name.slice(rule.match.value.length).trim()));
   }
 
-  return { category: null, subcategory: null, subsubcategory: null, tags: [] };
+  return { category: null, subcategory: null, subsubcategory: null, tags: [], displayName: name };
 }
 
 export function deriveTagsFromName(name, taxonomy) {

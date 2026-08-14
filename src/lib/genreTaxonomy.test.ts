@@ -13,6 +13,9 @@ describe('classifyPlaylistName', () => {
       // Tagged with the bare language, not the sub-folder's name: "French" and
       // "French Vibe" would be two chips saying one thing.
       tags: ['Vibes', 'French', 'chill'],
+      // "Feel The" and the language/genre words are the folder's own text —
+      // stripped from what's shown inside French Vibe, leaving just "Chill".
+      displayName: 'Chill',
     })
     expect(classify('Feel The RussianVibe')).toMatchObject({ subcategory: 'Russian Vibe' })
     expect(classify('Feel The Netherlands Vibe')).toMatchObject({ subcategory: 'Netherlands Vibe' })
@@ -27,6 +30,7 @@ describe('classifyPlaylistName', () => {
       subcategory: 'English Vibe',
       subsubcategory: null,
       tags: ['Vibes', 'English', 'chill'],
+      displayName: 'Chill',
     })
     expect(classify('Feel The ElectroVibe Higher')).toMatchObject({ subcategory: 'English Vibe' })
     expect(classify('Feel The PianoVibe Chill')).toMatchObject({ subcategory: 'English Vibe' })
@@ -53,12 +57,16 @@ describe('classifyPlaylistName', () => {
       subcategory: null,
       subsubcategory: null,
       tags: ['Punk'],
+      // Nothing left once "Feel The" and "Punk" are cut — falls back to the
+      // full original name rather than showing a blank row.
+      displayName: 'Feel The Punk',
     })
     expect(classify('Feel The French Punk Chill')).toEqual({
       category: 'Punk',
       subcategory: null,
       subsubcategory: null,
       tags: ['Punk', 'French', 'chill'],
+      displayName: 'Chill',
     })
     expect(classify('Feel The German Metal')).toMatchObject({ category: 'Metal', tags: ['Metal', 'German'] })
     expect(classify('Feel The Disco Now')).toMatchObject({ category: 'Disco' })
@@ -72,6 +80,7 @@ describe('classifyPlaylistName', () => {
       subcategory: 'Latino',
       subsubcategory: null,
       tags: ['Vibes', 'Latino', 'Spanish', 'chill'],
+      displayName: 'Chill',
     })
   })
 
@@ -81,6 +90,9 @@ describe('classifyPlaylistName', () => {
       subcategory: null,
       subsubcategory: null,
       tags: ['Vibes'],
+      // No genre word to cut, so only "Feel The" (already stripped by the
+      // caller before reaching here) is gone — "Happiness" stays as-is.
+      displayName: 'Happiness',
     })
     expect(classify('Feel The Happiness Like Before')).toMatchObject({
       category: 'Vibes',
@@ -97,6 +109,7 @@ describe('classifyPlaylistName', () => {
       subcategory: 'Nappe',
       subsubcategory: null,
       tags: ['Techno', 'Nappe', 'AfterVNR', 'vocals'],
+      displayName: 'AfterVNR Voice',
     })
     expect(classify('Techno Acide AfterVNR160+ Voice')).toMatchObject({
       subcategory: 'Acide',
@@ -119,6 +132,7 @@ describe('classifyPlaylistName', () => {
       subcategory: 'Deep Rave',
       subsubcategory: null,
       tags: ["Wallaby's", 'Deep Rave', 'chill+'],
+      displayName: 'ChillFort',
     })
     expect(classify('Wallaby’s Rave Voice')).toMatchObject({ category: "Wallaby's" })
     expect(classify("WALLABY'S TRANCE")).toMatchObject({ subcategory: 'Trance' })
@@ -132,6 +146,9 @@ describe('classifyPlaylistName', () => {
       subcategory: null,
       subsubcategory: null,
       tags: ['D&B'],
+      // No subgenre tokens for this family, so nothing more to cut than the
+      // genre prefix already removed before reaching here.
+      displayName: 'Nappe Chill Voice',
     })
     expect(classify('Jazzy Summer ChillFort')).toMatchObject({ category: 'Jazzy Soul', subcategory: 'Summer' })
     expect(classify('Raggameff Dubbidub Much Higher')).toMatchObject({ category: 'Raggameff', subcategory: 'Dubbidub' })
@@ -143,12 +160,14 @@ describe('classifyPlaylistName', () => {
       subcategory: null,
       subsubcategory: null,
       tags: ['Classique'],
+      displayName: 'Opera',
     })
     expect(classify('Classique Chillfort')).toEqual({
       category: 'Classique',
       subcategory: null,
       subsubcategory: null,
       tags: ['Classique'],
+      displayName: 'Chillfort',
     })
     expect(classify('Dubstep')).toMatchObject({ category: 'Dubstep' })
     expect(classify('You Must Feel This')).toMatchObject({ category: 'You Must Feel' })
@@ -161,12 +180,14 @@ describe('classifyPlaylistName', () => {
       subcategory: 'Boiler',
       subsubcategory: null,
       tags: ['Boiler'],
+      displayName: '8.0',
     })
     expect(classify('Futur Set 17')).toEqual({
       category: 'Boiler',
       subcategory: 'Futur Set',
       subsubcategory: null,
       tags: ['Boiler', 'Futur Set'],
+      displayName: '17',
     })
   })
 
@@ -177,6 +198,7 @@ describe('classifyPlaylistName', () => {
       subcategory: 'EN',
       subsubcategory: 'Old School',
       tags: ['Rap Game', 'EN', 'Old School', 'Now'],
+      displayName: 'Now',
     })
     expect(classify('Rap Game New School Grime')).toEqual({
       category: 'Rap Game',
@@ -184,6 +206,7 @@ describe('classifyPlaylistName', () => {
       subsubcategory: 'New School',
       // New School EN is the one group with its own tag vocabulary so far.
       tags: ['Rap Game', 'EN', 'New School', 'Grime'],
+      displayName: 'Grime',
     })
     // A language marker moves the sub-folder, and school only applies when
     // the name actually names one.
@@ -192,18 +215,21 @@ describe('classifyPlaylistName', () => {
       subcategory: 'FR',
       subsubcategory: 'Old School',
       tags: ['Rap Game', 'FR', 'Old School', 'Now'],
+      displayName: 'Now Zepo',
     })
     expect(classify('Rap Game FR New Gen Much Higher')).toEqual({
       category: 'Rap Game',
       subcategory: 'FR',
       subsubcategory: 'New Gen',
       tags: ['Rap Game', 'FR', 'New Gen', 'energetic+'],
+      displayName: 'Much Higher',
     })
     expect(classify('Rap Game ES Feel It Zepo')).toEqual({
       category: 'Rap Game',
       subcategory: 'ES',
       subsubcategory: null,
       tags: ['Rap Game', 'ES'],
+      displayName: 'Feel It Zepo',
     })
     // No school named at all, still lands under the language.
     expect(classify('Rap Game Fr Dance')).toEqual({
@@ -211,6 +237,19 @@ describe('classifyPlaylistName', () => {
       subcategory: 'FR',
       subsubcategory: null,
       tags: ['Rap Game', 'FR'],
+      displayName: 'Dance',
+    })
+  })
+
+  it('shows the full name when a playlist is named exactly the genre/school prefix', () => {
+    // "Rap Game New School" itself, with nothing after it — stripping down to
+    // the school would leave a blank row, so the full name is kept instead.
+    expect(classify('Rap Game New School')).toEqual({
+      category: 'Rap Game',
+      subcategory: 'EN',
+      subsubcategory: 'New School',
+      tags: ['Rap Game', 'EN', 'New School'],
+      displayName: 'Rap Game New School',
     })
   })
 
@@ -230,8 +269,20 @@ describe('classifyPlaylistName', () => {
   })
 
   it('returns no category for names matching no family', () => {
-    expect(classify('Best Of 02/2026')).toEqual({ category: null, subcategory: null, subsubcategory: null, tags: [] })
-    expect(classify('Lost & Found')).toEqual({ category: null, subcategory: null, subsubcategory: null, tags: [] })
+    expect(classify('Best Of 02/2026')).toEqual({
+      category: null,
+      subcategory: null,
+      subsubcategory: null,
+      tags: [],
+      displayName: 'Best Of 02/2026',
+    })
+    expect(classify('Lost & Found')).toEqual({
+      category: null,
+      subcategory: null,
+      subsubcategory: null,
+      tags: [],
+      displayName: 'Lost & Found',
+    })
   })
 })
 

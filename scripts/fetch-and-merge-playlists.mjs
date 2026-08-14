@@ -18,10 +18,14 @@ function getEnv() {
 }
 
 // Gitignored, persisted between CI runs via actions/cache (see deploy.yml) —
-// not committed. Keyed by playlist ID to { trackCount, snapshotId }; a
-// per-playlist track-count call (the expensive part, Spotify's Development
-// Mode quota is easy to exhaust with hundreds of playlists) is only made
-// when the playlist's snapshot_id has actually changed since last time.
+// not committed. Keyed by playlist ID to { trackCount, totalDurationMs,
+// snapshotId }; a per-playlist fetch (the expensive part, Spotify's
+// Development Mode quota is easy to exhaust with hundreds of playlists) is
+// only made when the playlist's snapshot_id has actually changed since last
+// time, or (once, the run this shipped) when a cached entry predates
+// totalDurationMs existing at all. File name predates totalDurationMs and is
+// kept as-is — renaming it would just discard the existing trackCount cache
+// for no benefit, since every entry needs a refetch for the new field anyway.
 const TRACK_COUNT_CACHE_PATH = 'data/track-counts-cache.json'
 
 // Same persistence mechanism, holding the last successfully fetched playlist
@@ -109,22 +113,33 @@ async function fetchWithRetry(url, accessToken, attempt = 0) {
 // object (both the /v1/me/playlists list and GET /v1/playlists/{id} itself)
 // no longer reliably reports a count — confirmed by 200 OK responses with the
 // field empty. The playlist-items endpoint (the old /tracks sub-resource,
-// renamed to /items) still returns an accurate `total` in its paging object,
-// so use that instead, asking for just 1 item to keep the payload tiny.
-async function fetchTrackCount(accessToken, playlistId) {
-  const res = await fetchWithRetry(`https://api.spotify.com/v1/playlists/${playlistId}/items?limit=1&fields=total`, accessToken)
+// renamed to /items) still returns an accurate `total` in its paging object.
+// Total listening time isn't exposed anywhere cheap, so getting it means
+// paginating every item and summing duration_ms — 100 at a time (Spotify's
+// max page size) to keep the call count close to what the count-only fetch
+// used to cost. Across the real catalog only ~30 playlists break 100 tracks,
+// so this adds a handful of extra calls overall, not one per playlist.
+async function fetchPlaylistStats(accessToken, playlistId) {
+  let trackCount = 0
+  let totalDurationMs = 0
+  let url = `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=100&fields=items(track(duration_ms)),total,next`
 
-  if (!res.ok) {
-    console.warn(`[fetch-and-merge-playlists] track count fetch failed for ${playlistId}: ${res.status} ${await res.text()}`)
-    return 0
+  while (url) {
+    const res = await fetchWithRetry(url, accessToken)
+    if (!res.ok) {
+      console.warn(`[fetch-and-merge-playlists] playlist stats fetch failed for ${playlistId}: ${res.status} ${await res.text()}`)
+      return { trackCount: 0, totalDurationMs: 0 }
+    }
+
+    const data = await res.json()
+    if (typeof data.total === 'number') trackCount = data.total
+    for (const item of data.items ?? []) {
+      totalDurationMs += item?.track?.duration_ms ?? 0
+    }
+    url = data.next
   }
 
-  const data = await res.json()
-  if (typeof data.total !== 'number') {
-    console.warn(`[fetch-and-merge-playlists] track count missing in response for ${playlistId}: ${JSON.stringify(data)}`)
-    return 0
-  }
-  return data.total
+  return { trackCount, totalDurationMs }
 }
 
 async function fetchOwnPublicPlaylists(accessToken) {
@@ -154,11 +169,12 @@ async function fetchOwnPublicPlaylists(accessToken) {
         name: item.name,
         imageUrl: item.images?.[0]?.url ?? null,
         trackCount: 0,
+        totalDurationMs: 0,
         externalUrl: item.external_urls?.spotify ?? `https://open.spotify.com/playlist/${item.id}`,
       })
       // snapshot_id changes whenever a playlist's tracks/order change — comes
       // free with the list response, so it's a zero-cost way to tell whether
-      // a per-playlist track-count call is actually worth making below.
+      // a per-playlist stats call is actually worth making below.
       snapshotIds[item.id] = item.snapshot_id
     }
     url = data.next
@@ -169,17 +185,23 @@ async function fetchOwnPublicPlaylists(accessToken) {
   await mapWithConcurrency(playlists, 5, async (playlist) => {
     const cached = cache[playlist.id]
     const snapshotId = snapshotIds[playlist.id]
-    if (cached && cached.snapshotId === snapshotId) {
+    // A cache entry from before totalDurationMs existed still counts as a
+    // miss — the whole point of the field is to have a real value everywhere,
+    // not to leave old playlists silently stuck at 0.
+    if (cached && cached.snapshotId === snapshotId && typeof cached.totalDurationMs === 'number') {
       playlist.trackCount = cached.trackCount
+      playlist.totalDurationMs = cached.totalDurationMs
       cacheHits += 1
       return
     }
-    playlist.trackCount = await fetchTrackCount(accessToken, playlist.id)
-    cache[playlist.id] = { trackCount: playlist.trackCount, snapshotId }
+    const stats = await fetchPlaylistStats(accessToken, playlist.id)
+    playlist.trackCount = stats.trackCount
+    playlist.totalDurationMs = stats.totalDurationMs
+    cache[playlist.id] = { trackCount: stats.trackCount, totalDurationMs: stats.totalDurationMs, snapshotId }
   })
   await writeFile(path.join(rootDir, TRACK_COUNT_CACHE_PATH), JSON.stringify(cache, null, 2))
   console.log(
-    `[fetch-and-merge-playlists] track counts: ${cacheHits} unchanged (skipped), ${playlists.length - cacheHits} fetched from Spotify (${playlists.filter((p) => p.trackCount > 0).length} non-zero total).`,
+    `[fetch-and-merge-playlists] playlist stats: ${cacheHits} unchanged (skipped), ${playlists.length - cacheHits} fetched from Spotify (${playlists.filter((p) => p.trackCount > 0).length} non-zero total).`,
   )
 
   return playlists
@@ -262,13 +284,14 @@ async function main() {
     const entry = content.playlists[playlist.id]
     if (entry?.tags) manuallyTagged += 1
     if (entry?.description) described += 1
-    const { category, subcategory, subsubcategory, tags } = classifyPlaylistName(playlist.name, taxonomy)
+    const { category, subcategory, subsubcategory, tags, displayName } = classifyPlaylistName(playlist.name, taxonomy)
     return {
       ...playlist,
       description: entry?.description ?? '',
       category,
       subcategory,
       subsubcategory,
+      displayName,
       tags: entry?.tags ?? tags,
     }
   })

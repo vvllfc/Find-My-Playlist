@@ -11,8 +11,16 @@ export interface CatalogPlaylist {
   name: string
   imageUrl: string | null
   trackCount: number
+  /** Milliseconds. Not available from Spotify as cheaply as trackCount, so a
+   *  playlist that hasn't gone through the paginated fetch yet reads 0 —
+   *  callers should treat 0 as "unknown" and not render a badge for it. */
+  totalDurationMs: number
   externalUrl: string
   description: string
+  /** Name with the current folder's own words cut off the front, e.g. "Feel It"
+   *  inside Rap Game / EN / New School. Falls back to the full name when that
+   *  would otherwise be blank. */
+  displayName: string
   /** Top-level folder on the public catalog; null lands in "Non classées". */
   category: string | null
   /** Folder inside the category (large genres only); null lands in "Autres". */
@@ -174,4 +182,20 @@ export function genreLevelTags(playlists: CatalogPlaylist[]): string[] {
     }
   }
   return [...genres].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+}
+
+/**
+ * "2 h 27" / "42 min" for a playlist's total listening time. Null for 0 —
+ * either a genuinely empty playlist or, more likely, one that hasn't been
+ * through the paginated Spotify fetch yet (see `totalDurationMs` on
+ * `CatalogPlaylist`) — callers should skip the badge entirely rather than
+ * show a misleading "0 min".
+ */
+export function formatListeningTime(totalDurationMs: number): string | null {
+  if (!totalDurationMs) return null
+  const totalMinutes = Math.round(totalDurationMs / 60_000)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours === 0) return `${minutes} min`
+  return `${hours} h ${String(minutes).padStart(2, '0')}`
 }

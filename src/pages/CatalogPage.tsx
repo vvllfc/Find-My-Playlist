@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
-import { buildFolderTree, findFolder, genreLevelTags, type CatalogPlaylist, type Folder } from '../lib/catalog'
+import {
+  buildFolderTree,
+  findFolder,
+  formatListeningTime,
+  genreLevelTags,
+  type CatalogPlaylist,
+  type Folder,
+} from '../lib/catalog'
 import './CatalogPage.css'
 
 export default function CatalogPage({ segments }: { segments: string[] }) {
@@ -236,31 +243,41 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
 
             {(isSearching || listedFolder || activeTags.size > 0) && (
               <div className="tracklist" key={routeKey}>
-                {filtered.map((playlist, index) => (
-                  <a
-                    key={playlist.id}
-                    href={playlist.externalUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="row"
-                  >
-                    <span className="row-index">{String(index + 1).padStart(2, '0')}</span>
-                    <span className="row-main">
-                      <p className="name">{playlist.name}</p>
-                      {playlist.description && <p className="desc">{playlist.description}</p>}
-                      <span className="row-tags">
-                        {playlist.tags
-                          .filter((tag) => !impliedTags.has(tag))
-                          .map((tag) => (
-                            <span key={tag} className={activeTags.has(tag) ? 'chip matched' : 'chip'}>
-                              {tag}
-                            </span>
-                          ))}
+                {filtered.map((playlist, index) => {
+                  const listeningTime = formatListeningTime(playlist.totalDurationMs)
+                  return (
+                    <a
+                      key={playlist.id}
+                      href={playlist.externalUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="row"
+                    >
+                      <span className="row-index">{String(index + 1).padStart(2, '0')}</span>
+                      <span className="row-main">
+                        {/* Full name only while searching, where finding the exact
+                            match matters; browsing a folder shows just what's left
+                            once its own words (genre, language, school…) are cut,
+                            so the same text doesn't repeat on every row. */}
+                        <p className="name">{isSearching ? playlist.name : playlist.displayName}</p>
+                        {playlist.description && <p className="desc">{playlist.description}</p>}
+                        <span className="row-tags">
+                          {playlist.tags
+                            .filter((tag) => !impliedTags.has(tag))
+                            .map((tag) => (
+                              <span key={tag} className={activeTags.has(tag) ? 'chip matched' : 'chip'}>
+                                {tag}
+                              </span>
+                            ))}
+                        </span>
                       </span>
-                    </span>
-                    <span className="row-count">{playlist.trackCount} titres</span>
-                  </a>
-                ))}
+                      <span className="row-meta">
+                        {listeningTime && <span className="row-duration">{listeningTime}</span>}
+                        <span className="row-count">{playlist.trackCount} titres</span>
+                      </span>
+                    </a>
+                  )
+                })}
                 {filtered.length === 0 && (
                   <p className="catalog-empty">Aucune playlist ne correspond à ta recherche.</p>
                 )}

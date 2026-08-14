@@ -5,6 +5,7 @@
     "description": "Sample Spotify description — chill session.",
     "imageUrl": null,
     "trackCount": 42,
+    "totalDurationMs": 8820000,
     "externalUrl": "https://open.spotify.com/playlist/sample-feel-the-vibe-chill"
   },
   {
@@ -13,6 +14,7 @@
     "description": "Sample Spotify description — energetic session.",
     "imageUrl": null,
     "trackCount": 38,
+    "totalDurationMs": 7600000,
     "externalUrl": "https://open.spotify.com/playlist/sample-feel-the-vibe-much-higher"
   },
   {
@@ -21,6 +23,7 @@
     "description": "",
     "imageUrl": null,
     "trackCount": 25,
+    "totalDurationMs": 5000000,
     "externalUrl": "https://open.spotify.com/playlist/sample-feel-the-hardrock"
   },
   {
@@ -29,6 +32,7 @@
     "description": "Sample Spotify description — vocal techno.",
     "imageUrl": null,
     "trackCount": 60,
+    "totalDurationMs": 12000000,
     "externalUrl": "https://open.spotify.com/playlist/sample-techno-nappe-aftervnr-voice"
   },
   {
@@ -37,6 +41,7 @@
     "description": "",
     "imageUrl": null,
     "trackCount": 55,
+    "totalDurationMs": 11000000,
     "externalUrl": "https://open.spotify.com/playlist/sample-techno-minimal-after"
   },
   {
@@ -45,6 +50,7 @@
     "description": "",
     "imageUrl": null,
     "trackCount": 30,
+    "totalDurationMs": 6000000,
     "externalUrl": "https://open.spotify.com/playlist/sample-dnb-voice"
   }
 ]

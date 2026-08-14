@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildFolderTree,
   findFolder,
+  formatListeningTime,
   listAllFolders,
   OTHERS_SUBFOLDER,
   SUBFOLDER_MIN_PLAYLISTS,
@@ -18,11 +19,14 @@ function playlist(
   subsubcategory: string | null = null,
 ): CatalogPlaylist {
   nextId += 1
+  const playlistName = name ?? `Playlist ${String(nextId).padStart(4, '0')}`
   return {
     id: `id-${nextId}`,
-    name: name ?? `Playlist ${String(nextId).padStart(4, '0')}`,
+    name: playlistName,
+    displayName: playlistName,
     imageUrl: null,
     trackCount: 10,
+    totalDurationMs: 0,
     externalUrl: 'https://open.spotify.com/playlist/x',
     description: '',
     category,
@@ -148,6 +152,21 @@ describe('findFolder', () => {
     expect(deep?.subsubfolder?.key).toBe('Rap Game/EN/New School')
     // A sub-slug that resolves but has no third level of its own to descend into.
     expect(findFolder(deepTree, 'rap-game', 'en', 'unknown')).toBeNull()
+  })
+})
+
+describe('formatListeningTime', () => {
+  it('formats under an hour as minutes only', () => {
+    expect(formatListeningTime(42 * 60_000)).toBe('42 min')
+  })
+
+  it('formats an hour or more as "H h MM"', () => {
+    expect(formatListeningTime(2 * 3_600_000 + 27 * 60_000)).toBe('2 h 27')
+    expect(formatListeningTime(3_600_000)).toBe('1 h 00')
+  })
+
+  it('returns null for zero — unknown, not an empty playlist', () => {
+    expect(formatListeningTime(0)).toBeNull()
   })
 })
 
