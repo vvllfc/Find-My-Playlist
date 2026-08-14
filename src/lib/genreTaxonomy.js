@@ -190,6 +190,17 @@ const LANGUAGES = [
 const VIBE_WORDS = ['electrovibe', 'pianovibe', 'rockvibe', 'vibe'];
 const DEFAULT_VIBE_LANGUAGE = 'English';
 
+// What a Vibe is a vibe *of*. The language names the folder, so it drops out
+// of the displayed name — but this doesn't, and without it a single folder
+// shows three separate playlists all called "ChillFort". A bare "Vibe" claims
+// nothing, so it contributes no word.
+const VIBE_QUALIFIERS = {
+  rockvibe: 'Rock',
+  electrovibe: 'Electro',
+  pianovibe: 'Piano',
+  vibe: null,
+};
+
 // Everything outside the Vibe family keeps its own literal genre as the
 // sub-folder, with the language demoted to a tag ("French Punk" is Punk).
 const GENRE_WORDS = {
@@ -287,12 +298,22 @@ function classifyFeelThe(remainder) {
   const era = findToken(remainder, ERA_TOKENS);
   if (era) tags.push(era);
 
-  // The language goes back into the displayed name unless the folder already
-  // says it. Inside "French Vibe" the word is redundant, but inside Disco or
-  // Punk the folder says nothing about language — and dropping it would leave
-  // "Feel The French Disco" showing as nothing at all, or a row of Chills with
-  // no way to tell the French one apart.
-  const displayRemainder = isVibe || !language ? rest : `${language.matched} ${rest}`.trim();
+  // What goes back into the displayed name is whatever the folder doesn't
+  // already say. For a Vibe that's the qualifier (Rock/Electro/Piano) but not
+  // the language, which names the folder; everywhere else it's the language,
+  // since Disco and Punk say nothing about it. Dropping either left rows that
+  // read as nothing but "Chill", several to a folder and none of them telling
+  // you which was which.
+  //
+  // Only a leading match is re-added: when the word was found mid-name it was
+  // never cut in the first place, so putting it back would say it twice.
+  let displayRemainder = rest;
+  if (isVibe) {
+    const qualifier = leadingMatch ? VIBE_QUALIFIERS[normalize(match.matched)] : null;
+    if (qualifier) displayRemainder = `${qualifier} ${rest}`.trim();
+  } else if (language) {
+    displayRemainder = `${language.matched} ${rest}`.trim();
+  }
 
   return { category, subcategory, subsubcategory: null, tags, displayRemainder };
 }

@@ -38,6 +38,21 @@ describe('classifyPlaylistName', () => {
     expect(classify('Feel The PianoVibe Chill')).toMatchObject({ subcategory: 'English Vibe' })
   })
 
+  it('keeps what a Vibe is a vibe of in the name, dropping only the language', () => {
+    // All three of these share one folder, and all three would otherwise be
+    // displayed as nothing but "ChillFort".
+    expect(classify('Feel The RockVibe ChillFort').displayName).toBe('Rock ChillFort')
+    expect(classify('Feel The ElectroVibe ChillFort').displayName).toBe('Electro ChillFort')
+    expect(classify('Feel The Vibe ChillFort').displayName).toBe('ChillFort')
+    expect(classify('Feel The PianoVibe Chill').displayName).toBe('Piano Chill')
+    // The language names the folder, so it goes — the qualifier stays.
+    expect(classify('Feel The Spanish Rockvibe Chill').displayName).toBe('Rock Chill')
+    expect(classify('Feel The FrenchRockVibe Like Before').displayName).toBe('Rock Like Before')
+    expect(classify('Feel The FrenchVibe Chill').displayName).toBe('Chill')
+    // Nothing but the qualifier left is still worth showing on its own.
+    expect(classify('Feel The Rockvibe').displayName).toBe('Rock')
+  })
+
   it('tags Rock on the playlists actually named RockVibe, and only those', () => {
     expect(classify('Feel The RockVibe Much Higher').tags).toEqual([
       'Vibes',
