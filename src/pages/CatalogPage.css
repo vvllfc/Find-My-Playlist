@@ -155,7 +155,8 @@
   cursor: pointer;
 }
 .tag:focus-visible,
-.row:focus-visible {
+.chip:focus-visible,
+.row-link:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -222,14 +223,26 @@
   padding: 0 0.5rem;
 }
 .row {
+  position: relative;
   display: grid;
   grid-template-columns: 2.75rem 1fr auto;
   align-items: center;
   gap: 1.25rem;
   padding: 1rem 0.35rem;
   border-bottom: 1px solid var(--border);
+  color: inherit;
+}
+/* The link sits on the name, then stretches back over the whole row, so the
+   row still opens Spotify from anywhere — while leaving the tags below it as
+   real buttons rather than text inside a link. */
+.row-link {
   text-decoration: none;
   color: inherit;
+}
+.row-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
 }
 
 @media (max-width: 480px) {
@@ -263,7 +276,11 @@
   flex-wrap: wrap;
   gap: 0.4rem;
 }
+/* Above the stretched row link, so a click filters by the tag instead of
+   opening the playlist. */
 .chip {
+  position: relative;
+  z-index: 1;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
@@ -273,6 +290,11 @@
   background: rgba(166, 107, 255, 0.12);
   border: 1px solid rgba(166, 107, 255, 0.3);
   color: var(--muted);
+  cursor: pointer;
+}
+.chip:hover {
+  border-color: var(--violet);
+  color: var(--ink);
 }
 /* Highlights only when this tag is currently selected in the mixer above —
    not tied to any specific tag value. */

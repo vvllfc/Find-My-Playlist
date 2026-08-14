@@ -287,7 +287,14 @@ function classifyFeelThe(remainder) {
   const era = findToken(remainder, ERA_TOKENS);
   if (era) tags.push(era);
 
-  return { category, subcategory, subsubcategory: null, tags, displayRemainder: rest };
+  // The language goes back into the displayed name unless the folder already
+  // says it. Inside "French Vibe" the word is redundant, but inside Disco or
+  // Punk the folder says nothing about language — and dropping it would leave
+  // "Feel The French Disco" showing as nothing at all, or a row of Chills with
+  // no way to tell the French one apart.
+  const displayRemainder = isVibe || !language ? rest : `${language.matched} ${rest}`.trim();
+
+  return { category, subcategory, subsubcategory: null, tags, displayRemainder };
 }
 
 // ---------------------------------------------------------------------------

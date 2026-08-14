@@ -246,36 +246,49 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                 {filtered.map((playlist, index) => {
                   const listeningTime = formatListeningTime(playlist.totalDurationMs)
                   return (
-                    <a
-                      key={playlist.id}
-                      href={playlist.externalUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="row"
-                    >
+                    // A div rather than the link itself: the tags below the name
+                    // are buttons now, and a button can't sit inside an anchor.
+                    // The name's link is stretched back over the whole row in
+                    // CSS, so clicking anywhere still opens Spotify — except on
+                    // a tag, which sits above it and filters instead.
+                    <div key={playlist.id} className="row">
                       <span className="row-index">{String(index + 1).padStart(2, '0')}</span>
                       <span className="row-main">
                         {/* Full name only while searching, where finding the exact
                             match matters; browsing a folder shows just what's left
                             once its own words (genre, language, school…) are cut,
                             so the same text doesn't repeat on every row. */}
-                        <p className="name">{isSearching ? playlist.name : playlist.displayName}</p>
+                        <p className="name">
+                          <a href={playlist.externalUrl} target="_blank" rel="noreferrer" className="row-link">
+                            {isSearching ? playlist.name : playlist.displayName}
+                          </a>
+                        </p>
                         {playlist.description && <p className="desc">{playlist.description}</p>}
                         <span className="row-tags">
                           {playlist.tags
                             .filter((tag) => !impliedTags.has(tag))
-                            .map((tag) => (
-                              <span key={tag} className={activeTags.has(tag) ? 'chip matched' : 'chip'}>
-                                {tag}
-                              </span>
-                            ))}
+                            .map((tag) => {
+                              const selected = activeTags.has(tag)
+                              return (
+                                <button
+                                  key={tag}
+                                  type="button"
+                                  className={selected ? 'chip matched' : 'chip'}
+                                  aria-pressed={selected}
+                                  aria-label={`${selected ? 'Retirer le filtre' : 'Filtrer par'} ${tag}`}
+                                  onClick={() => toggleTag(tag)}
+                                >
+                                  {tag}
+                                </button>
+                              )
+                            })}
                         </span>
                       </span>
                       <span className="row-meta">
                         {listeningTime && <span className="row-duration">{listeningTime}</span>}
                         <span className="row-count">{playlist.trackCount} titres</span>
                       </span>
-                    </a>
+                    </div>
                   )
                 })}
                 {filtered.length === 0 && (

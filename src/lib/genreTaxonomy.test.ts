@@ -69,9 +69,12 @@ describe('classifyPlaylistName', () => {
       subcategory: null,
       subsubcategory: null,
       tags: ['Punk', 'French', 'chill'],
-      displayName: 'Chill',
+      // The Punk folder says nothing about language, so "French" stays in the
+      // name — otherwise this is one "Chill" among several, indistinguishable.
+      displayName: 'French Chill',
       energyRank: 1,
     })
+    expect(classify('Feel The French Disco')).toMatchObject({ category: 'Disco', displayName: 'French' })
     expect(classify('Feel The German Metal')).toMatchObject({ category: 'Metal', tags: ['Metal', 'German'] })
     expect(classify('Feel The Disco Now')).toMatchObject({ category: 'Disco' })
     expect(classify('Feel The HardRock')).toMatchObject({ category: 'Hard Rock' })
@@ -84,9 +87,12 @@ describe('classifyPlaylistName', () => {
       subcategory: 'Latino',
       subsubcategory: null,
       tags: ['Vibes', 'Latino', 'Spanish', 'chill'],
-      displayName: 'Chill',
+      // Latino is the folder, not Spanish — so the language stays visible here
+      // too, unlike inside a "<Language> Vibe" folder that already names it.
+      displayName: 'Spanish Chill',
       energyRank: 1,
     })
+    expect(classify('Feel The FrenchVibe Chill')).toMatchObject({ displayName: 'Chill' })
   })
 
   it('still files a Feel The… name with no recognized genre word under Vibes (Autres)', () => {
