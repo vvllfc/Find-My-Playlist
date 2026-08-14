@@ -148,6 +148,25 @@ describe('buildFolderTree', () => {
     const es = rapGame.subfolders?.find((f) => f.name === 'ES')
     expect(es?.subfolders).toBeNull()
   })
+
+  it('lets an already-open genre split deeper than the size bar for a first split', () => {
+    // Techno's Aalmost: 18 playlists, under SUBFOLDER_MIN_PLAYLISTS, but its
+    // names divide along Lectro outright, so refusing the split on size alone
+    // would ignore what the names plainly say.
+    expect(18).toBeLessThan(SUBFOLDER_MIN_PLAYLISTS)
+    const tree = buildFolderTree([
+      ...many(30, 'Techno', 'House', 'Sunset'),
+      ...many(8, 'Techno', 'Aalmost', 'Lectro'),
+      ...many(10, 'Techno', 'Aalmost', null),
+    ])
+    const aalmost = tree[0].subfolders?.find((f) => f.name === 'Aalmost')
+    expect(aalmost?.playlists).toHaveLength(18)
+    expect(aalmost?.subfolders?.map((f) => f.name)).toEqual(['Lectro', OTHERS_SUBFOLDER])
+
+    // The bar still guards the first split: a small genre stays flat.
+    const small = buildFolderTree([...many(6, 'Ska', 'A'), ...many(6, 'Ska', 'B')])
+    expect(small[0].subfolders).toBeNull()
+  })
 })
 
 describe('findFolder', () => {

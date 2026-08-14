@@ -100,22 +100,33 @@ function groupBy(playlists: CatalogPlaylist[], keyOf: (p: CatalogPlaylist) => st
 
 // One level of grouping, applied recursively: `levelsOf` is the chain of
 // extractors still to try, this level's folder name off the front, the rest
-// tried one level deeper inside each group. Only Rap Game has a third level
-// today — everyone else's second extractor groups on a field that's always
-// null, which the distinct-values check below turns into "no further split"
-// on its own.
+// tried one level deeper inside each group. A genre whose names carry nothing
+// for the next level groups on a field that's always null, which the
+// distinct-values check below turns into "no further split" on its own.
+//
+// `requireMinSize` guards the first split only. That bar exists to stop a
+// modest genre being scattered across folders nobody asked for, but once a
+// genre is already open its sub-folders divide along names that say so
+// outright (Techno's House → Sunrise/Sunset, Aalmost → Lectro), and holding
+// those to the same size bar would refuse splits that are plainly intended.
+// The distinct-count and average checks still apply at every level.
 function buildSubfolders(
   keyPrefix: string,
   playlists: CatalogPlaylist[],
   levelsOf: Array<(p: CatalogPlaylist) => string | null>,
+  requireMinSize: boolean,
 ): Folder[] | null {
   const [levelOf, ...restLevels] = levelsOf
   if (!levelOf) return null
-  if (keyPrefix === UNCATEGORIZED || playlists.length < SUBFOLDER_MIN_PLAYLISTS) return null
-  const distinct = new Set(playlists.map(levelOf).filter((s): s is string => s !== null))
-  if (distinct.size < SUBFOLDER_MIN_DISTINCT) return null
+  if (keyPrefix === UNCATEGORIZED) return null
+  if (requireMinSize && playlists.length < SUBFOLDER_MIN_PLAYLISTS) return null
 
+  // Counted on the folders the split would actually produce, catch-all
+  // included — "Lectro and everything else" is a real division of Aalmost,
+  // even though only one of the two halves is named. What isn't worth a split
+  // is a group that would end up as a single folder holding everything.
   const groups = groupBy(playlists, (p) => levelOf(p) ?? OTHERS_SUBFOLDER)
+  if (groups.size < SUBFOLDER_MIN_DISTINCT) return null
   if (playlists.length / groups.size < SUBFOLDER_MIN_AVERAGE) return null
 
   return [...groups.entries()]
@@ -126,7 +137,7 @@ function buildSubfolders(
         slug: slugify(name),
         key,
         playlists: items,
-        subfolders: buildSubfolders(key, items, restLevels),
+        subfolders: buildSubfolders(key, items, restLevels, false),
       }
     })
     .sort(byNameWithCatchAllLast(OTHERS_SUBFOLDER))
@@ -140,7 +151,7 @@ export function buildFolderTree(playlists: CatalogPlaylist[]): Folder[] {
       slug: slugify(name),
       key: name,
       playlists: items,
-      subfolders: buildSubfolders(name, items, [(p) => p.subcategory, (p) => p.subsubcategory]),
+      subfolders: buildSubfolders(name, items, [(p) => p.subcategory, (p) => p.subsubcategory], true),
     }))
     .sort(byNameWithCatchAllLast(UNCATEGORIZED))
 }

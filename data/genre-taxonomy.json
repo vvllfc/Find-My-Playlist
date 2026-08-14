@@ -3,7 +3,21 @@
     "id": "techno",
     "match": { "type": "prefix", "value": "Techno" },
     "genre": "Techno",
-    "subgenreTokens": ["Léctro", "Mélo", "Minimal", "Nappe", "Acide"],
+    "subgenreTokens": [
+      ["Aalmost", "Almost"],
+      "Acide",
+      "Brasil",
+      ["House", "Sunrise", "Sunset"],
+      "Indus",
+      "Léctro",
+      "Mélo",
+      "Minimal",
+      "Nappe",
+      "Trance",
+      "Wallaby's"
+    ],
+    "subsubgenreTokens": ["Sunrise", ["Sunset", "Deep"], "Lectro"],
+    "tagTokens": ["Deep"],
     "eraTokens": ["AfterVNR160+", "AfterVNR", "GoodNight", "Before", "Middle", "After"],
     "voiceToken": "Voice"
   },

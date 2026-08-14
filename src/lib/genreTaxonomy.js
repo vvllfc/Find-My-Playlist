@@ -3,26 +3,45 @@
 // which has no TypeScript loader.
 
 // Source playlist names mix casing pretty freely (Chillfort/ChillFort/CHILLFORT,
-// Rockvibe/RockVibe, Fr/FR...) and two different apostrophe characters
-// (Wallaby's vs Wallaby’s). None of that is meaningful, so normalize before
-// ever comparing — matching stays defensive against inconsistent naming
-// instead of requiring everything to be renamed first.
+// Rockvibe/RockVibe, Fr/FR...), two different apostrophe characters (Wallaby's
+// vs Wallaby’s) and accents that come and go (Léctro/Lectro, Mélo/Melo). None
+// of that is meaningful, so normalize before ever comparing — matching stays
+// defensive against inconsistent naming instead of requiring everything to be
+// renamed first.
+const COMBINING_MARKS = new RegExp('[\\u0300-\\u036f]', 'g');
+
 function normalize(str) {
-  return str.toLowerCase().replace(/[‘’]/g, "'");
+  return str
+    .toLowerCase()
+    .replace(/[‘’]/g, "'")
+    .normalize('NFD')
+    .replace(COMBINING_MARKS, '');
 }
 
 function matchesPrefix(name, prefix) {
   return normalize(name).startsWith(normalize(prefix));
 }
 
-// Case-insensitive "does remainder contain token", trying longer/more
-// specific tokens first so e.g. "ChillFort" wins over the "Chill" it
-// contains, and "AfterVNR160+" wins over "AfterVNR".
-function findToken(remainder, tokens) {
-  const sorted = [...tokens].sort((a, b) => b.length - a.length);
+// A token entry is either a plain string, or an array whose first element is
+// the name to file under and whose others are alternative spellings that mean
+// the same thing — ["Aalmost", "Almost"] for a typo, ["Sunset", "Deep"] where
+// one word implies the other. Only the canonical name is ever returned, so a
+// misspelling never opens a folder of its own.
+function tokenCandidates(entries) {
+  const candidates = [];
+  for (const entry of entries) {
+    const spellings = Array.isArray(entry) ? entry : [entry];
+    for (const token of spellings) candidates.push({ canonical: spellings[0], token });
+  }
+  // Longer/more specific spellings first, so "ChillFort" wins over the "Chill"
+  // it contains and "AfterVNR160+" over "AfterVNR".
+  return candidates.sort((a, b) => b.token.length - a.token.length);
+}
+
+function findToken(remainder, entries) {
   const normalizedRemainder = normalize(remainder);
-  for (const token of sorted) {
-    if (normalizedRemainder.includes(normalize(token))) return token;
+  for (const { canonical, token } of tokenCandidates(entries)) {
+    if (normalizedRemainder.includes(normalize(token))) return canonical;
   }
   return null;
 }
@@ -63,6 +82,26 @@ function applyRule(rule, remainder) {
   const subcategory = rule.subgenre ?? (rule.subgenreTokens ? findToken(remainder, rule.subgenreTokens) : null);
   if (subcategory && subcategory !== rule.genre) tags.push(subcategory);
 
+  // A folder inside the sub-folder, for the genres whose names carry one
+  // (Techno's House → Sunrise/Sunset, Aalmost → Lectro). Sub-sub names are
+  // matched across the whole genre rather than per sub-folder: the words only
+  // occur where they belong, and a sub-folder where every playlist lands on
+  // the same one simply doesn't split. One exception — a word that names the
+  // sub-folder it already sits in says nothing new, so "Techno Léctro After"
+  // gets no Lectro sub-sub and no second chip repeating its own folder.
+  const matchedSubsub = rule.subsubgenreTokens ? findToken(remainder, rule.subsubgenreTokens) : null;
+  const subsubcategory =
+    matchedSubsub && subcategory && normalize(matchedSubsub) === normalize(subcategory) ? null : matchedSubsub;
+  if (subsubcategory) tags.push(subsubcategory);
+
+  // Words that qualify a playlist without moving it (Techno's "Deep").
+  if (rule.tagTokens) {
+    for (const entry of rule.tagTokens) {
+      const matched = findToken(remainder, [entry]);
+      if (matched && !tags.includes(matched)) tags.push(matched);
+    }
+  }
+
   if (rule.tempoTokens) {
     const matched = findTokenMapped(remainder, rule.tempoTokens);
     if (matched) tags.push(matched);
@@ -75,9 +114,9 @@ function applyRule(rule, remainder) {
 
   if (rule.voiceToken && hasVoice(remainder, rule.voiceToken)) tags.push('vocals');
 
-  const displayRemainder = stripLeadingToken(remainder, subcategory);
+  const displayRemainder = stripLeadingToken(stripLeadingToken(remainder, subcategory), subsubcategory);
 
-  return { category: rule.genre ?? null, subcategory, subsubcategory: null, tags, displayRemainder };
+  return { category: rule.genre ?? null, subcategory, subsubcategory, tags, displayRemainder };
 }
 
 // "Rap Game" is its own three-level family: language first (FR / ES, with EN

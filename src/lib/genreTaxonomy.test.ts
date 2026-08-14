@@ -125,6 +125,50 @@ describe('classifyPlaylistName', () => {
     expect(classify('Techno Minimal After')).toMatchObject({ category: 'Techno', subcategory: 'Minimal' })
   })
 
+  it('splits Techno into sub-genres, House and Aalmost one level deeper still', () => {
+    expect(classify('Techno House Sunrise Middle')).toMatchObject({
+      subcategory: 'House',
+      subsubcategory: 'Sunrise',
+    })
+    expect(classify('Techno Aalmost Lectro Before')).toMatchObject({
+      subcategory: 'Aalmost',
+      subsubcategory: 'Lectro',
+    })
+    // Named families that stand on their own, rather than falling in Autres.
+    expect(classify("Techno Wallaby's AfterVNR")).toMatchObject({ subcategory: "Wallaby's" })
+    expect(classify('Techno Indus Before')).toMatchObject({ subcategory: 'Indus' })
+    expect(classify('Techno Trance After')).toMatchObject({ subcategory: 'Trance' })
+    expect(classify('Techno Brasil')).toMatchObject({ subcategory: 'Brasil' })
+    // …and the ones that are still just Techno.
+    expect(classify('Techno Over Middle Voice')).toMatchObject({ subcategory: null })
+    expect(classify('Techno Voice After')).toMatchObject({ subcategory: null })
+  })
+
+  it('folds spelling drift into one folder rather than opening a second', () => {
+    // A missing accent, a doubled letter, a stray space — same folder.
+    expect(classify('Techno Lectro Middle')).toMatchObject({ subcategory: 'Léctro' })
+    expect(classify('Techno Léctro Middle')).toMatchObject({ subcategory: 'Léctro' })
+    expect(classify('Techno Melo After')).toMatchObject({ subcategory: 'Mélo' })
+    expect(classify('Techno Almost Before Voice')).toMatchObject({ subcategory: 'Aalmost' })
+    // The sub-folder's own word is not repeated as a sub-sub or a second chip.
+    expect(classify('Techno Léctro After')).toMatchObject({ subsubcategory: null })
+    expect(classify('Techno Léctro After').tags).toEqual(['Techno', 'Léctro', 'After'])
+  })
+
+  it('treats Deep as a Sunset qualifier, tagged but never its own folder', () => {
+    // Deep only ever qualifies House Sunset, so it carries the playlist there
+    // even when the name spells out neither House nor Sunset in full.
+    for (const name of [
+      'Techno House Deep Sunset Middle',
+      'Techno House Deep Before Vocal',
+      'Techno Deep Sunset Middle Voice',
+      'Techno Deep House Sunset After',
+    ]) {
+      expect(classify(name), name).toMatchObject({ subcategory: 'House', subsubcategory: 'Sunset' })
+      expect(classify(name).tags, name).toContain('Deep')
+    }
+  })
+
   it('never reads "No Voice" as vocals, even alongside an earlier "Voice"', () => {
     expect(classify("Wallaby's Rave No Voice").tags).not.toContain('vocals')
     expect(classify("Wallaby's Journey No Voice Hard").tags).not.toContain('vocals')
