@@ -308,7 +308,11 @@ async function main() {
     readJson('data/genre-taxonomy.json'),
   ])
   // Same defaulting as src/lib/siteContent.ts — missing sections are fine.
-  const content = { folders: rawContent.folders ?? {}, playlists: rawContent.playlists ?? {} }
+  const content = {
+    folders: rawContent.folders ?? {},
+    playlists: rawContent.playlists ?? {},
+    tags: rawContent.tags ?? {},
+  }
 
   // Names come from Spotify; everything editorial is ours. The description
   // shown on the site is hand-written in data/site-content.json and no longer
@@ -340,14 +344,14 @@ async function main() {
   merged.sort((a, b) => compareNames(a.name, b.name))
 
   const uncategorized = merged.filter((p) => p.category === null).length
-  const catalog = { playlists: merged, folders: content.folders }
+  const catalog = { playlists: merged, folders: content.folders, tags: content.tags }
 
   const outDir = path.join(rootDir, 'public', 'data')
   await mkdir(outDir, { recursive: true })
   await writeFile(path.join(outDir, 'catalog.json'), JSON.stringify(catalog, null, 2))
 
   console.log(
-    `[fetch-and-merge-playlists] ${merged.length} playlists, ${uncategorized} uncategorized, ${described} with a written description, ${manuallyTagged} with hand-written tags, ${Object.keys(content.folders).length} folder descriptions.`,
+    `[fetch-and-merge-playlists] ${merged.length} playlists, ${uncategorized} uncategorized, ${described} with a written description, ${manuallyTagged} with hand-written tags, ${Object.keys(content.folders).length} folder descriptions, ${Object.keys(content.tags).length} tag definitions.`,
   )
 }
 

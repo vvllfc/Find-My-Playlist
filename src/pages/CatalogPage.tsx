@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
+import SiteMenu from './SiteMenu'
 import {
   buildFolderTree,
   compareTags,
@@ -284,6 +285,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
             read on the way in, and it pushed the folder's own name — the
             heading that actually matters there — down past the fold. */}
         <div className={inFolder ? 'hero-inner compact' : 'hero-inner'}>
+          <SiteMenu />
           <p className="kicker">VLF Music</p>
           {!inFolder && (
             <>
@@ -292,7 +294,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                 {catalog ? `${catalog.playlists.length} playlists` : 'Playlists'} classées par genre, tempo et
                 présence de voix.
                 <br />
-                Dans chaque dossier, elles sont rangées par tempo&nbsp;: toujours du plus chill au plus NRV.
+                Regarde le glossaire en haut à droite si tu te poses des questions.
               </p>
             </>
           )}
@@ -306,21 +308,6 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
 
         {catalog && (
           <>
-            {/* Only where playlists are actually listed — over a grid of
-                sub-folders there is no "this folder's playlists" to draw from. */}
-            {!isSearching && listedFolder && (
-              <button
-                type="button"
-                className="random-button"
-                onClick={openRandomInSpotify}
-                disabled={filtered.length === 0}
-                title="Ouvre une playlist au hasard de ce dossier dans Spotify"
-              >
-                <ShuffleIcon />
-                Playlist aléatoire
-              </button>
-            )}
-
             {/* Above the filter strip rather than below it: it's the way out,
                 and behind three rows of chips on a phone it was being missed. */}
             {!isSearching && match && (
@@ -400,10 +387,30 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
 
             {!isSearching && currentFolder && (
               <header className="folder-header">
-                <h2>
-                  {breadcrumbPrefix ? `${breadcrumbPrefix} — ` : ''}
-                  {currentFolder.name}
-                </h2>
+                {/* Name and shortcut share a line on a wide screen, and the
+                    button drops under the name when they stop fitting — which
+                    is what a phone does without needing to be told. */}
+                <div className="folder-header-top">
+                  <h2>
+                    {breadcrumbPrefix ? `${breadcrumbPrefix} — ` : ''}
+                    {currentFolder.name}
+                  </h2>
+                  {/* Only where playlists are actually listed — over a grid of
+                      sub-folders there is no "this folder's playlists" to draw
+                      from. */}
+                  {listedFolder && (
+                    <button
+                      type="button"
+                      className="random-button"
+                      onClick={openRandomInSpotify}
+                      disabled={filtered.length === 0}
+                      title="Ouvre une playlist au hasard de ce dossier dans Spotify"
+                    >
+                      <ShuffleIcon />
+                      Playlist aléatoire
+                    </button>
+                  )}
+                </div>
                 {folderDescription && <p>{folderDescription}</p>}
               </header>
             )}

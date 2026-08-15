@@ -19,6 +19,13 @@ describe('parseRoute', () => {
   it('treats an unknown hash as a public route rather than a private one', () => {
     expect(parseRoute('/#/whatever')).toEqual({ kind: 'catalog', segments: [] })
   })
+
+  it('routes the glossary as its own page, not as a catalog segment', () => {
+    expect(parseRoute('/glossaire')).toEqual({ kind: 'glossary' })
+    expect(parseRoute('/glossaire/')).toEqual({ kind: 'glossary' })
+    // Only the bare path — anything deeper is not the glossary.
+    expect(parseRoute('/glossaire/techno')).toEqual({ kind: 'catalog', segments: ['glossaire', 'techno'] })
+  })
 })
 
 describe('pivotBetween', () => {

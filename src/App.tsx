@@ -4,6 +4,7 @@ import { handleRedirectCallback } from './lib/spotifyAuth'
 import CatalogPage from './pages/CatalogPage'
 import AdminPage from './pages/AdminPage'
 import ModifyPage from './pages/ModifyPage'
+import GlossaryPage from './pages/GlossaryPage'
 
 function App() {
   const route = useRoute()
@@ -23,6 +24,7 @@ function App() {
 
   if (route.kind === 'admin') return <AdminPage />
   if (route.kind === 'modify') return <ModifyPage />
+  if (route.kind === 'glossary') return <GlossaryPage />
   return <CatalogPage segments={route.segments} />
 }
 

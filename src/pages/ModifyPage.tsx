@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useCatalog } from '../lib/useCatalog'
-import { buildFolderTree, listAllFolders, type Folder } from '../lib/catalog'
+import { buildFolderTree, listAllFolders, listAllTags, type Folder } from '../lib/catalog'
 import { SPOTIFY_CLIENT_ID } from '../config'
 import { clearTokens, ensureFreshAccessToken, isLoggedIn, startLogin } from '../lib/spotifyAuth'
 import { fetchMyPlaylists, fetchPlaylistName, renamePlaylist } from '../lib/spotifyApi'
-import { useSiteContentStore, withPlaylistMeta, type PlaylistMeta, type SiteContentStore } from '../lib/siteContent'
+import {
+  useSiteContentStore,
+  withPlaylistMeta,
+  withTagMeta,
+  type PlaylistMeta,
+  type SiteContentStore,
+} from '../lib/siteContent'
 import { clearCachedEditPlaylists, getCachedEditPlaylists, setCachedEditPlaylists, updateCachedEditPlaylist } from '../lib/editPlaylistsCache'
 import { isUnlocked } from '../lib/adminGate'
 import PasswordGate from './PasswordGate'
@@ -51,6 +57,7 @@ export default function ModifyPage() {
         )}
         {store.status && <p className="admin-status">{store.status}</p>}
         <FolderContentEditor store={store} />
+        <TagGlossaryEditor store={store} />
         <PlaylistEditor store={store} />
       </main>
     </div>
@@ -127,6 +134,83 @@ function FolderContentEditor({ store }: { store: SiteContentStore }) {
             </form>
           )}
         </div>
+      )}
+    </section>
+  )
+}
+
+// What each tag means, shown on the public Glossary page. Same shape as the
+// folder editor above — one list, one field — because it's the same job: a
+// short piece of hand-written text keyed by something the catalog already has.
+function TagGlossaryEditor({ store }: { store: SiteContentStore }) {
+  const { catalog } = useCatalog()
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
+  const [description, setDescription] = useState('')
+
+  const tags = useMemo(() => (catalog ? listAllTags(catalog) : []), [catalog])
+
+  function select(tag: string) {
+    setSelectedTag(tag)
+    setDescription(store.loaded?.content.tags[tag]?.description ?? '')
+  }
+
+  async function save(e: FormEvent) {
+    e.preventDefault()
+    if (!selectedTag) return
+    await store.save(
+      (content) => withTagMeta(content, selectedTag, { description: description.trim() }),
+      'Update tag glossary',
+    )
+  }
+
+  const written = tags.filter((entry) => store.loaded?.content.tags[entry.tag]?.description).length
+
+  return (
+    <section className="admin-section">
+      <h2>Glossaire des tags</h2>
+      {store.token && store.loaded && (
+        <>
+          <p className="hint">
+            {written} / {tags.length} tags définis. Vider le champ retire la définition.
+          </p>
+          <div className="admin-editor">
+            <ul className="admin-playlist-list">
+              {tags.map((entry) => (
+                <li key={entry.tag}>
+                  <button
+                    type="button"
+                    className={entry.tag === selectedTag ? 'selected' : ''}
+                    onClick={() => select(entry.tag)}
+                  >
+                    {entry.isGenre ? entry.tag : `↳ ${entry.tag}`}
+                    {!store.loaded?.content.tags[entry.tag]?.description && (
+                      <span className="badge-new">{entry.count}</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {selectedTag && (
+              <form className="admin-form" onSubmit={save}>
+                <h3>{selectedTag}</h3>
+                <label>
+                  Définition du tag (affichée sur la page Glossaire)
+                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+                </label>
+                {store.conflict && (
+                  <p className="admin-conflict">
+                    Le fichier a changé depuis ton dernier chargement.{' '}
+                    <button type="button" onClick={store.reload}>
+                      Recharger la dernière version
+                    </button>
+                  </p>
+                )}
+                <button type="submit">Enregistrer</button>
+              </form>
+            )}
+          </div>
+        </>
       )}
     </section>
   )

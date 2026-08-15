@@ -55,6 +55,9 @@
   margin: 0 auto;
   padding: 3.5rem 2rem 2.5rem;
   box-sizing: border-box;
+  /* Anchors the corner menu to the content's right edge rather than the
+     viewport's, so it stays level with the text on a wide screen. */
+  position: relative;
 }
 /* Folder pages keep only the wordmark, so the band closes up around it rather
    than reserving the room a title and two lines of text used to need. */
@@ -90,6 +93,69 @@
   text-wrap: pretty;
 }
 
+/* Corner menu — the only navigation that isn't the folder hierarchy. */
+.site-menu {
+  position: absolute;
+  top: 1.35rem;
+  right: 2rem;
+  z-index: 5;
+}
+.site-menu-button {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+.site-menu-button::after {
+  content: ' ▾';
+  opacity: 0.6;
+}
+.site-menu-button.open::after {
+  content: ' ▴';
+}
+.site-menu-button:hover,
+.site-menu-button.open {
+  border-color: var(--violet);
+}
+.site-menu-button:focus-visible,
+.site-menu-item:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+.site-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  min-width: 9rem;
+  display: flex;
+  flex-direction: column;
+  padding: 0.3rem;
+  border: 1px solid var(--violet);
+  border-radius: 0.3rem;
+  /* Opaque, not translucent: it sits over the oil-slick backdrop, and the
+     streaks read straight through anything less. */
+  background: var(--surface);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
+}
+.site-menu-item {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--ink);
+  text-decoration: none;
+  padding: 0.5rem 0.7rem;
+  border-radius: 0.2rem;
+}
+.site-menu-item:hover {
+  background: rgba(166, 107, 255, 0.18);
+}
+
 .catalog {
   max-width: 68rem;
   margin: 0 auto;
@@ -108,6 +174,10 @@
   }
   .hero-inner.compact {
     padding: 1.5rem 1rem 0.35rem;
+  }
+  .site-menu {
+    top: 1rem;
+    right: 1rem;
   }
 }
 
@@ -398,9 +468,11 @@
   font-size: 1.1rem;
   margin: 0 0 0.2rem;
 }
+/* Green rather than the muted grey of the metadata around it: these are the
+   only hand-written words on the row, so they shouldn't read as small print. */
 .row-main .desc {
   font-size: 0.9rem;
-  color: var(--muted);
+  color: var(--accent);
   margin: 0 0 0.5rem;
 }
 .row-tags {
@@ -601,6 +673,19 @@
 .folder-header {
   margin: 0 0 1.25rem;
 }
+/* Wraps rather than switching layout at a breakpoint: the button drops under
+   the name exactly when the two stop fitting, which depends on how long the
+   folder's name is as much as on the screen. */
+.folder-header-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+}
+.folder-header-top .random-button {
+  margin: 0;
+}
 .folder-header h2 {
   font-family: var(--font-display);
   text-transform: uppercase;
@@ -642,9 +727,13 @@ button.back-link {
   /* The glyph sits high in its own box; pulls it back onto the text's centre. */
   margin-top: -0.09em;
 }
+/* Stays green on hover. It used to turn --ink, which read as the arrow simply
+   being white some of the time — an underline says "link" without dropping the
+   colour that identifies it. */
 .back-link:hover,
 .back-link:focus-visible {
-  color: var(--ink);
+  color: var(--accent);
+  text-decoration: underline;
 }
 /* The spacing below belongs to the link, so the gap is the same whether the
    filter strip follows it or the folder heading does. */
@@ -697,11 +786,6 @@ button.back-link {
   opacity: 0.5;
   cursor: default;
 }
-/* Both sit between the wordmark and the content; the pair shouldn't stack
-   their full margins on top of each other. */
-.random-button + .back-link {
-  margin-top: 0.9rem;
-}
 @media (prefers-reduced-motion: reduce) {
   .random-button {
     transition: none;
@@ -717,4 +801,83 @@ button.back-link {
   font-size: 0.85rem;
   color: var(--muted);
   margin: 0 0 1rem;
+}
+
+/* Glossary — reference reading rather than a listing, so it sits on the same
+   solid panel as the tracklist and keeps the line length short. */
+.glossary-section {
+  background: var(--bg);
+  border-radius: 0.4rem;
+  padding: 1.25rem 1.5rem 1.5rem;
+  margin: 0 0 1.25rem;
+}
+.glossary-section h2 {
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-weight: 900;
+  font-size: 1.35rem;
+  margin: 0 0 0.35rem;
+}
+.glossary-count {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--muted);
+  vertical-align: middle;
+}
+.glossary-intro {
+  margin: 0 0 1.1rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+  max-width: 44em;
+}
+.glossary-help,
+.glossary-tags {
+  margin: 0;
+  display: grid;
+  gap: 0.9rem;
+}
+.glossary-help dt {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--violet);
+  margin-bottom: 0.2rem;
+}
+.glossary-help dd {
+  margin: 0;
+  max-width: 48em;
+  font-size: 0.98rem;
+}
+/* The chip and its use-count on one line, the meaning under them — so the
+   column of tags stays scannable when most of them have no description yet. */
+.glossary-tags dt {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.glossary-tags dd {
+  margin: 0.3rem 0 0;
+  max-width: 48em;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.glossary-uses {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Not a filter here, just a label — so it drops the pointer the catalog's
+   clickable chips carry. */
+.glossary-tags .chip {
+  cursor: default;
+  color: var(--ink);
+}
+@media (max-width: 480px) {
+  .glossary-section {
+    padding: 1rem 1rem 1.25rem;
+  }
 }

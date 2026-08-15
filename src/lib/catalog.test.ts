@@ -5,6 +5,7 @@ import {
   findFolder,
   formatListeningTime,
   listAllFolders,
+  listAllTags,
   OTHERS_SUBFOLDER,
   SUBFOLDER_MIN_PLAYLISTS,
   genreLevelTags,
@@ -242,6 +243,40 @@ describe('genreLevelTags', () => {
   it('leaves out a cross-cutting tag nothing carries', () => {
     const techno = { ...playlist('Techno'), tags: ['Techno'] }
     expect(genreLevelTags([techno])).toEqual(['Techno'])
+  })
+})
+
+describe('listAllTags', () => {
+  const rock = { ...playlist('Vibes', 'English Vibe'), tags: ['Vibes', 'Rock', 'chill'] }
+  const other = { ...playlist('Vibes', 'French Vibe'), tags: ['Vibes', 'chill'] }
+  const techno = { ...playlist('Techno', 'Nappe'), tags: ['Techno', 'Chill Fort'] }
+
+  it('counts how many playlists carry each tag, and tells genres from refinements', () => {
+    const entries = listAllTags({ playlists: [rock, other, techno], folders: {} })
+
+    expect(entries.map((e) => [e.tag, e.count, e.isGenre])).toEqual([
+      // Chill Fort sorts above chill rather than alphabetically below it.
+      ['Chill Fort', 1, false],
+      ['chill', 2, false],
+      ['Rock', 1, true],
+      ['Techno', 1, true],
+      ['Vibes', 2, true],
+    ])
+  })
+
+  it('attaches the hand-written definition where there is one', () => {
+    const entries = listAllTags({
+      playlists: [techno],
+      folders: {},
+      tags: { Techno: { description: 'La techno.' } },
+    })
+
+    expect(entries.find((e) => e.tag === 'Techno')?.description).toBe('La techno.')
+    expect(entries.find((e) => e.tag === 'Chill Fort')?.description).toBeUndefined()
+  })
+
+  it('reads a catalog built before the glossary existed', () => {
+    expect(listAllTags({ playlists: [techno], folders: {} })).toHaveLength(2)
   })
 })
 

@@ -17,9 +17,17 @@ export interface PlaylistMeta {
   favorite?: boolean
 }
 
+/** What a tag means, written by hand — the glossary is the only reader. */
+export interface TagMeta {
+  description?: string
+}
+
 export interface SiteContent {
   folders: Record<string, FolderMeta>
   playlists: Record<string, PlaylistMeta>
+  /** Keyed by the tag itself ("Chill Fort", "Techno"), not by a slug — tags
+   *  come from playlist names and have no id of their own. */
+  tags: Record<string, TagMeta>
 }
 
 export interface LoadedSiteContent {
@@ -30,7 +38,7 @@ export interface LoadedSiteContent {
 // Tolerates missing sections so adding a field never breaks older files.
 export function normalizeSiteContent(raw: unknown): SiteContent {
   const data = (raw ?? {}) as Partial<SiteContent>
-  return { folders: data.folders ?? {}, playlists: data.playlists ?? {} }
+  return { folders: data.folders ?? {}, playlists: data.playlists ?? {}, tags: data.tags ?? {} }
 }
 
 export async function loadSiteContent(token: string): Promise<LoadedSiteContent> {
@@ -125,4 +133,15 @@ export function withPlaylistMeta(content: SiteContent, id: string, patch: Playli
     ...content,
     playlists: { ...content.playlists, [id]: { ...content.playlists[id], ...patch } },
   }
+}
+
+/** Same merge for a tag's glossary entry. Clearing the description drops the
+ *  whole entry rather than leaving `{"Chill": {}}` behind on every tag ever
+ *  opened in the editor. */
+export function withTagMeta(content: SiteContent, tag: string, patch: TagMeta): SiteContent {
+  const merged = { ...content.tags[tag], ...patch }
+  const tags = { ...content.tags }
+  if (merged.description) tags[tag] = merged
+  else delete tags[tag]
+  return { ...content, tags }
 }

@@ -40,10 +40,17 @@ export interface FolderMeta {
   description?: string
 }
 
+export interface TagDefinition {
+  description?: string
+}
+
 export interface Catalog {
   playlists: CatalogPlaylist[]
   /** Keyed by folder key — "Techno" or "Feel/Rock" for sub-folders. */
   folders: Record<string, FolderMeta>
+  /** Hand-written glossary entries, keyed by the tag itself. Optional: a
+   *  catalog.json built before the glossary existed simply has none. */
+  tags?: Record<string, TagDefinition>
 }
 
 export const UNCATEGORIZED = 'Non classées'
@@ -223,6 +230,34 @@ export function genreLevelTags(playlists: CatalogPlaylist[]): string[] {
     }
   }
   return [...genres].sort(compareTags)
+}
+
+export interface TagEntry {
+  tag: string
+  /** How many playlists carry it — the glossary sorts nothing by this, but a
+   *  tag on two playlists and one on ninety deserve to be told apart. */
+  count: number
+  /** True for the tags that name a top-level folder (plus the cross-genre
+   *  ones), which the glossary lists apart from the refinements. */
+  isGenre: boolean
+  description?: string
+}
+
+/** Every tag in the catalog with its playlist count, for the glossary. */
+export function listAllTags(catalog: Catalog): TagEntry[] {
+  const counts = new Map<string, number>()
+  for (const playlist of catalog.playlists) {
+    for (const tag of playlist.tags) counts.set(tag, (counts.get(tag) ?? 0) + 1)
+  }
+  const genres = new Set(genreLevelTags(catalog.playlists))
+  return [...counts.entries()]
+    .map(([tag, count]) => ({
+      tag,
+      count,
+      isGenre: genres.has(tag),
+      description: catalog.tags?.[tag]?.description,
+    }))
+    .sort((a, b) => compareTags(a.tag, b.tag))
 }
 
 /**

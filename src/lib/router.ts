@@ -12,7 +12,10 @@ import { runFolderTransition, type FolderPivot } from './folderTransition'
 export type Route =
   | { kind: 'admin' }
   | { kind: 'modify' }
+  | { kind: 'glossary' }
   | { kind: 'catalog'; segments: string[] }
+
+export const GLOSSARY_PATH = '/glossaire'
 
 export function parseRoute(location: string): Route {
   const hashIndex = location.indexOf('#')
@@ -21,7 +24,12 @@ export function parseRoute(location: string): Route {
 
   if (hash.startsWith('/admin')) return { kind: 'admin' }
   if (hash.startsWith('/modify')) return { kind: 'modify' }
-  return { kind: 'catalog', segments: pathname.split('/').filter(Boolean) }
+
+  const segments = pathname.split('/').filter(Boolean)
+  // A public page of its own rather than a catalog segment: it lists no
+  // playlists, so none of the folder machinery applies to it.
+  if (segments.length === 1 && segments[0] === 'glossaire') return { kind: 'glossary' }
+  return { kind: 'catalog', segments }
 }
 
 // How deep into the folder hierarchy a catalog route sits: the folder grid is
