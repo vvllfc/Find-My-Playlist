@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
 import {
@@ -48,6 +48,30 @@ const DIE_PIPS: Record<number, Array<[number, number]>> = {
   ],
 }
 const DIE_FACES = Object.keys(DIE_PIPS).map(Number)
+
+// Two paths crossing with a break where they meet, plus an arrowhead on each —
+// the usual shuffle mark, drawn here rather than pulled from an icon font.
+function ShuffleIcon() {
+  return (
+    <svg
+      className="random-icon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M3 6h4l10 12h4" />
+      <path d="M3 18h4l3-3.6" />
+      <path d="M14 9.6L17 6h4" />
+      <path d="M18 3l3 3-3 3" />
+      <path d="M18 15l3 3-3 3" />
+    </svg>
+  )
+}
 
 function Die({ face }: { face: number }) {
   return (
@@ -220,6 +244,19 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   // of it restores exactly what was there before.
   const shown = surprise ? [surprise] : filtered
 
+  // The folder's own shortcut: straight out to Spotify, no listing in between.
+  // Drawn from what's actually visible, so a tag filter still applies. Kept in
+  // a ref rather than state — it only guards the next click from repeating the
+  // last one and nothing on screen depends on it.
+  const lastRandomId = useRef<string | null>(null)
+  function openRandomInSpotify() {
+    const pool = filtered.length > 1 ? filtered.filter((p) => p.id !== lastRandomId.current) : filtered
+    if (pool.length === 0) return
+    const pick = pool[Math.floor(Math.random() * pool.length)]
+    lastRandomId.current = pick.id
+    window.open(pick.externalUrl, '_blank', 'noopener,noreferrer')
+  }
+
   // Inside a folder the search box goes away — the folder is the query. What
   // stays is the tag row, and only where playlists are actually listed: over a
   // grid of sub-folders the chips filter nothing you can see. No folder carries
@@ -269,6 +306,21 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
 
         {catalog && (
           <>
+            {/* Only where playlists are actually listed — over a grid of
+                sub-folders there is no "this folder's playlists" to draw from. */}
+            {!isSearching && listedFolder && (
+              <button
+                type="button"
+                className="random-button"
+                onClick={openRandomInSpotify}
+                disabled={filtered.length === 0}
+                title="Ouvre une playlist au hasard de ce dossier dans Spotify"
+              >
+                <ShuffleIcon />
+                Playlist aléatoire
+              </button>
+            )}
+
             {/* Above the filter strip rather than below it: it's the way out,
                 and behind three rows of chips on a phone it was being missed. */}
             {!isSearching && match && (
@@ -356,14 +408,21 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
               </header>
             )}
             {/* Says why a single playlist is on screen, and carries the way
-                back — the mixer button itself re-rolls rather than cancels. */}
+                back — the mixer button itself re-rolls rather than cancels.
+                The same arrow as every other way back, sitting directly above
+                what it backs out of. */}
             {surprise && (
-              <p className="search-summary">
-                Une playlist au hasard.{' '}
-                <button type="button" className="summary-action" onClick={() => setSurprise(null)}>
-                  Tout afficher
+              <>
+                <p className="search-summary">
+                  Une petite playlist pour satisfaire ton besoin de découverte
+                </p>
+                <button type="button" className="back-link" onClick={() => setSurprise(null)}>
+                  <span className="back-arrow" aria-hidden="true">
+                    ←
+                  </span>
+                  Revenir aux playlists
                 </button>
-              </p>
+              </>
             )}
             {isSearching && !surprise && (
               <p className="search-summary">
