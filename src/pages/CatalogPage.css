@@ -658,9 +658,11 @@
   margin: 0;
 }
 
+/* Green like the playlist descriptions, and for the same reason: on a tile
+   otherwise made of a name and a count, this is the written part. */
 .folder-desc {
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--accent);
   margin: 0 0 0.4rem;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -696,7 +698,7 @@
 .folder-header p {
   margin: 0.35rem 0 0;
   max-width: 44em;
-  color: var(--muted);
+  color: var(--accent);
   font-size: 0.95rem;
 }
 
@@ -727,14 +729,10 @@ button.back-link {
   /* The glyph sits high in its own box; pulls it back onto the text's centre. */
   margin-top: -0.09em;
 }
-/* Stays green on hover. It used to turn --ink, which read as the arrow simply
-   being white some of the time — an underline says "link" without dropping the
-   colour that identifies it. */
-.back-link:hover,
-.back-link:focus-visible {
-  color: var(--accent);
-  text-decoration: underline;
-}
+/* No hover state: it stays green and unadorned whatever the pointer does. It
+   used to turn --ink, which read as the arrow simply being white some of the
+   time. Keyboard focus is still marked, by the outline further down rather
+   than by changing the link itself. */
 /* The spacing below belongs to the link, so the gap is the same whether the
    filter strip follows it or the folder heading does. */
 .back-link + .mixer {
