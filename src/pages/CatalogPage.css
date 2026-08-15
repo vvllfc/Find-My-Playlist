@@ -858,6 +858,17 @@ button.back-link {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.4rem;
+  /* Hugs its longest line rather than spanning the page — it's an aside of
+     three short links, and full width made it look like a section of its own. */
+  width: fit-content;
+  max-width: 100%;
+}
+.glossary-toc-title {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink);
 }
 .glossary-toc a {
   font-family: var(--font-mono);

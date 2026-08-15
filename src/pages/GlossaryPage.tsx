@@ -41,10 +41,24 @@ const NAVIGATION_HELP = [
 // Single source for both the sections and the contents list above them, so the
 // two can't drift apart as sections are added.
 const SECTIONS = {
-  help: { id: 'se-reperer', title: 'Se repérer' },
-  genres: { id: 'les-genres', title: 'Les genres' },
-  refinements: { id: 'les-tags', title: 'Les tags' },
+  help: {
+    id: 'se-reperer',
+    title: 'Se repérer',
+    intro: 'Comment le catalogue est rangé, et à quoi sert chaque bouton.',
+  },
+  genres: {
+    id: 'les-genres',
+    title: 'Les genres',
+    intro: 'Les grandes familles — ce sont elles qui donnent les dossiers.',
+  },
+  refinements: {
+    id: 'les-tags',
+    title: 'Les tags',
+    intro: "Tempo, époque, présence de voix, sous-genres : ce qui distingue deux playlists d'un même dossier.",
+  },
 }
+
+type Section = (typeof SECTIONS)[keyof typeof SECTIONS]
 
 export default function GlossaryPage() {
   const { catalog, error } = useCatalog()
@@ -83,7 +97,10 @@ export default function GlossaryPage() {
             once the catalog is in, since two of the three targets are built
             from it and a link to nothing scrolls nowhere. */}
         {catalog && (
-          <nav className="glossary-toc" aria-label="Sommaire">
+          <nav className="glossary-toc" aria-labelledby="sommaire">
+            <p className="glossary-toc-title" id="sommaire">
+              Sommaire
+            </p>
             {Object.values(SECTIONS).map((section) => (
               <a key={section.id} href={`#${section.id}`}>
                 {section.title}
@@ -94,6 +111,7 @@ export default function GlossaryPage() {
 
         <section className="glossary-section" id={SECTIONS.help.id}>
           <h2>{SECTIONS.help.title}</h2>
+          <p className="glossary-intro">{SECTIONS.help.intro}</p>
           <dl className="glossary-help">
             {NAVIGATION_HELP.map((item) => (
               <div key={item.title}>
@@ -106,16 +124,8 @@ export default function GlossaryPage() {
 
         {catalog && (
           <>
-            <TagSection
-              section={SECTIONS.genres}
-              intro="Les grandes familles — ce sont elles qui donnent les dossiers."
-              entries={genres}
-            />
-            <TagSection
-              section={SECTIONS.refinements}
-              intro="Tempo, époque, présence de voix, sous-genres : ce qui distingue deux playlists d'un même dossier."
-              entries={refinements}
-            />
+            <TagSection section={SECTIONS.genres} entries={genres} />
+            <TagSection section={SECTIONS.refinements} entries={refinements} />
           </>
         )}
       </main>
@@ -123,22 +133,14 @@ export default function GlossaryPage() {
   )
 }
 
-function TagSection({
-  section,
-  intro,
-  entries,
-}: {
-  section: { id: string; title: string }
-  intro: string
-  entries: TagEntry[]
-}) {
+function TagSection({ section, entries }: { section: Section; entries: TagEntry[] }) {
   if (entries.length === 0) return null
   return (
     <section className="glossary-section" id={section.id}>
       <h2>
         {section.title} <span className="glossary-count">{entries.length}</span>
       </h2>
-      <p className="glossary-intro">{intro}</p>
+      <p className="glossary-intro">{section.intro}</p>
       {/* Two columns rather than a stack: the tag on the left, what it means
           on the right, so a meaning can be found by running down one column
           instead of reading every entry. dt/dd are direct children of the grid
