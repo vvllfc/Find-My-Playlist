@@ -247,25 +247,29 @@
      the separator above it and read as a thicker rule. */
   margin: 0.45rem 0;
 }
-/* Starts inside the frame and rides up over the top edge. The disc behind it
-   is the tracklist's own background, which cuts the border cleanly rather
-   than letting a line run through the heart. */
+/* Pinned across the top-right corner and tilted off the frame's axis, so it
+   reads as stuck on rather than laid out — big enough to be the first thing
+   seen in the list. */
 .row-heart {
   position: absolute;
-  top: -0.62rem;
-  right: 0.9rem;
-  display: grid;
-  place-items: center;
-  width: 1.45rem;
-  height: 1.45rem;
-  border-radius: 999px;
-  background: var(--bg);
+  /* Offset by roughly half its own size on both axes, so the corner runs
+     under its middle and it breaks out diagonally rather than sitting along
+     the top edge. */
+  top: -1.35rem;
+  right: -1.25rem;
   color: var(--violet);
+  transform: rotate(25deg);
+  /* Clicks fall through to the row's own link, so the heart isn't a dead spot
+     in the middle of a clickable row. */
+  pointer-events: none;
+  /* Reads as sitting on top of the frame and the separator it crosses,
+     instead of being cut by them. */
+  filter: drop-shadow(0 0 2px var(--bg)) drop-shadow(0 0 2px var(--bg));
 }
 .row-heart svg {
   display: block;
-  width: 0.95rem;
-  height: 0.95rem;
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
 /* The link sits on the name, then stretches back over the whole row, so the
@@ -287,6 +291,12 @@
   }
   .row-meta {
     grid-column: 2;
+  }
+  /* Only 1rem of page gutter here, and the tilt widens the heart's footprint
+     by about 7px on top of the offset — at the desktop offset it lands just
+     past the edge and gets silently clipped. */
+  .row-heart {
+    right: -0.7rem;
   }
 }
 

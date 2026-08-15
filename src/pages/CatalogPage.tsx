@@ -257,7 +257,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                     // a tag, which sits above it and filters instead.
                     <div key={playlist.id} className={playlist.favorite ? 'row favorite' : 'row'}>
                       {playlist.favorite && (
-                        <span className="row-heart" aria-label="Coup de cœur" title="Coup de cœur">
+                        <span className="row-heart" role="img" aria-label="Coup de cœur">
                           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                             <path
                               fill="currentColor"
