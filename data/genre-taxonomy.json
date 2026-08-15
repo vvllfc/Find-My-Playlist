@@ -63,7 +63,7 @@
     "id": "over-the-clouds",
     "match": { "type": "prefix", "value": "Over The Clouds" },
     "genre": "Over The Clouds",
-    "tagTokens": ["Emo", "Melo", "Elec"],
+    "tagTokens": ["Emo", "Melo", "Elec", "Nappe"],
     "tempoTokens": { "chillfort": "Chill Fort", "chill": "chill", "higher": "energetic" },
     "voiceToken": "Voice"
   },
@@ -71,6 +71,7 @@
     "id": "over-the-sky",
     "match": { "type": "prefix", "value": "Over The Sky" },
     "genre": "Over The Sky",
+    "tagTokens": ["Emo", "Melo", "Elec"],
     "tempoTokens": { "chillfort": "Chill Fort", "chill": "chill", "higher": "energetic" },
     "voiceToken": "Voice"
   },
