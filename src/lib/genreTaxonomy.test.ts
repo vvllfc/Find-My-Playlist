@@ -209,7 +209,7 @@ describe('classifyPlaylistName', () => {
       category: "Wallaby's",
       subcategory: 'Deep Rave',
       subsubcategory: null,
-      tags: ["Wallaby's", 'Deep Rave', 'chill+'],
+      tags: ["Wallaby's", 'Deep Rave', 'Chill Fort'],
       displayName: 'ChillFort',
       energyRank: 0,
     })

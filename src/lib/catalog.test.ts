@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildFolderTree,
+  compareTags,
   findFolder,
   formatListeningTime,
   listAllFolders,
@@ -192,6 +193,23 @@ describe('findFolder', () => {
     expect(deep?.subsubfolder?.key).toBe('Rap Game/EN/New School')
     // A sub-slug that resolves but has no third level of its own to descend into.
     expect(findFolder(deepTree, 'rap-game', 'en', 'unknown')).toBeNull()
+  })
+})
+
+describe('compareTags', () => {
+  it('puts Chill Fort above Chill, where the alphabet would put it below', () => {
+    expect(compareTags('Chill Fort', 'chill')).toBeLessThan(0)
+    expect([...['chill', 'Chill Fort']].sort(compareTags)).toEqual(['Chill Fort', 'chill'])
+  })
+
+  it('leaves them where the alphabet already placed them among the rest', () => {
+    expect(['vocals', 'chill', 'Chill Fort', 'AfterVNR', 'Melo'].sort(compareTags)).toEqual([
+      'AfterVNR',
+      'Chill Fort',
+      'chill',
+      'Melo',
+      'vocals',
+    ])
   })
 })
 

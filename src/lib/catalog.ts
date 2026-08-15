@@ -190,6 +190,22 @@ export function listAllFolders(tree: Folder[]): Folder[] {
 // language folders inside Vibes.
 export const CROSS_GENRE_TAGS = ['Rock']
 
+// Tags naming a step on the same scale read as a ladder, not as words: "Chill
+// Fort" belongs above "Chill", where the alphabet would put it below. Sorting
+// on these keys keeps them next to each other exactly where the alphabet
+// already places them, only in the right order between themselves.
+const TAG_SORT_KEYS: Record<string, string> = {
+  'Chill Fort': 'chill 1',
+  chill: 'chill 2',
+}
+
+/** Alphabetical (French-aware), except where tags form a scale of their own. */
+export function compareTags(a: string, b: string): number {
+  const keyA = TAG_SORT_KEYS[a] ?? a
+  const keyB = TAG_SORT_KEYS[b] ?? b
+  return keyA.localeCompare(keyB, 'fr', { sensitivity: 'base' })
+}
+
 /**
  * The handful of tags worth offering as a starting point: the genre names,
  * plus the cross-cutting ones. Everything else (tempo, era, vocals, sub-genres)
@@ -204,7 +220,7 @@ export function genreLevelTags(playlists: CatalogPlaylist[]): string[] {
       if (CROSS_GENRE_TAGS.includes(tag)) genres.add(tag)
     }
   }
-  return [...genres].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' }))
+  return [...genres].sort(compareTags)
 }
 
 /**

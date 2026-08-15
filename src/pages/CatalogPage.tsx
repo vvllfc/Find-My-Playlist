@@ -3,6 +3,7 @@ import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
 import {
   buildFolderTree,
+  compareTags,
   displayNameAtDepth,
   findFolder,
   formatListeningTime,
@@ -105,7 +106,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
       // The chosen genre leads the row, so it stays easy to click off.
       if (a === pickedGenre) return -1
       if (b === pickedGenre) return 1
-      return a.localeCompare(b, 'fr', { sensitivity: 'base' })
+      return compareTags(a, b)
     })
   }, [showGenreRow, genreTags, filtered, impliedTags, pickedGenre])
 

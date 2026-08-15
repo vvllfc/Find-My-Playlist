@@ -229,7 +229,7 @@ function isVibeWord(word) {
 
 const INTENSITY_TOKENS = {
   'much higher': 'energetic+',
-  chillfort: 'chill+',
+  chillfort: 'Chill Fort',
   higher: 'energetic',
   chill: 'chill',
   // Confirmed synonyms for the same scale, from inconsistent naming that

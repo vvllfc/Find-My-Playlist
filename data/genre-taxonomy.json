@@ -31,7 +31,7 @@
     "match": { "type": "prefix", "value": "Jazzy" },
     "genre": "Jazzy Soul",
     "subgenreTokens": ["All Season", "Summer", "Winter"],
-    "tempoTokens": { "chillfort": "chill+", "chill": "chill" },
+    "tempoTokens": { "chillfort": "Chill Fort", "chill": "chill" },
     "eraTokens": ["Very Old S", "Old S"]
   },
   {
@@ -39,20 +39,20 @@
     "match": { "type": "prefix", "value": "Raggameff" },
     "genre": "Raggameff",
     "subgenreTokens": ["Dubbidub", "New Vibe", "Old Vibe"],
-    "tempoTokens": { "much higher": "energetic+", "chillfort": "chill+", "chill": "chill", "higher": "energetic" },
+    "tempoTokens": { "much higher": "energetic+", "chillfort": "Chill Fort", "chill": "chill", "higher": "energetic" },
     "voiceToken": "Voice"
   },
   {
     "id": "reggaeton",
     "match": { "type": "prefix", "value": "Reggaeton" },
     "genre": "Reggaeton",
-    "tempoTokens": { "chillfort": "chill+", "chill": "chill" }
+    "tempoTokens": { "chillfort": "Chill Fort", "chill": "chill" }
   },
   {
     "id": "ska",
     "match": { "type": "prefix", "value": "Ska" },
     "genre": "Ska",
-    "tempoTokens": { "chillfort": "chill+", "chill": "chill" }
+    "tempoTokens": { "chillfort": "Chill Fort", "chill": "chill" }
   },
   {
     "id": "classique",
@@ -63,14 +63,15 @@
     "id": "over-the-clouds",
     "match": { "type": "prefix", "value": "Over The Clouds" },
     "genre": "Over The Clouds",
-    "tempoTokens": { "chillfort": "chill+", "chill": "chill", "higher": "energetic" },
+    "tagTokens": ["Emo", "Melo", "Elec"],
+    "tempoTokens": { "chillfort": "Chill Fort", "chill": "chill", "higher": "energetic" },
     "voiceToken": "Voice"
   },
   {
     "id": "over-the-sky",
     "match": { "type": "prefix", "value": "Over The Sky" },
     "genre": "Over The Sky",
-    "tempoTokens": { "chillfort": "chill+", "chill": "chill", "higher": "energetic" },
+    "tempoTokens": { "chillfort": "Chill Fort", "chill": "chill", "higher": "energetic" },
     "voiceToken": "Voice"
   },
   {
@@ -78,7 +79,7 @@
     "match": { "type": "prefix", "value": "Wallaby's" },
     "genre": "Wallaby's",
     "subgenreTokens": ["Deep Rave", "Deep Bass", "Frapcore", "Hard Tracks", "Raggatek", "Journey", "Rave", "Trance", "Acid"],
-    "tempoTokens": { "chillfort": "chill+", "chill": "chill", "hard": "energetic" },
+    "tempoTokens": { "chillfort": "Chill Fort", "chill": "chill", "hard": "energetic" },
     "voiceToken": "Voice"
   },
   {
