@@ -237,6 +237,37 @@
   border-bottom: 1px solid var(--border);
   color: inherit;
 }
+/* Hand-picked favourites, framed rather than merely marked. The frame replaces
+   the row's own separator, so it reads as one object instead of a row wearing
+   an extra line. */
+.row.favorite {
+  border: 1px solid var(--violet);
+  border-radius: 0.5rem;
+  /* Held slightly off its neighbours so the frame doesn't sit flush against
+     the separator above it and read as a thicker rule. */
+  margin: 0.45rem 0;
+}
+/* Starts inside the frame and rides up over the top edge. The disc behind it
+   is the tracklist's own background, which cuts the border cleanly rather
+   than letting a line run through the heart. */
+.row-heart {
+  position: absolute;
+  top: -0.62rem;
+  right: 0.9rem;
+  display: grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--violet);
+}
+.row-heart svg {
+  display: block;
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
 /* The link sits on the name, then stretches back over the whole row, so the
    row still opens Spotify from anywhere — while leaving the tags below it as
    real buttons rather than text inside a link. */

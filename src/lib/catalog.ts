@@ -31,6 +31,8 @@ export interface CatalogPlaylist {
   subsubcategory: string | null
   /** Rung on the genre's calmest-to-most-energetic ladder; null sorts last. */
   energyRank: number | null
+  /** Hand-picked favourite, framed on the public catalog. */
+  favorite: boolean
   tags: string[]
 }
 

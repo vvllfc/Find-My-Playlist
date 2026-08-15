@@ -34,6 +34,7 @@ function playlist(
     subcategory,
     subsubcategory,
     energyRank: null,
+    favorite: false,
     tags: category ? [category] : [],
   }
 }

@@ -4,7 +4,7 @@ import { buildFolderTree, listAllFolders, type Folder } from '../lib/catalog'
 import { SPOTIFY_CLIENT_ID } from '../config'
 import { clearTokens, ensureFreshAccessToken, isLoggedIn, startLogin } from '../lib/spotifyAuth'
 import { fetchMyPlaylists, fetchPlaylistName, renamePlaylist } from '../lib/spotifyApi'
-import { useSiteContentStore, withPlaylistMeta, type SiteContentStore } from '../lib/siteContent'
+import { useSiteContentStore, withPlaylistMeta, type PlaylistMeta, type SiteContentStore } from '../lib/siteContent'
 import { clearCachedEditPlaylists, getCachedEditPlaylists, setCachedEditPlaylists, updateCachedEditPlaylist } from '../lib/editPlaylistsCache'
 import { isUnlocked } from '../lib/adminGate'
 import PasswordGate from './PasswordGate'
@@ -158,6 +158,8 @@ function PlaylistEditor({ store }: { store: SiteContentStore }) {
   const [savedName, setSavedName] = useState('')
   const [description, setDescription] = useState('')
   const [savedDescription, setSavedDescription] = useState('')
+  const [favorite, setFavorite] = useState(false)
+  const [savedFavorite, setSavedFavorite] = useState(false)
   const [formStatus, setFormStatus] = useState<string | null>(null)
   const [formLoading, setFormLoading] = useState(false)
 
@@ -199,18 +201,20 @@ function PlaylistEditor({ store }: { store: SiteContentStore }) {
     return q ? list.filter((p) => p.name.toLowerCase().includes(q)) : list
   }, [privatePlaylists, query])
 
-  function startEditing(source: Source, id: string, currentName: string, siteDescription: string) {
+  function startEditing(source: Source, id: string, currentName: string, siteDescription: string, isFavorite: boolean) {
     setSelected({ source, id })
     setName(currentName)
     setSavedName(currentName)
     setDescription(siteDescription)
     setSavedDescription(siteDescription)
+    setFavorite(isFavorite)
+    setSavedFavorite(isFavorite)
     setFormStatus(null)
   }
 
   async function selectPublic(id: string, listName: string) {
-    const siteDescription = store.loaded?.content.playlists[id]?.description ?? ''
-    startEditing('public', id, listName, siteDescription)
+    const meta = store.loaded?.content.playlists[id]
+    startEditing('public', id, listName, meta?.description ?? '', meta?.favorite === true)
 
     // The static JSON is a snapshot from the last build; the name may have
     // moved on Spotify since, so confirm it before offering it for editing.
@@ -233,7 +237,7 @@ function PlaylistEditor({ store }: { store: SiteContentStore }) {
 
   function selectPrivate(id: string) {
     const playlist = privatePlaylists?.find((p) => p.id === id)
-    startEditing('private', id, playlist?.name ?? '', '')
+    startEditing('private', id, playlist?.name ?? '', '', false)
   }
 
   async function save(e: FormEvent) {
@@ -242,7 +246,8 @@ function PlaylistEditor({ store }: { store: SiteContentStore }) {
 
     const nameChanged = name.trim() !== savedName.trim()
     const descriptionChanged = selected.source === 'public' && description.trim() !== savedDescription.trim()
-    if (!nameChanged && !descriptionChanged) {
+    const favoriteChanged = selected.source === 'public' && favorite !== savedFavorite
+    if (!nameChanged && !descriptionChanged && !favoriteChanged) {
       setFormStatus('Rien à enregistrer.')
       return
     }
@@ -267,10 +272,17 @@ function PlaylistEditor({ store }: { store: SiteContentStore }) {
       }
     }
 
-    if (descriptionChanged) {
+    // Both live in the same file, so they go in one commit rather than two.
+    if (descriptionChanged || favoriteChanged) {
       const id = selected.id
-      await store.save((content) => withPlaylistMeta(content, id, { description: description.trim() }), 'Update playlist description')
+      const patch: PlaylistMeta = {}
+      if (descriptionChanged) patch.description = description.trim()
+      // Undefined rather than false so unmarking drops the key entirely
+      // instead of leaving a "favorite": false behind on every playlist.
+      if (favoriteChanged) patch.favorite = favorite || undefined
+      await store.save((content) => withPlaylistMeta(content, id, patch), 'Update playlist content')
       setSavedDescription(description.trim())
+      setSavedFavorite(favorite)
       return
     }
 
@@ -346,6 +358,11 @@ function PlaylistEditor({ store }: { store: SiteContentStore }) {
                       className={selectedPublic && selected?.id === p.id ? 'selected' : ''}
                       onClick={() => selectPublic(p.id, p.name)}
                     >
+                      {store.loaded?.content.playlists[p.id]?.favorite && (
+                        <span className="badge-favorite" aria-label="Coup de cœur">
+                          ♥
+                        </span>
+                      )}
                       {p.name}
                       {!store.loaded?.content.playlists[p.id]?.description && (
                         <span className="badge-new">sans description</span>
@@ -387,10 +404,16 @@ function PlaylistEditor({ store }: { store: SiteContentStore }) {
                 <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
               </label>
               {selectedPublic ? (
-                <label>
-                  Description du site (affichée sur la page publique)
-                  <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
-                </label>
+                <>
+                  <label>
+                    Description du site (affichée sur la page publique)
+                    <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+                  </label>
+                  <label className="admin-toggle">
+                    <input type="checkbox" checked={favorite} onChange={(e) => setFavorite(e.target.checked)} />
+                    Coup de cœur — encadrée en violet sur le site public
+                  </label>
+                </>
               ) : (
                 <p className="hint">Playlist privée : elle n'apparaît pas sur le site public, donc pas de description.</p>
               )}

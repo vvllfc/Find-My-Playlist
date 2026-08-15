@@ -187,10 +187,35 @@
   white-space: nowrap;
 }
 
+/* Marks a favourite in the list, so they can be spotted without opening each
+   one. Just the heart — the label would crowd every other row's name. */
+.badge-favorite {
+  color: var(--violet);
+  font-size: 0.95rem;
+  line-height: 1;
+  margin-right: 0.4rem;
+}
+
 .admin-form {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+/* A checkbox reads as a control beside its label, not above it like the text
+   fields around it. */
+.admin-toggle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+}
+.admin-toggle input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--violet);
+  cursor: pointer;
 }
 
 .admin-form label {

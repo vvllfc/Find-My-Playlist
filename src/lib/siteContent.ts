@@ -13,6 +13,8 @@ import type { FolderMeta } from './catalog'
 export interface PlaylistMeta {
   tags?: string[]
   description?: string
+  /** Marked as a favourite; the public catalog frames it. Absent means no. */
+  favorite?: boolean
 }
 
 export interface SiteContent {

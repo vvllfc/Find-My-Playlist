@@ -332,6 +332,7 @@ async function main() {
       subsubcategory,
       displayNames,
       energyRank,
+      favorite: entry?.favorite === true,
       tags: entry?.tags ?? tags,
     }
   })

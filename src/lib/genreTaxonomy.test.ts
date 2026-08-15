@@ -423,6 +423,7 @@ describe('displayNameAtDepth', () => {
     subcategory: null,
     subsubcategory: null,
     energyRank: null,
+    favorite: false,
     tags: [],
   })
 
