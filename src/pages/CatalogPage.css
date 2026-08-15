@@ -127,6 +127,11 @@
      the search bar adrift from what introduces it. */
   margin: 1.25rem 0 2rem;
 }
+/* Inside a folder the back button takes the top slot, and both margins in a
+   row put the strip adrift again. */
+.back-link + .mixer {
+  margin-top: 0.9rem;
+}
 .mixer input[type='search'] {
   flex: 1 1 14rem;
   min-width: 8rem;
@@ -182,6 +187,21 @@
 }
 .tag-toggle.open::after {
   content: ' ▴';
+}
+
+/* An action, not a filter — so it takes the green used for "go" everywhere
+   else on the page rather than the violet worn by the chips beside it. */
+.tag-surprise {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.42rem 0.9rem;
+  border-color: rgba(30, 215, 96, 0.45);
+  background: rgba(30, 215, 96, 0.12);
+  white-space: nowrap;
+}
+.tag-surprise:hover:not(:disabled) {
+  border-color: var(--accent);
 }
 
 /* The choices, unfolded inside the mixer itself rather than a second box
@@ -529,17 +549,39 @@
   font-size: 0.95rem;
 }
 
+/* A button rather than a line of small grey text: at 0.85rem in --muted it
+   read as a caption and was being missed. The arrow carries most of the size —
+   it's the part people look for — and the padding brings the tap target up to
+   ~44px, which the bare text link never was. */
 .back-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
   font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--muted);
+  font-size: 0.95rem;
+  color: var(--ink);
   text-decoration: none;
-  margin: 0 0 1rem;
+  margin: 1.25rem 0 0;
+  padding: 0.4rem 1rem 0.4rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+}
+.back-arrow {
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--accent);
+  /* The glyph sits high in its own box; pulls it back onto the text's centre. */
+  margin-top: -0.12em;
 }
 .back-link:hover,
 .back-link:focus-visible {
   color: var(--ink);
+  border-color: var(--accent);
+}
+.back-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .search-summary {
@@ -547,4 +589,19 @@
   font-size: 0.85rem;
   color: var(--muted);
   margin: 0 0 1rem;
+}
+/* The way out of a surprise, sitting in the line that explains it — as a chip
+   in the mixer it would read as one more filter. */
+.summary-action {
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: none;
+  padding: 0;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.summary-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

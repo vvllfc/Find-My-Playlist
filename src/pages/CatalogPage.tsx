@@ -18,6 +18,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   const [query, setQuery] = useState('')
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set())
   const [tagsOpen, setTagsOpen] = useState(false)
+  const [surprise, setSurprise] = useState<CatalogPlaylist | null>(null)
 
   const [slug, subslug, subsubslug] =
     segments[0] === 'genre' ? [segments[1] ?? null, segments[2] ?? null, segments[3] ?? null] : [null, null, null]
@@ -51,10 +52,14 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
     return catalog?.playlists ?? []
   }, [isSearching, catalog, current])
 
-  // Reset the tag filter when moving between folders so a stale selection
-  // can't silently hide everything in the next one.
+  // Reset the filters when moving between folders so a stale selection can't
+  // silently hide everything in the next one. The query goes with them: the
+  // search box isn't rendered inside a folder, so a query left over from
+  // before would narrow the list with nothing on screen to say why.
   useEffect(() => {
     setActiveTags(new Set())
+    setQuery('')
+    setSurprise(null)
   }, [slug, subslug, subsubslug])
 
   // Tags redundant with where you already are: the names of every folder on
@@ -130,6 +135,9 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   }
 
   function toggleTag(tag: string) {
+    // Filtering is a deliberate move back to the whole list — keeping a single
+    // random playlist on screen would make the new filter look broken.
+    setSurprise(null)
     setActiveTags((prev) => {
       const next = new Set(prev)
       if (next.has(tag)) {
@@ -144,6 +152,27 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
     })
   }
 
+  // Drawn from whatever is currently on screen rather than the whole catalog,
+  // so a surprise inside Techno is a Techno playlist and a surprise on a
+  // search is one of its results. Re-rolling never hands back the one already
+  // showing — a button that visibly does nothing reads as broken.
+  function pickSurprise() {
+    const pool = filtered.length > 1 ? filtered.filter((p) => p.id !== surprise?.id) : filtered
+    if (pool.length === 0) return
+    setSurprise(pool[Math.floor(Math.random() * pool.length)])
+  }
+
+  // A surprise replaces the listing rather than filtering it, so backing out
+  // of it restores exactly what was there before.
+  const shown = surprise ? [surprise] : filtered
+
+  // Inside a folder the search box goes away — the folder is the query. What
+  // stays is the tag row, and only where playlists are actually listed: over a
+  // grid of sub-folders the chips filter nothing you can see. No folder carries
+  // more than eight of them, so they sit open instead of behind the toggle.
+  const inFolder = Boolean(match)
+  const showTagRow = chips.length > 0 && (!inFolder || Boolean(listedFolder))
+
   // Route only, deliberately not the query — otherwise every keystroke in the
   // search box would replay the arrival animation.
   const routeKey = `${slug ?? ''}/${subslug ?? ''}/${subsubslug ?? ''}`
@@ -153,7 +182,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   const ancestorFolders = matchedFolders.slice(0, -1)
   const backTarget =
     ancestorFolders.length > 0 ? `/genre/${ancestorFolders.map((f) => f.slug).join('/')}` : '/'
-  const backLabel = ancestorFolders.length > 0 ? `← ${ancestorFolders[ancestorFolders.length - 1].name}` : '← Tous les genres'
+  const backLabel = ancestorFolders.length > 0 ? ancestorFolders[ancestorFolders.length - 1].name : 'Tous les genres'
   const breadcrumbPrefix = ancestorFolders.map((f) => f.name).join(' — ')
 
   return (
@@ -164,7 +193,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
           <h1>Trouve ta playlist</h1>
           <p>
             {catalog ? `${catalog.playlists.length} playlists` : 'Playlists'} classées par genre, tempo et présence
-            de voix — cherche par nom ou parcours les dossiers.
+            de voix.
             <br />
             Dans chaque dossier, elles sont rangées par tempo&nbsp;: toujours du plus chill au plus NRV.
           </p>
@@ -178,46 +207,75 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
 
         {catalog && (
           <>
-            <div className="mixer" role="search">
-              <input
-                type="search"
-                placeholder="Rechercher une playlist…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                aria-label="Rechercher une playlist"
-              />
-              {chips.length > 0 && (
-                <>
-                  <div className="mixer-divider" />
-                  {/* Folded away by default: laid out flat, twenty-odd genres
-                      filled the screen on a phone before any playlist showed. */}
-                  <button
-                    type="button"
-                    className={tagsOpen ? 'tag tag-toggle open' : 'tag tag-toggle'}
-                    aria-expanded={tagsOpen}
-                    onClick={() => setTagsOpen((open) => !open)}
-                  >
-                    Tags{activeTags.size > 0 ? ` · ${activeTags.size}` : ''}
-                  </button>
-                  {/* What's filtering stays visible even when folded, so the
-                      list is never quietly narrowed by something off screen. */}
-                  {chips.filter((tag) => activeTags.has(tag)).map((tag) => renderChip(tag))}
-                  {/* Unfolds inside the same mixer box rather than a second
-                      one underneath — it's still one filter strip. */}
-                  {tagsOpen && chips.some((tag) => !activeTags.has(tag)) && (
-                    <div className="tag-panel">
-                      {chips.filter((tag) => !activeTags.has(tag)).map((tag) => renderChip(tag))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
+            {/* Above the filter strip rather than below it: it's the way out,
+                and behind three rows of chips on a phone it was being missed. */}
             {!isSearching && match && (
               <Link to={backTarget} className="back-link">
+                <span className="back-arrow" aria-hidden="true">
+                  ←
+                </span>
                 {backLabel}
               </Link>
             )}
+
+            <div
+              className="mixer"
+              role={inFolder ? 'group' : 'search'}
+              aria-label={inFolder ? 'Filtrer les playlists' : undefined}
+            >
+              {!inFolder && (
+                <input
+                  type="search"
+                  placeholder="Rechercher une playlist…"
+                  value={query}
+                  onChange={(e) => {
+                    setQuery(e.target.value)
+                    setSurprise(null)
+                  }}
+                  aria-label="Rechercher une playlist"
+                />
+              )}
+              {/* Sits with the search rather than with the tags: both are ways
+                  of getting to a playlist, where the chips narrow a list. */}
+              <button
+                type="button"
+                className="tag tag-surprise"
+                onClick={pickSurprise}
+                disabled={filtered.length === 0}
+              >
+                Surprends-moi
+              </button>
+              {showTagRow && <div className="mixer-divider" />}
+              {showTagRow &&
+                (inFolder ? (
+                  chips.map((tag) => renderChip(tag))
+                ) : (
+                  <>
+                    {/* Folded away at the top level only: laid out flat,
+                        twenty-odd genres filled the screen on a phone before
+                        any playlist showed. A folder's handful doesn't. */}
+                    <button
+                      type="button"
+                      className={tagsOpen ? 'tag tag-toggle open' : 'tag tag-toggle'}
+                      aria-expanded={tagsOpen}
+                      onClick={() => setTagsOpen((open) => !open)}
+                    >
+                      Tags{activeTags.size > 0 ? ` · ${activeTags.size}` : ''}
+                    </button>
+                    {/* What's filtering stays visible even when folded, so the
+                        list is never quietly narrowed by something off screen. */}
+                    {chips.filter((tag) => activeTags.has(tag)).map((tag) => renderChip(tag))}
+                    {/* Unfolds inside the same mixer box rather than a second
+                        one underneath — it's still one filter strip. */}
+                    {tagsOpen && chips.some((tag) => !activeTags.has(tag)) && (
+                      <div className="tag-panel">
+                        {chips.filter((tag) => !activeTags.has(tag)).map((tag) => renderChip(tag))}
+                      </div>
+                    )}
+                  </>
+                ))}
+            </div>
+
             {!isSearching && currentFolder && (
               <header className="folder-header">
                 <h2>
@@ -227,13 +285,23 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                 {folderDescription && <p>{folderDescription}</p>}
               </header>
             )}
-            {isSearching && (
+            {/* Says why a single playlist is on screen, and carries the way
+                back — the mixer button itself re-rolls rather than cancels. */}
+            {surprise && (
+              <p className="search-summary">
+                Une playlist au hasard.{' '}
+                <button type="button" className="summary-action" onClick={() => setSurprise(null)}>
+                  Tout afficher
+                </button>
+              </p>
+            )}
+            {isSearching && !surprise && (
               <p className="search-summary">
                 {filtered.length} résultat{filtered.length > 1 ? 's' : ''} pour «&nbsp;{query.trim()}&nbsp;»
               </p>
             )}
 
-            {!isSearching && gridFolders && activeTags.size === 0 && (
+            {!isSearching && !surprise && gridFolders && activeTags.size === 0 && (
               <FolderGrid
                 // Remounts on each move so the arrival animation replays; React
                 // would otherwise reuse the same grid element between levels.
@@ -245,9 +313,9 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
               />
             )}
 
-            {(isSearching || listedFolder || activeTags.size > 0) && (
+            {(isSearching || listedFolder || activeTags.size > 0 || surprise) && (
               <div className="tracklist" key={routeKey}>
-                {filtered.map((playlist, index) => {
+                {shown.map((playlist, index) => {
                   const listeningTime = formatListeningTime(playlist.totalDurationMs)
                   return (
                     // A div rather than the link itself: the tags below the name
@@ -306,7 +374,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                     </div>
                   )
                 })}
-                {filtered.length === 0 && (
+                {shown.length === 0 && (
                   <p className="catalog-empty">Aucune playlist ne correspond à ta recherche.</p>
                 )}
               </div>
