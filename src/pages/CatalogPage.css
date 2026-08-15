@@ -764,10 +764,11 @@ button.back-link {
    used to turn --ink, which read as the arrow simply being white some of the
    time. Keyboard focus is still marked, by the outline further down rather
    than by changing the link itself. */
-/* The spacing below belongs to the link, so the gap is the same whether the
-   filter strip follows it or the folder heading does. */
-.back-link + .mixer {
-  margin-top: 0;
+/* Inside a folder the strip sits between the heading and the playlists it
+   filters, so it takes the heading's own rhythm rather than the wider gap it
+   needs under the hero on the home page. */
+.folder-header + .mixer {
+  margin: 0 0 1.25rem;
 }
 
 /* The folder's shortcut out to Spotify. It takes the violet the wordmark above

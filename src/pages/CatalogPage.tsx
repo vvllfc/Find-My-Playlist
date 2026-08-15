@@ -323,6 +323,40 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
               </Link>
             )}
 
+            {/* Heading and shortcut side by side, the button flush with the
+                bottom of whatever the text ends on — so its distance to what
+                follows is the same whether or not the folder has a
+                description. Wrapping puts it under the whole block, which is
+                what a phone does without needing to be told. Above the tag
+                strip: name and blurb say what the folder is, and only then
+                comes the means of narrowing it. */}
+            {!isSearching && currentFolder && (
+              <header className="folder-header">
+                <div className="folder-header-text">
+                  <h2>
+                    {breadcrumbPrefix ? `${breadcrumbPrefix} — ` : ''}
+                    {currentFolder.name}
+                  </h2>
+                  {folderDescription && <p>{folderDescription}</p>}
+                </div>
+                {/* Only where playlists are actually listed — over a grid of
+                    sub-folders there is no "this folder's playlists" to draw
+                    from. */}
+                {listedFolder && (
+                  <button
+                    type="button"
+                    className="random-button"
+                    onClick={openRandomInSpotify}
+                    disabled={filtered.length === 0}
+                    title="Ouvre une playlist au hasard de ce dossier dans Spotify"
+                  >
+                    <ShuffleIcon />
+                    Playlist aléatoire
+                  </button>
+                )}
+              </header>
+            )}
+
             {/* Nothing left to put in it inside a folder showing sub-folders:
                 no search, no action, no useful chips — so the box itself goes
                 rather than sitting there empty. */}
@@ -397,37 +431,6 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
             </div>
             )}
 
-            {/* Heading and shortcut side by side, the button flush with the
-                bottom of whatever the text ends on — so its distance to the
-                first playlist is the same whether or not the folder has a
-                description. Wrapping puts it under the whole block, which is
-                what a phone does without needing to be told. */}
-            {!isSearching && currentFolder && (
-              <header className="folder-header">
-                <div className="folder-header-text">
-                  <h2>
-                    {breadcrumbPrefix ? `${breadcrumbPrefix} — ` : ''}
-                    {currentFolder.name}
-                  </h2>
-                  {folderDescription && <p>{folderDescription}</p>}
-                </div>
-                {/* Only where playlists are actually listed — over a grid of
-                    sub-folders there is no "this folder's playlists" to draw
-                    from. */}
-                {listedFolder && (
-                  <button
-                    type="button"
-                    className="random-button"
-                    onClick={openRandomInSpotify}
-                    disabled={filtered.length === 0}
-                    title="Ouvre une playlist au hasard de ce dossier dans Spotify"
-                  >
-                    <ShuffleIcon />
-                    Playlist aléatoire
-                  </button>
-                )}
-              </header>
-            )}
             {/* Says why a single playlist is on screen, and carries the way
                 back — the mixer button itself re-rolls rather than cancels.
                 The same arrow as every other way back, sitting directly above
