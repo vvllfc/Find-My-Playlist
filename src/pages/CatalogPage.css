@@ -844,26 +844,29 @@ button.back-link {
   scroll-margin-top: 1rem;
 }
 
-/* Contents. Plain links in a strip rather than pills — the pill shape is the
-   tags' own, and these navigate rather than filter. */
+/* Contents — a small dashed list, one entry per line. Plain links rather than
+   pills: the pill shape is the tags' own, and these navigate rather than
+   filter. Sentence case and no letter-spacing, so it stays a quiet aside next
+   to the headings it points at. */
 .glossary-toc {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 1.5rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
   margin: 0 0 1.25rem;
-  padding: 0.7rem 1.1rem;
+  padding: 0.7rem 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 0.4rem;
 }
 .glossary-toc a {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-size: 0.75rem;
   color: var(--violet);
   text-decoration: none;
+}
+.glossary-toc a::before {
+  content: '— ';
 }
 .glossary-toc a:hover {
   text-decoration: underline;

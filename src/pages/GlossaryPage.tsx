@@ -43,7 +43,7 @@ const NAVIGATION_HELP = [
 const SECTIONS = {
   help: { id: 'se-reperer', title: 'Se repérer' },
   genres: { id: 'les-genres', title: 'Les genres' },
-  refinements: { id: 'les-autres-tags', title: 'Les autres tags' },
+  refinements: { id: 'les-tags', title: 'Les tags' },
 }
 
 export default function GlossaryPage() {
