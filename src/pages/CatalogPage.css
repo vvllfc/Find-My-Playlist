@@ -189,19 +189,43 @@
   content: ' ▴';
 }
 
-/* An action, not a filter — so it takes the green used for "go" everywhere
-   else on the page rather than the violet worn by the chips beside it. */
-.tag-surprise {
+/* Deliberately not built on .tag: it acts on the catalog rather than filtering
+   it, so nothing about it should read as a chip. Square corners against their
+   pills, a solid fill against their outlines, and the dice says at a glance
+   what it does — three ways of not being mistaken for a filter. */
+.surprise-button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-mono);
   font-size: 0.85rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 0.42rem 0.9rem;
-  border-color: rgba(30, 215, 96, 0.45);
-  background: rgba(30, 215, 96, 0.12);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.5rem 0.95rem;
+  border: none;
+  border-radius: 0.3rem;
+  background: var(--accent-fill);
+  color: var(--accent-ink);
+  cursor: pointer;
   white-space: nowrap;
 }
-.tag-surprise:hover:not(:disabled) {
-  border-color: var(--accent);
+.surprise-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  display: block;
+}
+.surprise-button:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+.surprise-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.surprise-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* The choices, unfolded inside the mixer itself rather than a second box
@@ -549,35 +573,28 @@
   font-size: 0.95rem;
 }
 
-/* A button rather than a line of small grey text: at 0.85rem in --muted it
-   read as a caption and was being missed. The arrow carries most of the size —
-   it's the part people look for — and the padding brings the tap target up to
-   ~44px, which the bare text link never was. */
+/* Plain text as it always was — the pill-and-border treatment belongs to the
+   tags, and wearing it here made a piece of navigation look like a filter.
+   Only the arrow is enlarged, which is what was actually hard to spot. */
 .back-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.45rem;
   font-family: var(--font-mono);
-  font-size: 0.95rem;
-  color: var(--ink);
+  font-size: 0.85rem;
+  color: var(--muted);
   text-decoration: none;
   margin: 1.25rem 0 0;
-  padding: 0.4rem 1rem 0.4rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
 }
 .back-arrow {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   line-height: 1;
-  color: var(--accent);
   /* The glyph sits high in its own box; pulls it back onto the text's centre. */
-  margin-top: -0.12em;
+  margin-top: -0.09em;
 }
 .back-link:hover,
 .back-link:focus-visible {
   color: var(--ink);
-  border-color: var(--accent);
 }
 .back-link:focus-visible {
   outline: 2px solid var(--accent);

@@ -172,6 +172,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   // more than eight of them, so they sit open instead of behind the toggle.
   const inFolder = Boolean(match)
   const showTagRow = chips.length > 0 && (!inFolder || Boolean(listedFolder))
+  const showMixer = !inFolder || showTagRow
 
   // Route only, deliberately not the query — otherwise every keystroke in the
   // search box would replay the arrival animation.
@@ -218,6 +219,10 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
               </Link>
             )}
 
+            {/* Nothing left to put in it inside a folder showing sub-folders:
+                no search, no action, no useful chips — so the box itself goes
+                rather than sitting there empty. */}
+            {showMixer && (
             <div
               className="mixer"
               role={inFolder ? 'group' : 'search'}
@@ -235,17 +240,25 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                   aria-label="Rechercher une playlist"
                 />
               )}
-              {/* Sits with the search rather than with the tags: both are ways
-                  of getting to a playlist, where the chips narrow a list. */}
-              <button
-                type="button"
-                className="tag tag-surprise"
-                onClick={pickSurprise}
-                disabled={filtered.length === 0}
-              >
-                Surprends-moi
-              </button>
-              {showTagRow && <div className="mixer-divider" />}
+              {/* Only alongside the search box, and deliberately not a chip:
+                  it acts on the catalog instead of narrowing it. */}
+              {!inFolder && (
+                <button
+                  type="button"
+                  className="surprise-button"
+                  onClick={pickSurprise}
+                  disabled={filtered.length === 0}
+                >
+                  <svg className="surprise-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" strokeWidth="2" />
+                    <circle cx="8.5" cy="8.5" r="1.6" fill="currentColor" />
+                    <circle cx="12" cy="12" r="1.6" fill="currentColor" />
+                    <circle cx="15.5" cy="15.5" r="1.6" fill="currentColor" />
+                  </svg>
+                  Surprends-moi
+                </button>
+              )}
+              {showTagRow && !inFolder && <div className="mixer-divider" />}
               {showTagRow &&
                 (inFolder ? (
                   chips.map((tag) => renderChip(tag))
@@ -275,6 +288,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                   </>
                 ))}
             </div>
+            )}
 
             {!isSearching && currentFolder && (
               <header className="folder-header">
