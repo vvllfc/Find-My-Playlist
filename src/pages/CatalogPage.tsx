@@ -13,12 +13,60 @@ import {
 } from '../lib/catalog'
 import './CatalogPage.css'
 
+// Pip positions on the standard 3×3 face grid, in the 24×24 viewBox below.
+const DIE_PIPS: Record<number, Array<[number, number]>> = {
+  1: [[12, 12]],
+  2: [
+    [8.5, 8.5],
+    [15.5, 15.5],
+  ],
+  3: [
+    [8.5, 8.5],
+    [12, 12],
+    [15.5, 15.5],
+  ],
+  4: [
+    [8.5, 8.5],
+    [15.5, 8.5],
+    [8.5, 15.5],
+    [15.5, 15.5],
+  ],
+  5: [
+    [8.5, 8.5],
+    [15.5, 8.5],
+    [12, 12],
+    [8.5, 15.5],
+    [15.5, 15.5],
+  ],
+  6: [
+    [8.5, 8.5],
+    [15.5, 8.5],
+    [8.5, 12],
+    [15.5, 12],
+    [8.5, 15.5],
+    [15.5, 15.5],
+  ],
+}
+const DIE_FACES = Object.keys(DIE_PIPS).map(Number)
+
+function Die({ face }: { face: number }) {
+  return (
+    <svg className="surprise-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" strokeWidth="2" />
+      {(DIE_PIPS[face] ?? DIE_PIPS[3]).map(([cx, cy]) => (
+        <circle key={`${cx},${cy}`} cx={cx} cy={cy} r="1.7" fill="currentColor" />
+      ))}
+    </svg>
+  )
+}
+
 export default function CatalogPage({ segments }: { segments: string[] }) {
   const { catalog, error } = useCatalog()
   const [query, setQuery] = useState('')
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set())
   const [tagsOpen, setTagsOpen] = useState(false)
   const [surprise, setSurprise] = useState<CatalogPlaylist | null>(null)
+  const [dieFace, setDieFace] = useState(3)
 
   const [slug, subslug, subsubslug] =
     segments[0] === 'genre' ? [segments[1] ?? null, segments[2] ?? null, segments[3] ?? null] : [null, null, null]
@@ -160,6 +208,12 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
     const pool = filtered.length > 1 ? filtered.filter((p) => p.id !== surprise?.id) : filtered
     if (pool.length === 0) return
     setSurprise(pool[Math.floor(Math.random() * pool.length)])
+    // The die lands on a new face every roll, for the same reason the playlist
+    // does: a face that came up twice would look like the click was lost.
+    setDieFace((face) => {
+      const others = DIE_FACES.filter((f) => f !== face)
+      return others[Math.floor(Math.random() * others.length)]
+    })
   }
 
   // A surprise replaces the listing rather than filtering it, so backing out
@@ -189,15 +243,22 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   return (
     <div className="catalog-page">
       <div className="hero-zone">
-        <div className="hero-inner">
+        {/* Only where it's an introduction. Inside a folder it has already been
+            read on the way in, and it pushed the folder's own name — the
+            heading that actually matters there — down past the fold. */}
+        <div className={inFolder ? 'hero-inner compact' : 'hero-inner'}>
           <p className="kicker">VLF Music</p>
-          <h1>Trouve ta playlist</h1>
-          <p>
-            {catalog ? `${catalog.playlists.length} playlists` : 'Playlists'} classées par genre, tempo et présence
-            de voix.
-            <br />
-            Dans chaque dossier, elles sont rangées par tempo&nbsp;: toujours du plus chill au plus NRV.
-          </p>
+          {!inFolder && (
+            <>
+              <h1>Trouve ta playlist</h1>
+              <p>
+                {catalog ? `${catalog.playlists.length} playlists` : 'Playlists'} classées par genre, tempo et
+                présence de voix.
+                <br />
+                Dans chaque dossier, elles sont rangées par tempo&nbsp;: toujours du plus chill au plus NRV.
+              </p>
+            </>
+          )}
         </div>
       </div>
 
@@ -249,13 +310,8 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                   onClick={pickSurprise}
                   disabled={filtered.length === 0}
                 >
-                  <svg className="surprise-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <rect x="3" y="3" width="18" height="18" rx="4" fill="none" stroke="currentColor" strokeWidth="2" />
-                    <circle cx="8.5" cy="8.5" r="1.6" fill="currentColor" />
-                    <circle cx="12" cy="12" r="1.6" fill="currentColor" />
-                    <circle cx="15.5" cy="15.5" r="1.6" fill="currentColor" />
-                  </svg>
                   Surprends-moi
+                  <Die face={dieFace} />
                 </button>
               )}
               {showTagRow && !inFolder && <div className="mixer-divider" />}
