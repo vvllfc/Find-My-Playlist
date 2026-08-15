@@ -162,8 +162,9 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
           <p className="kicker">VLF Music</p>
           <h1>Trouve ta playlist</h1>
           <p>
-            {catalog ? `${catalog.playlists.length} playlists` : 'Playlists'} triées par genre, tempo et présence
-            de voix — cherche par nom ou parcours les dossiers.
+            {catalog ? `${catalog.playlists.length} playlists` : 'Playlists'} classées par genre, tempo et présence
+            de voix — cherche par nom ou parcours les dossiers. Dans chaque dossier, elles sont rangées par
+            tempo&nbsp;: toujours du plus chill au plus NRV.
           </p>
         </div>
       </div>
