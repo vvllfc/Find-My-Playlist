@@ -80,6 +80,9 @@
   max-width: 36em;
   font-size: 1.05rem;
   opacity: 0.85;
+  /* Keeps the last word of each line off a line of its own — both sentences
+     wrap here, and "NRV." was ending up stranded. */
+  text-wrap: pretty;
 }
 
 .catalog {
