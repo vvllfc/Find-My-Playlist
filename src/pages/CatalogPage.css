@@ -45,10 +45,16 @@
   pointer-events: none;
   z-index: 0;
 }
-.hero-zone,
 .catalog {
   position: relative;
   z-index: 1;
+}
+/* Above .catalog, not level with it. The corner menu's panel hangs past the
+   bottom of the hero, and at the same z-index the later element wins — so the
+   catalog was painting over the overhang and swallowing its clicks. */
+.hero-zone {
+  position: relative;
+  z-index: 2;
 }
 .hero-inner {
   max-width: 68rem;
@@ -72,6 +78,16 @@
   font-size: 0.8rem;
   color: var(--violet);
   margin: 0 0 0.5rem;
+}
+/* The wordmark doubles as the way home. Inline rather than filling the <p>, so
+   only the words are clickable and not the empty width beside them. */
+.kicker-link {
+  color: inherit;
+  text-decoration: none;
+}
+.kicker-link:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 3px;
 }
 .hero-inner h1 {
   font-family: var(--font-display);
@@ -229,6 +245,17 @@
   width: 1px;
   align-self: stretch;
   background: var(--border);
+}
+/* Names the strip where nothing else does. Same type as the .tag-toggle it
+   stands in for at the top level, so the two read as the same label — white
+   rather than the chips' violet, being a heading and not a filter. */
+.mixer-label {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink);
 }
 .tag {
   font-family: var(--font-mono);
@@ -672,20 +699,24 @@
 
 /* Header shown inside a folder (and sub-folder) — name + the hand-written
    description from site content. */
+/* Wraps rather than switching layout at a breakpoint: the button drops under
+   the text exactly when the two stop fitting, which depends on how long the
+   folder's name and blurb are as much as on the screen. `flex-end` is what
+   keeps the button's distance to the first playlist constant — it sits on the
+   baseline of the block, whether that block ends on the name or on a
+   description under it. */
 .folder-header {
   margin: 0 0 1.25rem;
-}
-/* Wraps rather than switching layout at a breakpoint: the button drops under
-   the name exactly when the two stop fitting, which depends on how long the
-   folder's name is as much as on the screen. */
-.folder-header-top {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 0.6rem 1rem;
 }
-.folder-header-top .random-button {
+.folder-header-text {
+  min-width: 0;
+}
+.folder-header .random-button {
   margin: 0;
 }
 .folder-header h2 {
@@ -808,6 +839,38 @@ button.back-link {
   border-radius: 0.4rem;
   padding: 1.25rem 1.5rem 1.5rem;
   margin: 0 0 1.25rem;
+  /* Jumped to from the contents above, so the heading lands with a little air
+     over it rather than flush against the top of the window. */
+  scroll-margin-top: 1rem;
+}
+
+/* Contents. Plain links in a strip rather than pills — the pill shape is the
+   tags' own, and these navigate rather than filter. */
+.glossary-toc {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1.5rem;
+  margin: 0 0 1.25rem;
+  padding: 0.7rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+}
+.glossary-toc a {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--violet);
+  text-decoration: none;
+}
+.glossary-toc a:hover {
+  text-decoration: underline;
+}
+.glossary-toc a:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 3px;
 }
 .glossary-section h2 {
   font-family: var(--font-display);
@@ -829,11 +892,28 @@ button.back-link {
   font-size: 0.95rem;
   max-width: 44em;
 }
-.glossary-help,
-.glossary-tags {
+.glossary-help {
   margin: 0;
   display: grid;
   gap: 0.9rem;
+}
+/* A two-column list: tags down the left, meanings down the right, each pair a
+   row with a rule under it. Reads as a reference table rather than as prose. */
+.glossary-tags {
+  margin: 0;
+  display: grid;
+  grid-template-columns: minmax(6rem, 13rem) 1fr;
+  /* Left on the default `stretch`. Baseline alignment gave the two cells of a
+     row different heights, so each drew its rule at a different y and the list
+     came out as a staircase of broken lines. */
+}
+.glossary-tags dt,
+.glossary-tags dd {
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+}
+.glossary-tags dt {
+  padding-right: 1rem;
 }
 .glossary-help dt {
   font-family: var(--font-mono);
@@ -848,25 +928,28 @@ button.back-link {
   max-width: 48em;
   font-size: 0.98rem;
 }
-/* The chip and its use-count on one line, the meaning under them — so the
-   column of tags stays scannable when most of them have no description yet. */
-.glossary-tags dt {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-}
 .glossary-tags dd {
-  margin: 0.3rem 0 0;
+  margin: 0;
   max-width: 48em;
   font-size: 0.95rem;
   color: var(--muted);
 }
-.glossary-uses {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
+/* Two columns don't fit a phone, so the meaning drops under its tag — the rule
+   then belongs under the pair, not between its halves. */
+@media (max-width: 640px) {
+  .glossary-tags {
+    grid-template-columns: 1fr;
+  }
+  .glossary-tags dt {
+    border-bottom: none;
+    padding: 0.6rem 0 0.3rem;
+  }
+  .glossary-tags dd {
+    padding-top: 0;
+  }
+  .glossary-tags dd:empty {
+    padding: 0;
+  }
 }
 /* Not a filter here, just a label — so it drops the pointer the catalog's
    clickable chips carry. */

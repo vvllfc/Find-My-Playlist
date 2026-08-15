@@ -286,7 +286,11 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
             heading that actually matters there — down past the fold. */}
         <div className={inFolder ? 'hero-inner compact' : 'hero-inner'}>
           <SiteMenu />
-          <p className="kicker">VLF Music</p>
+          <p className="kicker">
+            <Link to="/" className="kicker-link">
+              VLF Music
+            </Link>
+          </p>
           {!inFolder && (
             <>
               <h1>Trouve ta playlist</h1>
@@ -353,65 +357,75 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                   <Die face={dieFace} />
                 </button>
               )}
-              {showTagRow && !inFolder && <div className="mixer-divider" />}
-              {showTagRow &&
-                (inFolder ? (
-                  chips.map((tag) => renderChip(tag))
-                ) : (
-                  <>
-                    {/* Folded away at the top level only: laid out flat,
-                        twenty-odd genres filled the screen on a phone before
-                        any playlist showed. A folder's handful doesn't. */}
-                    <button
-                      type="button"
-                      className={tagsOpen ? 'tag tag-toggle open' : 'tag tag-toggle'}
-                      aria-expanded={tagsOpen}
-                      onClick={() => setTagsOpen((open) => !open)}
-                    >
-                      Tags{activeTags.size > 0 ? ` · ${activeTags.size}` : ''}
-                    </button>
-                    {/* What's filtering stays visible even when folded, so the
-                        list is never quietly narrowed by something off screen. */}
-                    {chips.filter((tag) => activeTags.has(tag)).map((tag) => renderChip(tag))}
-                    {/* Unfolds inside the same mixer box rather than a second
-                        one underneath — it's still one filter strip. */}
-                    {tagsOpen && chips.some((tag) => !activeTags.has(tag)) && (
-                      <div className="tag-panel">
-                        {chips.filter((tag) => !activeTags.has(tag)).map((tag) => renderChip(tag))}
-                      </div>
-                    )}
-                  </>
-                ))}
+              {showTagRow && (
+                <>
+                  {/* Inside a folder the strip is nothing but tags, so it says
+                      so outright — at the top level the toggle below already
+                      carries that word. */}
+                  {inFolder && <span className="mixer-label">Tags</span>}
+                  <div className="mixer-divider" />
+                  {inFolder ? (
+                    chips.map((tag) => renderChip(tag))
+                  ) : (
+                    <>
+                      {/* Folded away at the top level only: laid out flat,
+                          twenty-odd genres filled the screen on a phone before
+                          any playlist showed. A folder's handful doesn't. */}
+                      <button
+                        type="button"
+                        className={tagsOpen ? 'tag tag-toggle open' : 'tag tag-toggle'}
+                        aria-expanded={tagsOpen}
+                        onClick={() => setTagsOpen((open) => !open)}
+                      >
+                        Tags{activeTags.size > 0 ? ` · ${activeTags.size}` : ''}
+                      </button>
+                      {/* What's filtering stays visible even when folded, so
+                          the list is never quietly narrowed by something off
+                          screen. */}
+                      {chips.filter((tag) => activeTags.has(tag)).map((tag) => renderChip(tag))}
+                      {/* Unfolds inside the same mixer box rather than a second
+                          one underneath — it's still one filter strip. */}
+                      {tagsOpen && chips.some((tag) => !activeTags.has(tag)) && (
+                        <div className="tag-panel">
+                          {chips.filter((tag) => !activeTags.has(tag)).map((tag) => renderChip(tag))}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
             </div>
             )}
 
+            {/* Heading and shortcut side by side, the button flush with the
+                bottom of whatever the text ends on — so its distance to the
+                first playlist is the same whether or not the folder has a
+                description. Wrapping puts it under the whole block, which is
+                what a phone does without needing to be told. */}
             {!isSearching && currentFolder && (
               <header className="folder-header">
-                {/* Name and shortcut share a line on a wide screen, and the
-                    button drops under the name when they stop fitting — which
-                    is what a phone does without needing to be told. */}
-                <div className="folder-header-top">
+                <div className="folder-header-text">
                   <h2>
                     {breadcrumbPrefix ? `${breadcrumbPrefix} — ` : ''}
                     {currentFolder.name}
                   </h2>
-                  {/* Only where playlists are actually listed — over a grid of
-                      sub-folders there is no "this folder's playlists" to draw
-                      from. */}
-                  {listedFolder && (
-                    <button
-                      type="button"
-                      className="random-button"
-                      onClick={openRandomInSpotify}
-                      disabled={filtered.length === 0}
-                      title="Ouvre une playlist au hasard de ce dossier dans Spotify"
-                    >
-                      <ShuffleIcon />
-                      Playlist aléatoire
-                    </button>
-                  )}
+                  {folderDescription && <p>{folderDescription}</p>}
                 </div>
-                {folderDescription && <p>{folderDescription}</p>}
+                {/* Only where playlists are actually listed — over a grid of
+                    sub-folders there is no "this folder's playlists" to draw
+                    from. */}
+                {listedFolder && (
+                  <button
+                    type="button"
+                    className="random-button"
+                    onClick={openRandomInSpotify}
+                    disabled={filtered.length === 0}
+                    title="Ouvre une playlist au hasard de ce dossier dans Spotify"
+                  >
+                    <ShuffleIcon />
+                    Playlist aléatoire
+                  </button>
+                )}
               </header>
             )}
             {/* Says why a single playlist is on screen, and carries the way

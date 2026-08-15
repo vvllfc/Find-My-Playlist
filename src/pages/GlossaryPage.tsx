@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { Fragment, useMemo } from 'react'
 import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
 import { listAllTags, type TagEntry } from '../lib/catalog'
@@ -38,6 +38,14 @@ const NAVIGATION_HELP = [
   },
 ]
 
+// Single source for both the sections and the contents list above them, so the
+// two can't drift apart as sections are added.
+const SECTIONS = {
+  help: { id: 'se-reperer', title: 'Se repérer' },
+  genres: { id: 'les-genres', title: 'Les genres' },
+  refinements: { id: 'les-autres-tags', title: 'Les autres tags' },
+}
+
 export default function GlossaryPage() {
   const { catalog, error } = useCatalog()
   const tags = useMemo(() => (catalog ? listAllTags(catalog) : []), [catalog])
@@ -49,7 +57,11 @@ export default function GlossaryPage() {
       <div className="hero-zone">
         <div className="hero-inner">
           <SiteMenu />
-          <p className="kicker">VLF Music</p>
+          <p className="kicker">
+            <Link to="/" className="kicker-link">
+              VLF Music
+            </Link>
+          </p>
           <h1>Glossaire</h1>
           <p>Comment le site est rangé, et ce que veut dire chaque tag.</p>
         </div>
@@ -66,8 +78,22 @@ export default function GlossaryPage() {
         {error && <p className="catalog-error">Impossible de charger les playlists pour le moment.</p>}
         {!error && !catalog && <p className="catalog-loading">Chargement…</p>}
 
-        <section className="glossary-section">
-          <h2>Se repérer</h2>
+        {/* Plain anchors: the browser's own jump, so they work from the
+            keyboard and can be opened or copied like any other link. Only
+            once the catalog is in, since two of the three targets are built
+            from it and a link to nothing scrolls nowhere. */}
+        {catalog && (
+          <nav className="glossary-toc" aria-label="Sommaire">
+            {Object.values(SECTIONS).map((section) => (
+              <a key={section.id} href={`#${section.id}`}>
+                {section.title}
+              </a>
+            ))}
+          </nav>
+        )}
+
+        <section className="glossary-section" id={SECTIONS.help.id}>
+          <h2>{SECTIONS.help.title}</h2>
           <dl className="glossary-help">
             {NAVIGATION_HELP.map((item) => (
               <div key={item.title}>
@@ -81,12 +107,12 @@ export default function GlossaryPage() {
         {catalog && (
           <>
             <TagSection
-              title="Les genres"
+              section={SECTIONS.genres}
               intro="Les grandes familles — ce sont elles qui donnent les dossiers."
               entries={genres}
             />
             <TagSection
-              title="Les autres tags"
+              section={SECTIONS.refinements}
               intro="Tempo, époque, présence de voix, sous-genres : ce qui distingue deux playlists d'un même dossier."
               entries={refinements}
             />
@@ -97,27 +123,36 @@ export default function GlossaryPage() {
   )
 }
 
-function TagSection({ title, intro, entries }: { title: string; intro: string; entries: TagEntry[] }) {
+function TagSection({
+  section,
+  intro,
+  entries,
+}: {
+  section: { id: string; title: string }
+  intro: string
+  entries: TagEntry[]
+}) {
   if (entries.length === 0) return null
   return (
-    <section className="glossary-section">
+    <section className="glossary-section" id={section.id}>
       <h2>
-        {title} <span className="glossary-count">{entries.length}</span>
+        {section.title} <span className="glossary-count">{entries.length}</span>
       </h2>
       <p className="glossary-intro">{intro}</p>
+      {/* Two columns rather than a stack: the tag on the left, what it means
+          on the right, so a meaning can be found by running down one column
+          instead of reading every entry. dt/dd are direct children of the grid
+          so the pairs line up as rows. */}
       <dl className="glossary-tags">
         {entries.map((entry) => (
-          <div key={entry.tag}>
+          <Fragment key={entry.tag}>
             <dt>
               <span className="chip">{entry.tag}</span>
-              <span className="glossary-uses">
-                {entry.count} playlist{entry.count > 1 ? 's' : ''}
-              </span>
             </dt>
-            {/* No placeholder where nothing is written yet — an empty row reads
-                as a gap to fill, which is only true for whoever writes them. */}
-            {entry.description && <dd>{entry.description}</dd>}
-          </div>
+            {/* Rendered even when empty, so the rows keep their alignment —
+                and so a tag still waiting for a definition is visible as one. */}
+            <dd>{entry.description}</dd>
+          </Fragment>
         ))}
       </dl>
     </section>
