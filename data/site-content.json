@@ -38,6 +38,9 @@
     },
     "Techno/Aalmost": {
       "description": "Techno qui parle beaucoup"
+    },
+    "Techno/Aalmost/Lectro": {
+      "description": "Techno son electro"
     }
   },
   "playlists": {
