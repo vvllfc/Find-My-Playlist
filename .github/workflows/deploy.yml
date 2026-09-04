@@ -24,7 +24,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Matches the version used locally, and stays ahead of what the
+          # dependencies ask for: @supabase/auth-js declares node >=22, which
+          # on 20 made npm ci warn on every run. Nothing here executes that
+          # package — it is browser code that Vite bundles with its own parser
+          # — but 20 reached end of life in April 2026 either way.
+          node-version: 24
           cache: npm
       - run: npm ci
       - uses: actions/cache@v4
