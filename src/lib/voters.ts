@@ -42,7 +42,11 @@ export function useVoters(playlistId: string): VoterList | undefined {
  * not ask again.
  */
 export async function loadVoters(playlistId: string): Promise<void> {
-  if (lists.has(playlistId)) return
+  // A list already read, or being read, is left alone — but one that failed is
+  // worth another go: reopening the row is exactly when someone is asking for
+  // it again.
+  const known = lists.get(playlistId)
+  if (known && known.status !== 'failed') return
   setLists(new Map(lists).set(playlistId, { status: 'loading' }))
   try {
     const res = await restFetch(

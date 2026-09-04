@@ -89,7 +89,14 @@ async function loadShelves(): Promise<void> {
     // error banner over a feature nobody asked for yet is worse than a blank.
     setState({ ...SIGNED_OUT, loading: false })
   }
-  await applyPending()
+  // Inside its own guard: loadShelves is started with void, so anything that
+  // escapes here would surface as an unhandled rejection rather than as a
+  // problem anyone can see or act on.
+  try {
+    await applyPending()
+  } catch {
+    // The pending entry is already cleared; there is nothing left to retry.
+  }
 }
 
 // Read and cleared in one go, before the write is attempted: an entry that

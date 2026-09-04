@@ -30,10 +30,6 @@ export function useUpvoteCounts(): UpvoteCounts {
   return useSyncExternalStore(subscribe, getUpvoteCounts, getUpvoteCounts)
 }
 
-export function countFor(playlistId: string): number {
-  return state.counts.get(playlistId) ?? 0
-}
-
 let inFlight: Promise<void> | null = null
 
 /**
@@ -61,6 +57,9 @@ async function load(): Promise<void> {
     // works without a single vote; a banner about an unreachable database over
     // a site that is plainly working would be worse than a missing number.
     setState({ counts: NO_COUNTS, loaded: true })
+    // Released so a later caller can try again. Held, one blip on the very
+    // first load would mean no counts for the rest of the session.
+    inFlight = null
   }
 }
 

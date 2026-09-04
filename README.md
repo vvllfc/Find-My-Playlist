@@ -104,6 +104,49 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
    [`src/config.ts`](src/config.ts) (`ADMIN_GATE_PASSWORD_HASH`). Laisser vide désactive l'écran sur
    les deux pages (même mot de passe, même verrou pour les deux).
 
+7. **Projet Supabase** (supabase.com, plan gratuit) — c'est ce qui porte les comptes visiteurs, les
+   favoris et les votes. GitHub Pages ne sert que des fichiers statiques et ne peut donc rien
+   arbitrer : sans un service extérieur, n'importe qui pourrait voter mille fois depuis la console
+   du navigateur.
+   - Créer le projet, puis exécuter **dans l'ordre** les fichiers de
+     [`supabase/migrations/`](supabase/migrations/) dans le SQL Editor. Ils ne sont pas
+     ré-exécutables : relancer un fichier déjà passé échoue sur `already exists`, ce qui veut
+     simplement dire qu'il est déjà en place.
+   - Copier **Project URL** et la clé **anon** (Settings → API) dans
+     [`src/config.ts`](src/config.ts). La clé anon est publique par conception — elle voyage dans le
+     bundle comme le Client ID Spotify. Ce n'est pas elle qui protège quoi que ce soit (voir
+     "Sécurité"). La clé **service_role** contourne toutes les règles et n'a rien à faire dans ce
+     dépôt, sous aucune forme.
+   - Reporter la même URL et la même clé anon dans l'étape *Keep the Supabase project awake* de
+     [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) : un projet gratuit se met en
+     pause après une semaine sans activité base, et le site cesserait alors d'afficher les votes.
+     Les visiteurs suffisent normalement à le tenir éveillé, cette étape est le plancher pour une
+     semaine sans personne.
+8. **Connexion Google** — deux consoles à accorder, et c'est l'étape où l'on se perd le plus, parce
+   qu'il y a **deux URL de callback différentes à deux endroits différents** :
+
+   | Étape | URL | Où la saisir |
+   |---|---|---|
+   | Google → Supabase | `https://<ref>.supabase.co/auth/v1/callback` | dans **Google Cloud** |
+   | Supabase → le site | `https://vlfmusic.fr/connexion` | dans **Supabase** |
+
+   - Google Cloud → *Google Auth Platform* : écran de consentement en **External**, scopes
+     `openid`, `userinfo.email`, `userinfo.profile` et rien d'autre. Créer un client **Web
+     application** ; *Authorized JavaScript origins* `https://vlfmusic.fr` et
+     `http://localhost:5173` ; *Authorized redirect URIs* l'URL de callback Supabase ci-dessus.
+   - ⚠️ **Publier l'application** (Audience → Publish app). Laissée en *Testing*, seuls les comptes
+     listés à la main peuvent se connecter, cent au maximum. Les scopes demandés n'étant pas
+     sensibles, la publication est immédiate et ne demande aucune vérification Google.
+   - Le **Client Secret** Google se colle dans Supabase et **uniquement** là : c'est un vrai secret,
+     utilisé côté serveur, que le navigateur ne voit jamais. Contrairement au Client ID Spotify, il
+     ne va pas dans `src/config.ts`.
+   - Supabase → Authentication : **Google activé, tous les autres fournisseurs désactivés**, Email
+     compris — il n'y a volontairement aucun mot de passe dans ce projet.
+   - Supabase → Authentication → ⚠️ **« Enable anonymous sign-ins » sur OFF**. Activé, bourrer les
+     urnes coûterait une requête HTTP par vote au lieu d'un compte Google.
+   - Supabase → Authentication → URL Configuration : Site URL `https://vlfmusic.fr`, Redirect URLs
+     `https://vlfmusic.fr/connexion` **et** `http://localhost:5173/connexion`.
+
 ## Sécurité
 
 - Spotify a désactivé l'accès en "Client Credentials" (app-only, sans connexion) à la liste des
@@ -130,6 +173,43 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
   déterrent : le hash est présent dans le bundle public comme tout le reste d'un site statique. Il
   évite juste qu'un visiteur qui tombe sur l'URL ne se mette à explorer l'interface — la vraie
   protection reste le token GitHub et la connexion Spotify ci-dessus.
+
+### Comptes visiteurs, favoris et votes
+
+- **Aucun mot de passe n'existe nulle part.** La connexion passe uniquement par Google : rien à
+  hacher, rien à faire fuiter, aucun formulaire de réinitialisation à attaquer, et aucun formulaire
+  d'inscription sur le site à spammer — Google fait ce filtrage. C'est la raison du choix, pas un
+  effet de bord.
+- **La clé anon est publique et ne protège rien.** Ce qui protège les données est la Row Level
+  Security, écrite dans [`supabase/migrations/`](supabase/migrations/) — donc relisible et
+  comparable dans git plutôt que seulement dans une console web.
+- **`anon` ne reçoit aucun droit de table** sur `favorites`, `upvotes` ni `profiles`. Pas seulement
+  aucune politique de lecture : aucun `GRANT`. Un refus arrive donc en `42501`, avant même que la
+  moindre policy soit consultée. Ce qui est public passe par des **vues**, qui ne peuvent rendre que
+  les colonnes et les lignes qu'elles nomment — une policy mal écrite, elle, exposerait tout.
+- **Un vote par personne et par playlist**, garanti par la clé primaire composite et non par
+  l'interface : une requête forgée ne peut pas voter deux fois. Aucun `UPDATE` n'est accordé sur les
+  votes ni les favoris — on insère ou on supprime, jamais on ne réécrit, ce qui rend aussi
+  `created_at` infalsifiable.
+- **Le compteur de votes est public ; qui a voté ne l'est pas**, sauf choix explicite de la personne
+  sur sa page « Mon compte ». Le réglage est fermé par défaut : qui ne visite jamais cette page
+  reste invisible pour toujours. Cocher rend visibles **tous** ses votes, passés compris ; décocher
+  les cache tous aussitôt — c'est une jointure calculée à la lecture, il n'y a rien à
+  re-synchroniser.
+- ⚠️ **Ne jamais ajouter `force row level security` sur `public.upvotes`.** La vue des compteurs
+  agrège au nom du propriétaire de la table, qui est exempt de sa propre RLS ; `FORCE` la lui
+  appliquerait et tous les compteurs retomberaient à zéro.
+- Le linter Supabase signale `security_definer_view` sur les deux vues publiques. C'est attendu :
+  c'est exactement le mécanisme employé, et les `comment on view` le disent.
+- **Suppression de compte** — `delete_own_account()` est en `SECURITY DEFINER` parce qu'elle touche
+  le schéma `auth`, et sans danger parce que le seul identifiant qu'elle sait viser est
+  `auth.uid()`, lu dans le jeton signé : elle ne peut supprimer que son appelant, quoi qu'on lui
+  passe. Le `ON DELETE CASCADE` des trois tables emporte le reste. Sans elle, « supprimer mes
+  données » aurait laissé l'e-mail en base.
+- **Ce qui n'est pas couvert**, et qui est assumé : quelqu'un avec plusieurs comptes Google peut
+  voter plusieurs fois, et l'unicité des pseudos ne se défend pas contre les caractères qui se
+  ressemblent sans être les mêmes. Aller plus loin voudrait dire empreinte d'IP ou d'appareil, pire
+  pour la vie privée que le problème résolu.
 
 ## Taxonomie de genres
 
