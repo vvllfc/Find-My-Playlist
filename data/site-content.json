@@ -59,6 +59,9 @@
     },
     "Techno/Indus": {
       "description": "Techno sonorité industrielle"
+    },
+    "Techno/Mélo": {
+      "description": "Techno sonorité mélodique"
     }
   },
   "playlists": {
