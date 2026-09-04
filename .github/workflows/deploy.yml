@@ -32,6 +32,12 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Before the Spotify fetch rather than after: a run that is going to
+      # fail may as well fail without having spent quota on the way. Now that
+      # the repo carries row-level-security logic and the code that talks to
+      # it, shipping past a red test is not a thing to leave possible.
+      - run: npm run lint
+      - run: npm test
       - uses: actions/cache@v4
         with:
           path: |

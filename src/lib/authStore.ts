@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import { AUTH_CALLBACK_PATH } from './router'
-import { auth } from './supabase'
+import { getAuth, hasStoredSession } from './supabase'
 
 export interface AuthState {
   status: 'loading' | 'signed-out' | 'signed-in'
@@ -16,7 +16,11 @@ const RETURN_TO_KEY = 'auth_return_to'
 
 const SIGNED_OUT: AuthState = { status: 'signed-out', userId: null, email: null }
 
-let state: AuthState = { status: 'loading', userId: null, email: null }
+// 'loading' only for someone who actually has a session to restore. A visitor
+// with nothing stored is signed out and known to be, before a byte of the auth
+// client has been asked for — which also spares them the flicker of a menu that
+// says nothing until a download finishes.
+let state: AuthState = hasStoredSession() ? { status: 'loading', userId: null, email: null } : SIGNED_OUT
 const listeners = new Set<() => void>()
 
 // useSyncExternalStore compares snapshots by identity, not by content, so the
@@ -52,23 +56,45 @@ export function onAuthChange(listener: (next: AuthState) => void): () => void {
   return () => watchers.delete(listener)
 }
 
-// One subscription for the whole app, opened once per module evaluation rather
-// than from a component effect: StrictMode mounts effects twice in development,
-// so a provider would hold two subscriptions after every dev reload. auth-js
-// emits INITIAL_SESSION on start, so this one listener is also what moves the
-// state off 'loading' — no separate getSession() call.
-if (typeof window !== 'undefined') {
-  auth.onAuthStateChange((_event, session) => {
-    setState(
-      session
-        ? { status: 'signed-in', userId: session.user.id, email: session.user.email ?? null }
-        : SIGNED_OUT,
-    )
+let wiring: Promise<void> | null = null
+
+/**
+ * Loads the auth client and points it at the store, once.
+ *
+ * Memoised rather than guarded by a flag, so the three callers that need a
+ * client — a restored session, a sign-in, a returning redirect — can all ask
+ * without racing each other into two clients and two subscriptions.
+ *
+ * One subscription for the whole app, opened here rather than from a component
+ * effect: StrictMode mounts effects twice in development, so a provider would
+ * hold two after every dev reload. auth-js emits INITIAL_SESSION on start, so
+ * this one listener is also what moves the state off 'loading' — no separate
+ * getSession() call.
+ */
+function ensureWired(): Promise<void> {
+  wiring ??= getAuth().then((auth) => {
+    auth.onAuthStateChange((_event, session) => {
+      setState(
+        session
+          ? { status: 'signed-in', userId: session.user.id, email: session.user.email ?? null }
+          : SIGNED_OUT,
+      )
+    })
   })
+  return wiring
 }
+
+// Only for a visitor who has something to restore. Everyone else pays nothing
+// for a feature they have not used, which is the whole point of splitting the
+// client out of the initial bundle.
+if (typeof window !== 'undefined' && hasStoredSession()) void ensureWired()
 
 export async function signInWithGoogle(): Promise<void> {
   sessionStorage.setItem(RETURN_TO_KEY, window.location.pathname + window.location.hash)
+  // Wired before the redirect so the session that comes back has somewhere to
+  // land, whichever page the visitor returns to.
+  await ensureWired()
+  const auth = await getAuth()
   await auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -84,6 +110,7 @@ export async function signInWithGoogle(): Promise<void> {
 }
 
 export async function signOut(): Promise<void> {
+  const auth = await getAuth()
   await auth.signOut()
 }
 
@@ -127,6 +154,11 @@ async function runExchange(): Promise<SignInOutcome> {
   if (denied) return { returnTo, error: 'La connexion a été refusée.' }
   if (!code) return { returnTo, error: 'Cette page a été ouverte sans code de connexion.' }
 
+  // This page load started with nothing stored, so nothing wired itself up: the
+  // subscription has to exist before the exchange, or the session would arrive
+  // with no listener to notice it.
+  await ensureWired()
+  const auth = await getAuth()
   const { error } = await auth.exchangeCodeForSession(code)
   if (error) return { returnTo, error: "La connexion n'a pas pu être terminée." }
   return { returnTo, error: null }
