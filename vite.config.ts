@@ -16,7 +16,12 @@ import react from '@vitejs/plugin-react'
 // Keep this list in step with parseRoute() in src/lib/router.ts. Catalogue
 // paths (/genre/techno…) are open-ended and cannot be pre-listed — they keep
 // falling through to 404.html, which works and always has.
-const PUBLIC_PATHS = ['glossaire', 'confidentialite', 'connexion', 'favoris', 'compte']
+// Deliberately NOT here: /connexion. It is where Google returns after a
+// login, and giving it a file would make the host redirect that return through
+// /connexion/ — one more hop on the single path in this project that cannot be
+// exercised locally, for a status code no crawler will ever read. It keeps
+// falling through 404.html, which is exactly what it has always done.
+const PUBLIC_PATHS = ['glossaire', 'confidentialite', 'favoris', 'compte']
 
 // GitHub Pages serves 404.html for any path with no file behind it, and has no
 // SPA rewrite setting. Shipping a copy of index.html under that name is what

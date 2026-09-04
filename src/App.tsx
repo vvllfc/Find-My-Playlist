@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { AUTH_CALLBACK_PATH, useRoute } from './lib/router'
+import { isSignInPath, useRoute } from './lib/router'
 import { handleRedirectCallback } from './lib/spotifyAuth'
 import CatalogPage from './pages/CatalogPage'
 import AdminPage from './pages/AdminPage'
@@ -23,7 +23,7 @@ function App() {
     // /connexion, which SignInPage owns. The path is the whole rule, and
     // getting it wrong hands one provider's code to the other's token endpoint
     // and spends it: a code is single-use and lives five minutes.
-    if (window.location.pathname === AUTH_CALLBACK_PATH) return
+    if (isSignInPath(window.location.pathname)) return
 
     // Spotify's redirect_uri has no hash (it's registered as plain
     // https://vlfmusic.fr/), so this callback can land while any route is

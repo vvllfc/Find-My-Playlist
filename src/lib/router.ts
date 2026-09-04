@@ -33,6 +33,20 @@ export const SIGN_IN_PATH = '/connexion'
 // either side sees the role it plays there.
 export const AUTH_CALLBACK_PATH = SIGN_IN_PATH
 
+/**
+ * Whether a pathname is the sign-in page, trailing slash or not.
+ *
+ * Never compare the raw pathname with === . The host redirects a fixed path to
+ * its slashed form (see PUBLIC_PATHS in vite.config.ts), a visitor can type
+ * either, and getting this wrong is no cosmetic bug: App.tsx uses this to tell
+ * a Google return from a Spotify one, and handing one provider's code to the
+ * other's endpoint spends it. A code is single-use and lives five minutes.
+ */
+export function isSignInPath(pathname: string): boolean {
+  const trimmed = pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+  return trimmed === SIGN_IN_PATH
+}
+
 export const FAVORITES_PATH = '/favoris'
 
 export const ACCOUNT_PATH = '/compte'

@@ -152,6 +152,14 @@ un lien profond à froid.
 > **Ajouter une page à chemin fixe veut donc dire l'ajouter à cette liste**, et vérifier qu'elle
 > résout aussi avec la barre finale — `router.test.ts` épingle les deux formes pour chacune. Les
 > chemins de catalogue, eux, sont ouverts et continuent de passer par `404.html`.
+>
+> **`/connexion` est délibérément absente de la liste.** Lui donner un fichier ferait passer le
+> retour de Google par une redirection, sur le seul chemin du projet qui ne peut pas être testé
+> ailleurs qu'en production, pour un statut qu'aucun robot n'ira lire. Le coût réel a été mesuré :
+> la redirection préserve bien la query, mais le garde d'`App.tsx` comparait `pathname` à
+> `/connexion` avec `===`, et `/connexion/` échouait — le code Google partait chez le gestionnaire
+> Spotify, qui efface la query avant de la valider. La connexion aurait été cassée en silence.
+> D'où `isSignInPath()`, qui tolère la barre finale, et son test.
 
 ---
 

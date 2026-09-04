@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseRoute, pivotBetween } from './router'
+import { isSignInPath, parseRoute, pivotBetween } from './router'
 
 describe('parseRoute', () => {
   it('routes public pages from the pathname, with no hash involved', () => {
@@ -77,6 +77,23 @@ describe('the pre-rendered public paths', () => {
       expect(parseRoute(path)).toEqual({ kind })
       expect(parseRoute(`${path}/`)).toEqual({ kind })
     }
+  })
+})
+
+describe('isSignInPath', () => {
+  it('accepts the sign-in path with or without its trailing slash', () => {
+    expect(isSignInPath('/connexion')).toBe(true)
+    expect(isSignInPath('/connexion/')).toBe(true)
+  })
+
+  it('refuses everything else', () => {
+    // App.tsx sends anything this rejects to Spotify's callback handler, which
+    // strips the query before checking it is valid. A false positive here
+    // silently destroys a Google authorization code.
+    expect(isSignInPath('/')).toBe(false)
+    expect(isSignInPath('/connexion/oops')).toBe(false)
+    expect(isSignInPath('/connexionnn')).toBe(false)
+    expect(isSignInPath('/compte')).toBe(false)
   })
 })
 
