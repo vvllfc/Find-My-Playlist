@@ -173,13 +173,18 @@ describe('classifyPlaylistName', () => {
 
   it('folds spelling drift into one folder rather than opening a second', () => {
     // A missing accent, a doubled letter, a stray space — same folder.
-    expect(classify('Techno Lectro Middle')).toMatchObject({ subcategory: 'Léctro' })
-    expect(classify('Techno Léctro Middle')).toMatchObject({ subcategory: 'Léctro' })
+    expect(classify('Techno Lectro Middle')).toMatchObject({ subcategory: 'Lectro' })
+    expect(classify('Techno Léctro Middle')).toMatchObject({ subcategory: 'Lectro' })
     expect(classify('Techno Melo After')).toMatchObject({ subcategory: 'Mélo' })
     expect(classify('Techno Almost Before Voice')).toMatchObject({ subcategory: 'Aalmost' })
+    // Renamed on Spotify from Acid to Acide. The old spelling is kept as an
+    // alternative rather than dropped: the rename only reaches the catalogue on
+    // the next fetch, and nothing should fall out of its folder in between.
+    expect(classify("Wallaby's Acid")).toMatchObject({ subcategory: 'Acide' })
+    expect(classify("Wallaby's Acide")).toMatchObject({ subcategory: 'Acide' })
     // The sub-folder's own word is not repeated as a sub-sub or a second chip.
     expect(classify('Techno Léctro After')).toMatchObject({ subsubcategory: null })
-    expect(classify('Techno Léctro After').tags).toEqual(['Techno', 'Léctro', 'After'])
+    expect(classify('Techno Léctro After').tags).toEqual(['Techno', 'Lectro', 'After'])
   })
 
   it('treats Deep as a Sunset qualifier, tagged but never its own folder', () => {
