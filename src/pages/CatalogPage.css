@@ -552,13 +552,15 @@
   font-size: 1.1rem;
   margin: 0 0 0.2rem;
 }
-/* Muted rather than green. It was in the interactive accent to keep it from
-   reading as small print, which was the right worry and the wrong fix: a
-   coloured paragraph on a row full of links reads as another link. Size and
-   position carry it instead — green now means only "you can act on this". */
+/* Violet, like everything else on the site that is Valentin speaking rather
+   than the catalogue reporting. It was green once, which made a sentence look
+   like a link; grey briefly, which lost it among the figures. Violet is the
+   colour that was already his — it marked his picks and signed the wordmark,
+   and it costs nothing to let it carry his words too, because nothing a
+   visitor can click is ever violet. */
 .row-main .desc {
   font-size: 0.9rem;
-  color: var(--muted);
+  color: var(--violet);
   margin: 0.15rem 0 0;
 }
 /* Above the stretched row link, so a click filters by the tag instead of
@@ -833,11 +835,11 @@
   margin: 0;
 }
 
-/* Muted, like every other hand-written line on the site: a text is read, it
-   does not signal. */
+/* Violet, like every other line on the site he wrote himself: on a tile made
+   otherwise of a name and a count, this is the part with a voice. */
 .folder-desc {
   font-size: 0.85rem;
-  color: var(--muted);
+  color: var(--violet);
   margin: 0 0 0.4rem;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -877,7 +879,7 @@
 .folder-header p {
   margin: 0.35rem 0 0;
   max-width: 44em;
-  color: var(--muted);
+  color: var(--violet);
   font-size: 0.95rem;
 }
 
@@ -1220,10 +1222,12 @@ button.back-link {
   font-weight: 700;
   color: var(--ink);
 }
+/* Green: these navigate. Violet is what Valentin wrote, and the contents of
+   a page is not something he wrote — it is the page pointing at itself. */
 .glossary-toc a {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--violet);
+  color: var(--accent);
   text-decoration: none;
 }
 .glossary-toc a::before {
