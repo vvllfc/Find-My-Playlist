@@ -146,6 +146,45 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
      urnes coûterait une requête HTTP par vote au lieu d'un compte Google.
    - Supabase → Authentication → URL Configuration : Site URL `https://vlfmusic.fr`, Redirect URLs
      `https://vlfmusic.fr/connexion` **et** `http://localhost:5173/connexion`.
+9. **Faire afficher « VLF Music » plutôt que `<ref>.supabase.co` sur l'écran Google** — pas encore
+   fait. Google montre le **domaine racine de l'URL de callback**, et le nom d'une application ne
+   s'affiche **qu'une fois la marque vérifiée** : renseigner le nom sans lancer la vérification ne
+   change rien du tout à l'écran.
+
+   1. ✅ **Propriété du domaine** — vérifiée le 04/09/2026 dans la
+      [Search Console](https://search.google.com/search-console), par enregistrement TXT DNS chez le
+      registrar. ⚠️ **Ne jamais supprimer ce TXT** : Google revérifie périodiquement, et la marque
+      retomberait avec lui. Pour le relire :
+      `curl -s "https://dns.google/resolve?name=vlfmusic.fr&type=TXT"`.
+      À savoir si c'est à refaire : le type de propriété « Fournisseur de nom de domaine » n'accepte
+      **que** le DNS, d'où l'absence d'alternative proposée quand il échoue. Une propriété
+      « Préfixe d'URL » sur `https://vlfmusic.fr` ouvre, elle, la validation par fichier HTML — posé
+      dans `public/`, il part au déploiement suivant.
+   2. **Branding** — [console.cloud.google.com/auth/branding](https://console.cloud.google.com/auth/branding),
+      en prenant garde d'être dans **le projet Google Cloud qui porte le client OAuth de Supabase** :
+
+      | Champ | Valeur |
+      |---|---|
+      | App name | `VLF Music` |
+      | App logo | carré, 120 × 120 px au minimum |
+      | Application home page | `https://vlfmusic.fr` |
+      | Privacy policy link | une page de confidentialité **hébergée sur vlfmusic.fr** — reste à écrire |
+      | Authorized domains | `vlfmusic.fr`, **et rien d'autre** |
+
+   3. **Verify Branding**, puis suivi sur
+      [console.cloud.google.com/auth/verification](https://console.cloud.google.com/auth/verification).
+      Le plus souvent automatique en quelques minutes ; 2 à 3 jours ouvrés si un humain doit trancher.
+
+   ⚠️ **Ce qui peut tout bloquer** : Google demande que *Authorized domains* contienne aussi les
+   domaines des *redirect URIs*, donc `supabase.co`, dont la propriété est impossible à prouver. S'il
+   refuse la vérification pour ce motif, il ne reste que deux issues. Le domaine personnalisé
+   Supabase (add-on à 10 $/mois **et** plan payant à 25 $/mois) est écarté par principe — ce projet
+   ne coûte rien. L'autre est de basculer la connexion sur **Google Identity Services**
+   (`signInWithIdToken` au lieu de `signInWithOAuth`) : gratuit, et il n'y a alors plus aucune
+   redirection par `supabase.co` du tout, puisque le jeton est émis dans le navigateur sur
+   `vlfmusic.fr` — qui devient donc le domaine affiché. En échange : un script tiers à charger, un
+   nonce à gérer, les particularités de FedCM selon les navigateurs, et le flux actuel à garder en
+   repli.
 
 ## Sécurité
 
