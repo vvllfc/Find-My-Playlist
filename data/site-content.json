@@ -50,6 +50,9 @@
     },
     "Techno/House/Sunrise": {
       "description": "Techno house for daytime"
+    },
+    "Techno/House/Sunset": {
+      "description": "Techno house for night time"
     }
   },
   "playlists": {
