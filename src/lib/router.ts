@@ -15,6 +15,7 @@ export type Route =
   | { kind: 'glossary' }
   | { kind: 'authCallback' }
   | { kind: 'favorites' }
+  | { kind: 'account' }
   | { kind: 'catalog'; segments: string[] }
 
 export const GLOSSARY_PATH = '/glossaire'
@@ -25,6 +26,8 @@ export const GLOSSARY_PATH = '/glossaire'
 export const AUTH_CALLBACK_PATH = '/connexion'
 
 export const FAVORITES_PATH = '/favoris'
+
+export const ACCOUNT_PATH = '/compte'
 
 export function parseRoute(location: string): Route {
   const hashIndex = location.indexOf('#')
@@ -41,6 +44,7 @@ export function parseRoute(location: string): Route {
   // Nothing to look at: it exists to catch Google's redirect and move on.
   if (segments.length === 1 && segments[0] === 'connexion') return { kind: 'authCallback' }
   if (segments.length === 1 && segments[0] === 'favoris') return { kind: 'favorites' }
+  if (segments.length === 1 && segments[0] === 'compte') return { kind: 'account' }
   return { kind: 'catalog', segments }
 }
 

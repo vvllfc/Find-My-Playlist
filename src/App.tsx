@@ -7,6 +7,7 @@ import ModifyPage from './pages/ModifyPage'
 import GlossaryPage from './pages/GlossaryPage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 import FavoritesPage from './pages/FavoritesPage'
+import AccountPage from './pages/AccountPage'
 
 function App() {
   const route = useRoute()
@@ -40,6 +41,7 @@ function App() {
   if (route.kind === 'glossary') return <GlossaryPage />
   if (route.kind === 'authCallback') return <AuthCallbackPage />
   if (route.kind === 'favorites') return <FavoritesPage />
+  if (route.kind === 'account') return <AccountPage />
   return <CatalogPage segments={route.segments} />
 }
 

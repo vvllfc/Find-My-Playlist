@@ -96,3 +96,11 @@ describe('the favourites page', () => {
     expect(pivotBetween('/genre/techno', '/favoris')).toBeNull()
   })
 })
+
+describe('the account page', () => {
+  it('routes /compte as its own page rather than a catalog segment', () => {
+    expect(parseRoute('/compte')).toEqual({ kind: 'account' })
+    expect(parseRoute('/compte/')).toEqual({ kind: 'account' })
+    expect(parseRoute('/compte/reglages')).toEqual({ kind: 'catalog', segments: ['compte', 'reglages'] })
+  })
+})

@@ -71,7 +71,15 @@ export async function signInWithGoogle(): Promise<void> {
   sessionStorage.setItem(RETURN_TO_KEY, window.location.pathname + window.location.hash)
   await auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: `${window.location.origin}${AUTH_CALLBACK_PATH}` },
+    options: {
+      redirectTo: `${window.location.origin}${AUTH_CALLBACK_PATH}`,
+      // Signing out clears the session on this side, but not the one Google
+      // keeps: without this, the next sign-in silently picks the account that
+      // just left, and there is no way to reach a second one. select_account
+      // makes Google ask every time, which costs one click and is the only
+      // thing that makes leaving, and switching, actually possible.
+      queryParams: { prompt: 'select_account' },
+    },
   })
 }
 

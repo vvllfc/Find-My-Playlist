@@ -564,7 +564,8 @@
    transform, filter or isolation: any of them would open a stacking context
    and drop the button straight back underneath. */
 .row-fav,
-.row-vote {
+.row-vote,
+.row-votes {
   position: relative;
   z-index: 1;
   display: inline-flex;
@@ -584,26 +585,64 @@
   height: 1.05rem;
   display: block;
 }
+/* Its own button rather than part of the arrow, so reading who voted never
+   casts a vote by accident. */
 .row-votes {
   font-family: var(--font-mono);
   font-size: 0.8rem;
   /* Tabular figures so a row does not shift sideways as its count ticks over,
-     and a fixed minimum so the arrow stays put when the first vote lands. */
+     and a floor so the arrow stays put when the first vote lands. */
   font-variant-numeric: tabular-nums;
   min-width: 1ch;
+  padding: 0.25rem 0.35rem;
 }
 .row-fav:hover,
 .row-fav.saved,
 .row-vote:hover,
-.row-vote.voted {
-  /* Green, where the curated coup de cœur is violet: on this site green marks
+.row-vote.voted,
+.row-votes:hover,
+.row-votes.open {
+  /* Green, where the curated coup de coeur is violet: on this site green marks
      what a visitor does, violet what the owner decided. */
   color: var(--accent);
 }
+.row-votes.open {
+  background: rgba(30, 215, 96, 0.12);
+}
 .row-fav:focus-visible,
-.row-vote:focus-visible {
+.row-vote:focus-visible,
+.row-votes:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* A sibling of the row rather than a child of it: .tracklist is a flex column,
+   so the panel drops straight underneath without the row grid having to make
+   room for it. */
+.row-voters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0 0.35rem 0.9rem 3.9rem;
+  border-bottom: 1px solid var(--border);
+}
+.row-voter {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.2rem 0.6rem;
+}
+.row-voters-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+@media (max-width: 480px) {
+  .row-voters {
+    padding-left: 1.75rem;
+  }
 }
 
 /* A dot between them, only when the duration is actually there. */
@@ -1062,4 +1101,127 @@ button.back-link {
   display: flex;
   justify-content: flex-end;
   margin: 1.25rem 0 -0.5rem;
+}
+
+/* --- Mon compte --------------------------------------------------------- */
+
+.account {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin: 2rem 0 4rem;
+  max-width: 36rem;
+}
+.account-identity {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.account-block h2 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.02em;
+  margin: 0 0 0.5rem;
+}
+/* Every explanatory line on this page: what a setting does, what it will make
+   visible, what a button will destroy. Quiet, but never absent. */
+.account-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0.5rem 0 0;
+  line-height: 1.5;
+}
+.account-input {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.3rem;
+  padding: 0.6rem 0.75rem;
+}
+.account-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.account-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.account-toggle input {
+  margin-top: 0.15rem;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+/* Disabled because there is no name yet, which the note underneath explains. */
+.account-toggle input:disabled {
+  cursor: not-allowed;
+}
+.account-toggle:has(input:disabled) {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+.account-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.account-link {
+  color: var(--accent);
+}
+/* Framed in the contrast accent rather than in red: nothing else on this site
+   is red, and the section already says plainly what it does. */
+.account-block.danger {
+  border: 1px solid var(--violet);
+  border-radius: 0.4rem;
+  padding: 1.25rem;
+}
+.account-danger {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--violet);
+  background: none;
+  border: 1px solid var(--violet);
+  border-radius: 0.3rem;
+  padding: 0.55rem 0.9rem;
+  margin-top: 1rem;
+  cursor: pointer;
+}
+.account-danger:hover {
+  background: rgba(166, 107, 255, 0.15);
+}
+.account-danger:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+.account-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.account-confirm .account-input {
+  max-width: 16rem;
+}
+.account-confirm .account-note {
+  margin: 0;
+}
+.account-confirm .account-danger {
+  margin-top: 0;
+}
+/* Visibly inert until the word has been typed, so the safeguard reads as a
+   safeguard rather than as a button that mysteriously did nothing. */
+.account-danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.account-danger:disabled:hover {
+  background: none;
 }

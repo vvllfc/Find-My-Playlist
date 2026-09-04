@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { getAuthState, onAuthChange, signInWithGoogle } from './authStore'
 import { restFetch } from './supabase'
 import { adjust } from './upvoteCounts'
+import { forgetVoters } from './voters'
 
 /** The two tables a visitor writes to. Both hold one row per person per
  *  playlist, so both toggle the same way — only the destination differs. */
@@ -134,7 +135,12 @@ async function toggle(shelf: Shelf, playlistId: string): Promise<void> {
   inFlight.set(key, op)
 
   setState({ ...withIds(shelf, toggled(before, playlistId)), error: null })
-  if (shelf === 'upvotes') adjust(playlistId, adding ? 1 : -1)
+  if (shelf === 'upvotes') {
+    adjust(playlistId, adding ? 1 : -1)
+    // The open list of voters no longer includes this change; re-read it
+    // next time rather than showing the visitor a list they are missing from.
+    forgetVoters(playlistId)
+  }
 
   try {
     if (adding) {
