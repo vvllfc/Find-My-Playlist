@@ -12,6 +12,7 @@
     "fetch:playlists": "node scripts/fetch-and-merge-playlists.mjs"
   },
   "dependencies": {
+    "@supabase/auth-js": "^2.115.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },

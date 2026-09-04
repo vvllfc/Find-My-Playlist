@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '../lib/Link'
 import { GLOSSARY_PATH } from '../lib/router'
+import { signInWithGoogle, signOut, useAuth } from '../lib/authStore'
 
 // The site's only navigation outside the folder hierarchy, parked in the
 // corner of the hero. Deliberately a menu rather than a row of links: there is
@@ -8,6 +9,7 @@ import { GLOSSARY_PATH } from '../lib/router'
 // appears.
 export default function SiteMenu() {
   const [open, setOpen] = useState(false)
+  const { status, email } = useAuth()
   const container = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
 
@@ -53,6 +55,23 @@ export default function SiteMenu() {
           <Link to={GLOSSARY_PATH} className="site-menu-item" role="menuitem">
             Glossaire
           </Link>
+
+          {/* Nothing at all while the session is still being read: an entry
+              that says "Se connecter" and then flips to an address a moment
+              later reads as a glitch, and the panel is only open by choice. */}
+          {status === 'signed-out' && (
+            <button type="button" className="site-menu-item" role="menuitem" onClick={() => void signInWithGoogle()}>
+              Se connecter
+            </button>
+          )}
+          {status === 'signed-in' && (
+            <>
+              <span className="site-menu-identity">{email}</span>
+              <button type="button" className="site-menu-item" role="menuitem" onClick={() => void signOut()}>
+                Se déconnecter
+              </button>
+            </>
+          )}
         </div>
       )}
     </div>

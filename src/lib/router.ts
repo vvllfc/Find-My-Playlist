@@ -13,9 +13,15 @@ export type Route =
   | { kind: 'admin' }
   | { kind: 'modify' }
   | { kind: 'glossary' }
+  | { kind: 'authCallback' }
   | { kind: 'catalog'; segments: string[] }
 
 export const GLOSSARY_PATH = '/glossaire'
+
+// A landing path of its own, and above all not '/': it is what tells the Google
+// return apart from the Spotify one, whose redirect_uri is registered verbatim
+// as the bare site root and cannot move without re-registering (see App.tsx).
+export const AUTH_CALLBACK_PATH = '/connexion'
 
 export function parseRoute(location: string): Route {
   const hashIndex = location.indexOf('#')
@@ -29,6 +35,8 @@ export function parseRoute(location: string): Route {
   // A public page of its own rather than a catalog segment: it lists no
   // playlists, so none of the folder machinery applies to it.
   if (segments.length === 1 && segments[0] === 'glossaire') return { kind: 'glossary' }
+  // Nothing to look at: it exists to catch Google's redirect and move on.
+  if (segments.length === 1 && segments[0] === 'connexion') return { kind: 'authCallback' }
   return { kind: 'catalog', segments }
 }
 
@@ -102,6 +110,17 @@ export function navigate(to: string): void {
   if (to === currentLocation) return
   commit(to, () => {
     window.history.pushState(null, '', to)
+    window.scrollTo(0, 0)
+  })
+}
+
+// Like navigate, but leaving no history entry behind — for the OAuth return,
+// whose URL carries a single-use code that must never be reachable with the
+// back button.
+export function replaceLocation(to: string): void {
+  if (to === currentLocation) return
+  commit(to, () => {
+    window.history.replaceState(null, '', to)
     window.scrollTo(0, 0)
   })
 }

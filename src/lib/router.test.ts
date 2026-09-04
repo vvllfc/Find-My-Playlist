@@ -59,3 +59,23 @@ describe('pivotBetween', () => {
     expect(pivotBetween('/#/modify', '/')).toBeNull()
   })
 })
+
+describe('the OAuth landing path', () => {
+  it('routes /connexion as its own page rather than a catalog segment', () => {
+    expect(parseRoute('/connexion')).toEqual({ kind: 'authCallback' })
+    expect(parseRoute('/connexion/')).toEqual({ kind: 'authCallback' })
+    // Google comes back with ?code= on the end, and parseRoute never sees it:
+    // readLocation is pathname + hash, and a query lives in neither. Feeding
+    // one in here would fail, which is why the callback is recognised by
+    // window.location.pathname in App.tsx rather than through a route.
+    // Only the bare path, like the glossary — anything deeper is not it.
+    expect(parseRoute('/connexion/oops')).toEqual({ kind: 'catalog', segments: ['connexion', 'oops'] })
+  })
+
+  it('leaves the callback out of the folder animation', () => {
+    // Not a step up or down the hierarchy, so there is no tile to pivot around
+    // and nothing should try to animate on the way back out of the login.
+    expect(pivotBetween('/', '/connexion')).toBeNull()
+    expect(pivotBetween('/connexion', '/genre/techno')).toBeNull()
+  })
+})

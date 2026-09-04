@@ -20,3 +20,16 @@ export const SPOTIFY_SCOPES = ['playlist-read-private', 'playlist-modify-public'
 // visitors, not real security (see src/lib/adminGate.ts). Leave empty to
 // disable the gate. Generate a hash with: node scripts/hash-password.mjs "…"
 export const ADMIN_GATE_PASSWORD_HASH = 'ac3f6da328c6062ef2e8638543b6757f54f905b664ecfcd52fcbc7cde9dda452'
+
+// Supabase project backing visitor accounts — Google sign-in, favourites and
+// upvotes. The anon key is a public-role JWT: it is meant to ship in the
+// bundle, exactly like the Spotify Client ID above. It is not what protects
+// anything — Row Level Security is
+// (supabase/migrations/0001_comptes_favoris_votes.sql), which decides row by
+// row what this key is allowed to read or write. Hiding it in an environment
+// variable would hide nothing: it comes back out verbatim in the served
+// JavaScript. The service_role key, by contrast, bypasses every one of those
+// rules and has no business in this repo, in any file, in any form.
+export const SUPABASE_URL = 'https://hvfzgrtfcikamyssbipc.supabase.co'
+export const SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnpncnRmY2lrYW15c3NiaXBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0NzQwNTUsImV4cCI6MjEwNDA1MDA1NX0.aoXH9a2TRXu90kbLLPw2-RtpU3oE66aks67Ztht7Wvs'
