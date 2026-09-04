@@ -1,4 +1,6 @@
 import { displayNameAtDepth, formatListeningTime, type CatalogPlaylist } from '../lib/catalog'
+import { useAuth } from '../lib/authStore'
+import { toggleFavorite, useUserLibrary } from '../lib/userLibrary'
 
 interface PlaylistRowProps {
   playlist: CatalogPlaylist
@@ -24,6 +26,9 @@ export default function PlaylistRow({
   onToggleTag,
 }: PlaylistRowProps) {
   const listeningTime = formatListeningTime(playlist.totalDurationMs)
+  const { status } = useAuth()
+  const { favoriteIds } = useUserLibrary()
+  const saved = favoriteIds.has(playlist.id)
 
   return (
     // A div rather than the link itself: the tags below the name are buttons
@@ -76,6 +81,36 @@ export default function PlaylistRow({
       <span className="row-meta">
         {listeningTime && <span className="row-duration">{listeningTime}</span>}
         <span className="row-count">{playlist.trackCount} titres</span>
+        {/* Inside row-meta rather than as a fourth grid column: .row collapses
+            to two columns under 480px, and a new column would mean keeping two
+            breakpoints in step forever. */}
+        <span className="row-actions">
+          <button
+            type="button"
+            className={saved ? 'row-fav saved' : 'row-fav'}
+            aria-pressed={saved}
+            aria-label={
+              status !== 'signed-in'
+                ? 'Se connecter pour ajouter à mes favoris'
+                : saved
+                  ? 'Retirer de mes favoris'
+                  : 'Ajouter à mes favoris'
+            }
+            onClick={() => void toggleFavorite(playlist.id)}
+          >
+            {/* One shape either way; only the fill says whether it is set, so
+                the row does not change width when it is clicked. */}
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path
+                d="M7 3h10a1 1 0 0 1 1 1v17l-6-3.5L6 21V4a1 1 0 0 1 1-1z"
+                fill={saved ? 'currentColor' : 'none'}
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </button>
+        </span>
       </span>
     </div>
   )

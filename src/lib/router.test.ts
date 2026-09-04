@@ -79,3 +79,20 @@ describe('the OAuth landing path', () => {
     expect(pivotBetween('/connexion', '/genre/techno')).toBeNull()
   })
 })
+
+describe('the favourites page', () => {
+  it('routes /favoris as its own page rather than a catalog segment', () => {
+    expect(parseRoute('/favoris')).toEqual({ kind: 'favorites' })
+    expect(parseRoute('/favoris/')).toEqual({ kind: 'favorites' })
+    // Only the bare path, like the glossary — anything deeper is not it, and
+    // without this it would silently render the catalogue instead of a 404.
+    expect(parseRoute('/favoris/techno')).toEqual({ kind: 'catalog', segments: ['favoris', 'techno'] })
+  })
+
+  it('leaves the shelf out of the folder animation', () => {
+    // It lists across every folder, so there is no tile for the grid to pivot
+    // around on the way in or out.
+    expect(pivotBetween('/', '/favoris')).toBeNull()
+    expect(pivotBetween('/genre/techno', '/favoris')).toBeNull()
+  })
+})

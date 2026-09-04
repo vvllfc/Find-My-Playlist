@@ -31,3 +31,38 @@ export const auth = new GoTrueClient({
   autoRefreshToken: true,
   persistSession: true,
 })
+
+export class SupabaseError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+  }
+}
+
+/**
+ * One call against PostgREST, in the shape of src/lib/github.ts — the data
+ * layer here is four requests of one column each, so a query builder would be
+ * three dependencies and a fluent chain that the node-only test setup cannot
+ * assert against.
+ *
+ * The anon key always travels as `apikey`; Authorization carries the signed-in
+ * user's token when there is one and falls back to the anon key when there
+ * isn't. Getting that fallback backwards would quietly run every write as the
+ * anonymous role, which holds no privilege on these tables at all — so the
+ * tests assert on it rather than trusting it.
+ */
+export async function restFetch(path: string, init: RequestInit = {}): Promise<Response> {
+  const { data } = await auth.getSession()
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...init,
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${data.session?.access_token ?? SUPABASE_ANON_KEY}`,
+      ...init.headers,
+    },
+  })
+  if (!res.ok) throw new SupabaseError(`${res.status} ${await res.text()}`, res.status)
+  return res
+}

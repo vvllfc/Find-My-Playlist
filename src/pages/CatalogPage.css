@@ -548,6 +548,49 @@
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+/* Grouped in a box of their own, but it is each button that rises above the
+   stretched link over the title — not the box. Giving the box the z-index
+   would lift the duration and the track count with it, and clicking those
+   words would then open nothing at all. */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  /* row-meta aligns on the baseline, which is the wrong line for an icon. */
+  align-self: center;
+  margin-left: 0.15rem;
+}
+/* Above the stretched link, exactly as .chip is. Nothing here may set opacity,
+   transform, filter or isolation: any of them would open a stacking context
+   and drop the button straight back underneath. */
+.row-fav {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  padding: 0.25rem;
+  border: 0;
+  border-radius: 0.25rem;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+.row-fav svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  display: block;
+}
+.row-fav:hover,
+.row-fav.saved {
+  /* Green, where the curated coup de cœur is violet: on this site green marks
+     what a visitor does, violet what the owner decided. */
+  color: var(--accent);
+}
+.row-fav:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* A dot between them, only when the duration is actually there. */
 .row-duration::after {
   content: '·';
@@ -976,4 +1019,24 @@ button.back-link {
   .glossary-section {
     padding: 1rem 1rem 1.25rem;
   }
+}
+
+/* The favourites page filters within the shelf rather than through the mixer,
+   so its chips sit in a plain row: there is no search field or dice to line up
+   with, and no panel to fold away. */
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1.5rem 0 0.5rem;
+}
+/* Says why the page is empty, which is never the same reason twice: not signed
+   in, or signed in with nothing kept yet. */
+.favorites-empty {
+  margin: 2.5rem 0;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
 }

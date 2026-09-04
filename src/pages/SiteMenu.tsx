@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '../lib/Link'
-import { GLOSSARY_PATH } from '../lib/router'
+import { FAVORITES_PATH, GLOSSARY_PATH } from '../lib/router'
 import { signInWithGoogle, signOut, useAuth } from '../lib/authStore'
 
 // The site's only navigation outside the folder hierarchy, parked in the
@@ -66,6 +66,9 @@ export default function SiteMenu() {
           )}
           {status === 'signed-in' && (
             <>
+              <Link to={FAVORITES_PATH} className="site-menu-item" role="menuitem">
+                Mes favoris
+              </Link>
               <span className="site-menu-identity">{email}</span>
               <button type="button" className="site-menu-item" role="menuitem" onClick={() => void signOut()}>
                 Se déconnecter

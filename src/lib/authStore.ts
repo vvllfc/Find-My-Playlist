@@ -27,6 +27,7 @@ function setState(next: AuthState): void {
   if (next.status === state.status && next.userId === state.userId && next.email === state.email) return
   state = next
   for (const listener of listeners) listener()
+  for (const watcher of watchers) watcher(state)
 }
 
 function subscribe(callback: () => void): () => void {
@@ -40,6 +41,15 @@ export function getAuthState(): AuthState {
 
 export function useAuth(): AuthState {
   return useSyncExternalStore(subscribe, getAuthState, getAuthState)
+}
+
+// The same signal for callers that are not components — userLibrary loads and
+// clears its rows on this, having no way to use a hook.
+const watchers = new Set<(next: AuthState) => void>()
+
+export function onAuthChange(listener: (next: AuthState) => void): () => void {
+  watchers.add(listener)
+  return () => watchers.delete(listener)
 }
 
 // One subscription for the whole app, opened once per module evaluation rather

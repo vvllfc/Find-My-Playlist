@@ -14,6 +14,7 @@ export type Route =
   | { kind: 'modify' }
   | { kind: 'glossary' }
   | { kind: 'authCallback' }
+  | { kind: 'favorites' }
   | { kind: 'catalog'; segments: string[] }
 
 export const GLOSSARY_PATH = '/glossaire'
@@ -22,6 +23,8 @@ export const GLOSSARY_PATH = '/glossaire'
 // return apart from the Spotify one, whose redirect_uri is registered verbatim
 // as the bare site root and cannot move without re-registering (see App.tsx).
 export const AUTH_CALLBACK_PATH = '/connexion'
+
+export const FAVORITES_PATH = '/favoris'
 
 export function parseRoute(location: string): Route {
   const hashIndex = location.indexOf('#')
@@ -37,6 +40,7 @@ export function parseRoute(location: string): Route {
   if (segments.length === 1 && segments[0] === 'glossaire') return { kind: 'glossary' }
   // Nothing to look at: it exists to catch Google's redirect and move on.
   if (segments.length === 1 && segments[0] === 'connexion') return { kind: 'authCallback' }
+  if (segments.length === 1 && segments[0] === 'favoris') return { kind: 'favorites' }
   return { kind: 'catalog', segments }
 }
 
