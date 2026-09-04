@@ -7,6 +7,10 @@ Catalogue public des playlists Spotify publiques (recherche + tags), et deux pag
 Spotify (publiques ou privées) — la description affichée sur le site suit automatiquement celle de
 Spotify, il n'y a qu'un seul texte à maintenir.
 
+> 📐 **[ARCHITECTURE.md](ARCHITECTURE.md)** — à lire avant de toucher au code. Ce README dit comment
+> installer et configurer ; l'autre dit pourquoi c'est fait ainsi, et surtout quels pièges attendent
+> qui reprend le projet.
+
 ## Stack
 
 - [Vite](https://vite.dev) + React + TypeScript
@@ -168,7 +172,7 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
       | App name | `VLF Music` |
       | App logo | carré, 120 × 120 px au minimum |
       | Application home page | `https://vlfmusic.fr` |
-      | Privacy policy link | une page de confidentialité **hébergée sur vlfmusic.fr** — reste à écrire |
+      | Privacy policy link | `https://vlfmusic.fr/confidentialite` |
       | Authorized domains | `vlfmusic.fr`, **et rien d'autre** |
 
    3. **Verify Branding**, puis suivi sur
@@ -230,11 +234,12 @@ Le domaine personnalisé est configuré via [`public/CNAME`](public/CNAME).
   l'interface : une requête forgée ne peut pas voter deux fois. Aucun `UPDATE` n'est accordé sur les
   votes ni les favoris — on insère ou on supprime, jamais on ne réécrit, ce qui rend aussi
   `created_at` infalsifiable.
-- **Le compteur de votes est public ; qui a voté ne l'est pas**, sauf choix explicite de la personne
-  sur sa page « Mon compte ». Le réglage est fermé par défaut : qui ne visite jamais cette page
-  reste invisible pour toujours. Cocher rend visibles **tous** ses votes, passés compris ; décocher
-  les cache tous aussitôt — c'est une jointure calculée à la lecture, il n'y a rien à
-  re-synchroniser.
+- **Le compteur de votes est public ; qui a voté ne l'est pas.** Sans exception depuis la migration
+  `0004` : le panneau qui affichait les votants ayant choisi de l'être a été retiré de l'interface,
+  et la vue `playlist_public_voters` a été refermée dans la foulée. La laisser ouverte aurait été le
+  pire des deux mondes — la clé `anon` est publique, donc la liste restait interrogeable par une
+  requête HTTP, pendant que l'interrupteur permettant de s'en retirer avait disparu. La colonne
+  `votes_public` est conservée telle quelle, sans effet, en attendant que le panneau soit redessiné.
 - ⚠️ **Ne jamais ajouter `force row level security` sur `public.upvotes`.** La vue des compteurs
   agrège au nom du propriétaire de la table, qui est exempt de sa propre RLS ; `FORCE` la lui
   appliquerait et tous les compteurs retomberaient à zéro.

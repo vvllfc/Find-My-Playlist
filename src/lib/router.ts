@@ -13,6 +13,7 @@ export type Route =
   | { kind: 'admin' }
   | { kind: 'modify' }
   | { kind: 'glossary' }
+  | { kind: 'privacy' }
   | { kind: 'signIn' }
   | { kind: 'favorites' }
   | { kind: 'account' }
@@ -36,6 +37,11 @@ export const FAVORITES_PATH = '/favoris'
 
 export const ACCOUNT_PATH = '/compte'
 
+// Public and reachable without an account, on purpose: it is the page that
+// says what having one costs, and Google checks that it answers before it will
+// show this site's own name on its sign-in screen.
+export const PRIVACY_PATH = '/confidentialite'
+
 export function parseRoute(location: string): Route {
   const hashIndex = location.indexOf('#')
   const pathname = hashIndex === -1 ? location : location.slice(0, hashIndex)
@@ -52,6 +58,7 @@ export function parseRoute(location: string): Route {
   if (segments.length === 1 && segments[0] === 'connexion') return { kind: 'signIn' }
   if (segments.length === 1 && segments[0] === 'favoris') return { kind: 'favorites' }
   if (segments.length === 1 && segments[0] === 'compte') return { kind: 'account' }
+  if (segments.length === 1 && segments[0] === 'confidentialite') return { kind: 'privacy' }
   return { kind: 'catalog', segments }
 }
 

@@ -34,7 +34,7 @@ const NAVIGATION_HELP = [
   },
   {
     title: 'Le compte',
-    body: "Se connecter passe par Google, et rien d'autre. Il n'y a aucun mot de passe à créer ici : le site n'en voit jamais un et n'en garde aucune trace, donc il n'y a rien à perdre ni à faire fuiter. Un compte sert à garder des favoris et à voter — tout le reste du catalogue se consulte sans. La page « Mon compte » sert à choisir un pseudo, à décider si tes votes le portent en public, et à tout effacer si tu le souhaites.",
+    body: "Se connecter passe par Google, et rien d'autre. Il n'y a aucun mot de passe à créer ici : le site n'en voit jamais un et n'en garde aucune trace, donc il n'y a rien à perdre ni à faire fuiter. Un compte sert à garder des favoris et à voter — tout le reste du catalogue se consulte sans. La page « Mon compte » sert à choisir un pseudo, à retrouver ses favoris, à se déconnecter et à tout effacer si tu le souhaites.",
   },
   {
     title: 'Mes favoris',
@@ -42,11 +42,11 @@ const NAVIGATION_HELP = [
   },
   {
     title: 'Les votes',
-    body: "La flèche au bout d'une ligne vote pour une playlist, un vote par personne et par playlist. Le total est visible de tout le monde, y compris sans compte, et cliquer dessus montre qui a voté — mais uniquement les gens qui l'ont demandé dans « Mon compte ». Par défaut un vote est anonyme, et il le reste tant que personne ne change ce réglage. « Les plus votées », au-dessus de la liste, range par ce total ; l'enlever rend l'ordre habituel, du plus chill au plus NRV.",
+    body: "La flamme en haut d'une ligne vote pour une playlist, un vote par personne et par playlist. Le total s'affiche à côté et se voit de tout le monde, y compris sans compte. En revanche personne ne peut savoir qui a voté quoi : le lien entre une personne et son vote n'est lisible par personne d'autre qu'elle, et c'est la base de données qui le refuse, pas seulement l'affichage. « Les plus votées », au-dessus de la liste, range par ce total ; l'enlever rend l'ordre habituel, du plus chill au plus NRV.",
   },
   {
     title: 'Ouvrir une playlist',
-    body: "Un clic n'importe où sur une ligne ouvre la playlist dans Spotify — sauf sur un tag, sur le signet ou sur la flèche de vote, qui font ce qu'ils disent.",
+    body: "Un clic n'importe où sur une ligne ouvre la playlist dans Spotify — sauf sur un tag, sur le signet ou sur la flamme de vote, qui font ce qu'ils disent.",
   },
 ]
 

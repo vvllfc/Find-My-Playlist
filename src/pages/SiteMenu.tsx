@@ -65,7 +65,9 @@ export default function SiteMenu() {
           <Link to={FAVORITES_PATH} className="site-menu-item" role="menuitem">
             Mes favoris
           </Link>
-          {/* Last: it is a reference one goes looking for, not somewhere to go. */}
+          {/* Last: a reference one goes looking for, not somewhere to go.
+              The privacy notice used to sit below it and was moved to the foot
+              of the page, where it carries the weight it actually has. */}
           <Link to={GLOSSARY_PATH} className="site-menu-item" role="menuitem">
             Glossaire
           </Link>

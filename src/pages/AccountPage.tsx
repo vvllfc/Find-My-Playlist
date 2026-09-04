@@ -4,7 +4,6 @@ import { ACCOUNT_PATH, FAVORITES_PATH, navigate, replaceLocation, SIGN_IN_PATH }
 import { rememberReturnTo, signOut, useAuth } from '../lib/authStore'
 import { useUserLibrary } from '../lib/userLibrary'
 import {
-  canGoPublic,
   confirmsDeletion,
   DELETE_CONFIRMATION,
   deleteOwnAccount,
@@ -36,8 +35,11 @@ export default function AccountPage() {
     setVotesPublic(profile.votesPublic)
   }, [profile.loading, profile.displayName, profile.votesPublic])
 
-  const nameIsUsable = canGoPublic(name)
-  const dirty = name.trim() !== profile.displayName || votesPublic !== profile.votesPublic
+  // Le pseudo seul : c'est tout ce que cette page laisse encore changer. La
+  // valeur de votesPublic continue d'être relue et renvoyée telle quelle à
+  // l'enregistrement, pour qu'un profil qui l'avait activée ne la perde pas
+  // en changeant de pseudo.
+  const dirty = name.trim() !== profile.displayName
 
   async function onSave() {
     if (!userId) return
@@ -142,29 +144,13 @@ export default function AccountPage() {
               />
             </section>
 
-            <section className="account-block">
-              <h2>Mes votes</h2>
-              <label className="account-toggle">
-                <input
-                  type="checkbox"
-                  checked={votesPublic}
-                  disabled={!nameIsUsable}
-                  onChange={(e) => {
-                    setVotesPublic(e.target.checked)
-                    setSaved(false)
-                  }}
-                />
-                <span>Afficher mon pseudo à côté des playlists pour lesquelles j’ai voté</span>
-              </label>
-              {/* Said outright rather than discovered: it applies backwards as
-                  well as forwards, and both ways round. */}
-              <p className="account-note">
-                Décoché, personne ne peut savoir que tu as voté — pas même moi. Coché, ton pseudo devient visible sur{' '}
-                <strong>tous</strong> tes votes, y compris ceux d’avant ; le décocher les cache tous aussitôt. Le
-                nombre de votes, lui, est public dans les deux cas.
-              </p>
-              {!nameIsUsable && <p className="account-note">Il faut d’abord choisir un pseudo.</p>}
-            </section>
+            {/* The switch that made a vote carry its pseudo publicly lived
+                here. It was pulled along with the panel that displayed those
+                names, which was not good enough to keep: a setting that
+                promises to show something nothing displays is a lie, and this
+                one is a promise about privacy. The column and its policies are
+                untouched in the database, so putting it back is a matter of
+                drawing the panel properly. */}
 
             <div className="account-actions">
               <button

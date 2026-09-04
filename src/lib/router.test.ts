@@ -60,6 +60,19 @@ describe('pivotBetween', () => {
   })
 })
 
+describe('the privacy notice', () => {
+  it('is a public page of its own, reachable without a session', () => {
+    expect(parseRoute('/confidentialite')).toEqual({ kind: 'privacy' })
+    expect(parseRoute('/confidentialite/')).toEqual({ kind: 'privacy' })
+    // Only the bare path, like the glossary: anything deeper is a catalog
+    // segment and must not be swallowed by this route.
+    expect(parseRoute('/confidentialite/rgpd')).toEqual({
+      kind: 'catalog',
+      segments: ['confidentialite', 'rgpd'],
+    })
+  })
+})
+
 describe('the OAuth landing path', () => {
   it('routes /connexion as its own page rather than a catalog segment', () => {
     expect(parseRoute('/connexion')).toEqual({ kind: 'signIn' })

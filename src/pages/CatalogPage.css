@@ -414,27 +414,51 @@
   position: relative;
   display: grid;
   grid-template-columns: 2.75rem 1fr auto;
-  align-items: center;
-  gap: 1.25rem;
+  /* On the title's own line, not in the middle of the row. Centring lined the
+     number and the duration up against a cell whose height changes with the
+     description and the tags, so they drifted downwards on a long row while
+     the title stayed at the top. Baselines put the three back on one line
+     whatever the row holds, and at whatever size each of them is set. */
+  align-items: baseline;
+  column-gap: 1.25rem;
   padding: 1rem 0.35rem;
   border-bottom: 1px solid var(--border);
   color: inherit;
+  /* A stacking context of the row's own, so the three layers inside it — the
+     controls, the frame of a coup de coeur, and the heart — are ordered
+     against each other and never against a neighbouring row. */
+  z-index: 0;
 }
 /* Hand-picked favourites, framed rather than merely marked. The frame replaces
    the row's own separator, so it reads as one object instead of a row wearing
    an extra line. */
 .row.favorite {
-  border: 1px solid var(--violet);
-  border-radius: 0.5rem;
+  border: 0;
   /* Held slightly off its neighbours so the frame doesn't sit flush against
      the separator above it and read as a thicker rule. */
   margin: 0.45rem 0;
+}
+/* The frame itself, drawn as a layer above the controls rather than as the
+   row's own border underneath them. The controls hang out past the row's edge
+   and crossed it; masking the border behind them left a visible block of page
+   colour, so the frame is put in front and stays an unbroken rectangle, with
+   the icons tucked under it. Inert to the pointer, so it costs no click. */
+.row.favorite::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--violet);
+  border-radius: 0.5rem;
+  pointer-events: none;
+  z-index: 2;
 }
 /* Pinned across the top-right corner and tilted off the frame's axis, so it
    reads as stuck on rather than laid out — big enough to be the first thing
    seen in the list. */
 .row-heart {
   position: absolute;
+  /* Above the frame it breaks out of, which is now a layer of its own. */
+  z-index: 3;
   /* Offset by roughly half its own size on both axes, so the corner runs
      under its middle and it breaks out diagonally rather than sitting along
      the top edge. */
@@ -472,8 +496,17 @@
   .row {
     grid-template-columns: 1.75rem 1fr;
   }
+  /* Its own breathing room, now that the row no longer has a shared gap: the
+     actions strip made this a three-row grid on a phone, and one spacing
+     cannot suit both the strip above the title and the duration below it. */
   .row-meta {
     grid-column: 2;
+    margin-top: 0.6rem;
+  }
+  /* Half the page gutter out here, so the same overhang would put the strip
+     within a few pixels of the screen edge. */
+  .row-actions {
+    margin-left: -0.25rem;
   }
   /* Only 1rem of page gutter here, and the tilt widens the heart's footprint
      by about 7px on top of the offset — at the desktop offset it lands just
@@ -548,24 +581,38 @@
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-/* Grouped in a box of their own, but it is each button that rises above the
-   stretched link over the title — not the box. Giving the box the z-index
-   would lift the duration and the track count with it, and clicking those
-   words would then open nothing at all. */
+/* A strip across the top of the row, before anything else in it. It used to
+   sit after the duration at the end of the line, where a phone ran out of
+   room and it spilled past the edge of the frame — and where, surrounded by
+   metadata, it read as something to be read rather than pressed.
+   Spanning every column so nothing can ever crowd it again, whatever the
+   count grows to.
+
+   It is each button that rises above the stretched link over the title, never
+   this box: giving the box a z-index would lift the count with it, and the
+   number is not a control. */
 .row-actions {
+  grid-column: 1 / -1;
+  justify-self: start;
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  /* row-meta aligns on the baseline, which is the wrong line for an icon. */
-  align-self: center;
-  margin-left: 0.15rem;
+  /* Pulled up flush with the top of the row and out past its left edge, the
+     way the curated heart breaks out of the opposite corner: the controls read
+     as pinned onto the row rather than laid out inside it, and the eye finds
+     them without hunting. The -1rem cancels the row's own top padding exactly,
+     which is what puts them on the container's edge rather than inside it.
+
+     Deliberately no background: one was tried, to keep the violet frame from
+     crossing the icons, and it showed as a block of page colour hanging off
+     the left of every row. The frame is drawn in front instead. */
+  margin: -1rem 0 0.3rem -0.65rem;
 }
 /* Above the stretched link, exactly as .chip is. Nothing here may set opacity,
    transform, filter or isolation: any of them would open a stacking context
    and drop the button straight back underneath. */
 .row-fav,
-.row-vote,
-.row-votes {
+.row-vote {
   position: relative;
   z-index: 1;
   display: inline-flex;
@@ -581,68 +628,36 @@
 }
 .row-fav svg,
 .row-vote svg {
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.35rem;
+  height: 1.35rem;
   display: block;
 }
-/* Its own button rather than part of the arrow, so reading who voted never
-   casts a vote by accident. */
+/* Plain text, deliberately not a control: it used to open the list of people
+   who had made their vote public, and that panel was pulled until it can be
+   drawn properly. Left under the stretched link like the duration, so clicking
+   the number opens the playlist as the rest of the row does. */
 .row-votes {
   font-family: var(--font-mono);
-  font-size: 0.8rem;
-  /* Tabular figures so a row does not shift sideways as its count ticks over,
-     and a floor so the arrow stays put when the first vote lands. */
+  font-size: 0.85rem;
+  color: var(--muted);
+  /* Tabular figures so the strip does not shift sideways as the count ticks
+     over, and a floor so the flame stays put when the first vote lands. */
   font-variant-numeric: tabular-nums;
   min-width: 1ch;
-  padding: 0.25rem 0.35rem;
+  margin-right: 0.2rem;
 }
 .row-fav:hover,
 .row-fav.saved,
 .row-vote:hover,
-.row-vote.voted,
-.row-votes:hover,
-.row-votes.open {
+.row-vote.voted {
   /* Green, where the curated coup de coeur is violet: on this site green marks
      what a visitor does, violet what the owner decided. */
   color: var(--accent);
 }
-.row-votes.open {
-  background: rgba(30, 215, 96, 0.12);
-}
 .row-fav:focus-visible,
-.row-vote:focus-visible,
-.row-votes:focus-visible {
+.row-vote:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-
-/* A sibling of the row rather than a child of it: .tracklist is a flex column,
-   so the panel drops straight underneath without the row grid having to make
-   room for it. */
-.row-voters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-  padding: 0 0.35rem 0.9rem 3.9rem;
-  border-bottom: 1px solid var(--border);
-}
-.row-voter {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--accent);
-  border: 1px solid var(--border);
-  border-radius: 1rem;
-  padding: 0.2rem 0.6rem;
-}
-.row-voters-note {
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-@media (max-width: 480px) {
-  .row-voters {
-    padding-left: 1.75rem;
-  }
 }
 
 /* A dot between them, only when the duration is actually there. */
@@ -1341,5 +1356,53 @@ button.back-link {
   .signin-pending span {
     animation: none;
     opacity: 0.6;
+  }
+}
+
+/* The one line on the privacy page that is about the page rather than about
+   the reader: set apart from the sections, and quiet. */
+.privacy-updated {
+  margin: 3rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* The foot of every public page. Lined up with the catalogue above it rather
+   than centred, and pulled back up into the deep bottom padding that column
+   already carries, so the link sits close under the content instead of adrift
+   below a screenful of nothing. */
+.site-footer {
+  max-width: 68rem;
+  margin: -2rem auto 0;
+  padding: 0 2rem 2.5rem;
+  box-sizing: border-box;
+  /* Both of these are why it was invisible. .catalog-page lays two decorative
+     sheets over the whole viewport in position: fixed, and .catalog carries a
+     z-index of its own to sit above them — this needs the same, or it is
+     painted over. And it sits outside .catalog-page, so it also needs that
+     wrapper's ground continued past its edge, or the last inch of the page
+     changes colour under the link. */
+  position: relative;
+  z-index: 1;
+  background: #0a0a0d;
+}
+.site-footer a {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-decoration: none;
+}
+.site-footer a:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+.site-footer a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+@media (max-width: 480px) {
+  .site-footer {
+    padding: 0 1rem 2rem;
   }
 }

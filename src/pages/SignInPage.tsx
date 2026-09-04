@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from '../lib/Link'
-import { ACCOUNT_PATH, replaceLocation } from '../lib/router'
+import { ACCOUNT_PATH, PRIVACY_PATH, replaceLocation } from '../lib/router'
 import {
   completeGoogleSignIn,
   defaultReturnTo,
@@ -163,8 +163,8 @@ export default function SignInPage() {
                 aucun autre visiteur.
               </li>
               <li>
-                <strong>Tes votes sont anonymes.</strong> Seul le total est public. Ton pseudo n'y apparaît que si tu
-                le demandes, depuis ton compte.
+                <strong>Tes votes sont anonymes.</strong> Seul le total est public : personne ne peut savoir qui a
+                voté quoi, et c'est la base de données qui le refuse, pas seulement l'affichage.
               </li>
             </ul>
 
@@ -174,7 +174,8 @@ export default function SignInPage() {
             </button>
 
             <p className="signin-note">
-              Tu peux supprimer ton compte, et tout ce qu'il contient, à tout moment depuis « Mon compte ».
+              Tu peux supprimer ton compte, et tout ce qu'il contient, à tout moment depuis « Mon compte ». Le détail
+              de ce qui est conservé est sur la page <Link to={PRIVACY_PATH}>Confidentialité</Link>.
             </p>
           </div>
         )}

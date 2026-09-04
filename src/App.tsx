@@ -8,6 +8,8 @@ import GlossaryPage from './pages/GlossaryPage'
 import SignInPage from './pages/SignInPage'
 import FavoritesPage from './pages/FavoritesPage'
 import AccountPage from './pages/AccountPage'
+import PrivacyPage from './pages/PrivacyPage'
+import SiteFooter from './pages/SiteFooter'
 
 function App() {
   const route = useRoute()
@@ -36,13 +38,22 @@ function App() {
     })
   }, [])
 
+  // The two private pages return before the footer is reached: the notice
+  // below it is addressed to visitors, and neither of those pages has any.
   if (route.kind === 'admin') return <AdminPage />
   if (route.kind === 'modify') return <ModifyPage />
-  if (route.kind === 'glossary') return <GlossaryPage />
-  if (route.kind === 'signIn') return <SignInPage />
-  if (route.kind === 'favorites') return <FavoritesPage />
-  if (route.kind === 'account') return <AccountPage />
-  return <CatalogPage segments={route.segments} />
+
+  return (
+    <>
+      {route.kind === 'glossary' && <GlossaryPage />}
+      {route.kind === 'signIn' && <SignInPage />}
+      {route.kind === 'favorites' && <FavoritesPage />}
+      {route.kind === 'account' && <AccountPage />}
+      {route.kind === 'privacy' && <PrivacyPage />}
+      {route.kind === 'catalog' && <CatalogPage segments={route.segments} />}
+      <SiteFooter />
+    </>
+  )
 }
 
 export default App

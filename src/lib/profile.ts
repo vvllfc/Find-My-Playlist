@@ -65,6 +65,11 @@ export function normalizeDisplayName(raw: string): string {
 
 /** Publishing a vote means publishing a name beside it, so there has to be one.
  *  The view drops nameless profiles anyway; refusing here says why. */
+// Nothing calls this today: it gated the switch that made a vote carry its
+// pseudo publicly, and that switch came out along with the panel which
+// displayed those names. Kept, with its test, because the rule it states — a
+// vote cannot be published under a name that does not exist — is the reason
+// the switch will need it again the day the panel is drawn properly.
 export function canGoPublic(displayName: string): boolean {
   return normalizeDisplayName(displayName).length > 0
 }
