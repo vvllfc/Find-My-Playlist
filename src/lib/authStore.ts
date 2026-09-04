@@ -89,8 +89,50 @@ function ensureWired(): Promise<void> {
 // client out of the initial bundle.
 if (typeof window !== 'undefined' && hasStoredSession()) void ensureWired()
 
+/**
+ * Where to put the visitor once Google has sent them back.
+ *
+ * Recorded by whoever sends them to the sign-in page, never by the button on
+ * it: by the time that button is pressed the visitor is standing on /connexion,
+ * which is no destination at all. A vote clicked deep in a folder records the
+ * folder; the menu records the account page.
+ */
+export function rememberReturnTo(path: string): void {
+  try {
+    sessionStorage.setItem(RETURN_TO_KEY, path)
+  } catch {
+    // Storage blocked outright. Signing in still works, it just comes back to
+    // the catalogue rather than to the exact spot it left.
+  }
+}
+
+
+/**
+ * The same, but only if nothing has claimed a return path yet.
+ *
+ * The sign-in page calls this on itself: a visitor who arrived by clicking a
+ * vote already has their folder recorded and must go back to it, while one who
+ * came from the menu recorded nothing and is asking for their account. First
+ * caller wins, so the specific intent always beats the generic one.
+ */
+export function defaultReturnTo(path: string): void {
+  try {
+    if (sessionStorage.getItem(RETURN_TO_KEY) === null) sessionStorage.setItem(RETURN_TO_KEY, path)
+  } catch {
+    // Blocked storage, handled the same way as above.
+  }
+}
+
+/** Drops it, for a sign-in the visitor walked away from. */
+export function forgetReturnTo(): void {
+  try {
+    sessionStorage.removeItem(RETURN_TO_KEY)
+  } catch {
+    // Then there was nothing recorded to drop.
+  }
+}
+
 export async function signInWithGoogle(): Promise<void> {
-  sessionStorage.setItem(RETURN_TO_KEY, window.location.pathname + window.location.hash)
   // Wired before the redirect so the session that comes back has somewhere to
   // land, whichever page the visitor returns to.
   await ensureWired()

@@ -62,8 +62,8 @@ describe('pivotBetween', () => {
 
 describe('the OAuth landing path', () => {
   it('routes /connexion as its own page rather than a catalog segment', () => {
-    expect(parseRoute('/connexion')).toEqual({ kind: 'authCallback' })
-    expect(parseRoute('/connexion/')).toEqual({ kind: 'authCallback' })
+    expect(parseRoute('/connexion')).toEqual({ kind: 'signIn' })
+    expect(parseRoute('/connexion/')).toEqual({ kind: 'signIn' })
     // Google comes back with ?code= on the end, and parseRoute never sees it:
     // readLocation is pathname + hash, and a query lives in neither. Feeding
     // one in here would fail, which is why the callback is recognised by

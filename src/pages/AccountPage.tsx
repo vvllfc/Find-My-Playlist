@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { Link } from '../lib/Link'
-import { FAVORITES_PATH } from '../lib/router'
-import { signInWithGoogle, signOut, useAuth } from '../lib/authStore'
+import { ACCOUNT_PATH, FAVORITES_PATH, navigate, replaceLocation, SIGN_IN_PATH } from '../lib/router'
+import { rememberReturnTo, signOut, useAuth } from '../lib/authStore'
 import { useUserLibrary } from '../lib/userLibrary'
 import {
   canGoPublic,
@@ -66,6 +66,28 @@ export default function AccountPage() {
     window.location.href = '/'
   }
 
+  async function onSignOut() {
+    // Home rather than the sign-in page. The guard below sends a signed-out
+    // visitor there, and being asked to sign back in is a strange answer to
+    // having just chosen to leave — so this leaves first, which unmounts the
+    // page and means the guard never runs.
+    navigate('/')
+    await signOut()
+  }
+
+  // "Mon compte" is one door: signed out it opens onto the sign-in page, not
+  // onto an empty version of this one. Recording where to come back to is the
+  // page's own job, so the menu can stay a plain list of links.
+  //
+  // Before paint rather than after: an effect would show the heading of a page
+  // the visitor is not allowed to see, then snatch it away. Replace rather than
+  // push, so Back does not land straight back on it.
+  useLayoutEffect(() => {
+    if (status !== 'signed-out') return
+    rememberReturnTo(ACCOUNT_PATH)
+    replaceLocation(SIGN_IN_PATH)
+  }, [status])
+
   function cancelDelete() {
     setConfirmingDelete(false)
     setTypedConfirmation('')
@@ -94,15 +116,6 @@ export default function AccountPage() {
         </Link>
 
         {status === 'loading' && <p className="catalog-loading">Chargement…</p>}
-
-        {status === 'signed-out' && (
-          <div className="favorites-empty">
-            <p>Connecte-toi pour gérer ton compte.</p>
-            <button type="button" className="surprise-button" onClick={() => void signInWithGoogle()}>
-              Se connecter avec Google
-            </button>
-          </div>
-        )}
 
         {status === 'signed-in' && (
           <div className="account">
@@ -175,6 +188,19 @@ export default function AccountPage() {
                   Voir mes favoris
                 </Link>
               </p>
+            </section>
+
+            <section className="account-block">
+              <h2>Ma session</h2>
+              <p className="account-note">
+                Se déconnecter n’efface rien : tes favoris et tes votes seront là à ta prochaine connexion. Google
+                redemandera quel compte utiliser, ce qui permet d’en changer.
+              </p>
+              {/* Violet like the deletion button below, and deliberately so:
+                  the two are the actions that end something. */}
+              <button type="button" className="account-danger" onClick={() => void onSignOut()}>
+                Se déconnecter
+              </button>
             </section>
 
             <section className="account-block danger">

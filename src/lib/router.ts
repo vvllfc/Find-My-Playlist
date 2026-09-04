@@ -13,17 +13,24 @@ export type Route =
   | { kind: 'admin' }
   | { kind: 'modify' }
   | { kind: 'glossary' }
-  | { kind: 'authCallback' }
+  | { kind: 'signIn' }
   | { kind: 'favorites' }
   | { kind: 'account' }
   | { kind: 'catalog'; segments: string[] }
 
 export const GLOSSARY_PATH = '/glossaire'
 
-// A landing path of its own, and above all not '/': it is what tells the Google
-// return apart from the Spotify one, whose redirect_uri is registered verbatim
-// as the bare site root and cannot move without re-registering (see App.tsx).
-export const AUTH_CALLBACK_PATH = '/connexion'
+// Both the page a visitor is sent to when something needs an account, and the
+// path Google returns to — deliberately one URL, told apart by the query
+// string rather than by the path (see SignInPage). It is above all not '/':
+// that is what distinguishes the Google return from the Spotify one, whose
+// redirect_uri is registered verbatim as the bare site root and cannot move
+// without being re-declared (see App.tsx).
+export const SIGN_IN_PATH = '/connexion'
+
+// The same path under the name the OAuth code calls it by, so that a reader of
+// either side sees the role it plays there.
+export const AUTH_CALLBACK_PATH = SIGN_IN_PATH
 
 export const FAVORITES_PATH = '/favoris'
 
@@ -41,8 +48,8 @@ export function parseRoute(location: string): Route {
   // A public page of its own rather than a catalog segment: it lists no
   // playlists, so none of the folder machinery applies to it.
   if (segments.length === 1 && segments[0] === 'glossaire') return { kind: 'glossary' }
-  // Nothing to look at: it exists to catch Google's redirect and move on.
-  if (segments.length === 1 && segments[0] === 'connexion') return { kind: 'authCallback' }
+  // Two jobs on one path: the sign-in page, and the URL Google returns to.
+  if (segments.length === 1 && segments[0] === 'connexion') return { kind: 'signIn' }
   if (segments.length === 1 && segments[0] === 'favoris') return { kind: 'favorites' }
   if (segments.length === 1 && segments[0] === 'compte') return { kind: 'account' }
   return { kind: 'catalog', segments }

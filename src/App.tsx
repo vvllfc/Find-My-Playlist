@@ -5,7 +5,7 @@ import CatalogPage from './pages/CatalogPage'
 import AdminPage from './pages/AdminPage'
 import ModifyPage from './pages/ModifyPage'
 import GlossaryPage from './pages/GlossaryPage'
-import AuthCallbackPage from './pages/AuthCallbackPage'
+import SignInPage from './pages/SignInPage'
 import FavoritesPage from './pages/FavoritesPage'
 import AccountPage from './pages/AccountPage'
 
@@ -18,7 +18,7 @@ function App() {
     // guess, they were given disjoint landing paths: Spotify's redirect_uri is
     // registered verbatim as https://vlfmusic.fr/ and can't move without being
     // re-declared, so it is the Google login that was pointed elsewhere — at
-    // /connexion, which AuthCallbackPage owns. The path is the whole rule, and
+    // /connexion, which SignInPage owns. The path is the whole rule, and
     // getting it wrong hands one provider's code to the other's token endpoint
     // and spends it: a code is single-use and lives five minutes.
     if (window.location.pathname === AUTH_CALLBACK_PATH) return
@@ -39,7 +39,7 @@ function App() {
   if (route.kind === 'admin') return <AdminPage />
   if (route.kind === 'modify') return <ModifyPage />
   if (route.kind === 'glossary') return <GlossaryPage />
-  if (route.kind === 'authCallback') return <AuthCallbackPage />
+  if (route.kind === 'signIn') return <SignInPage />
   if (route.kind === 'favorites') return <FavoritesPage />
   if (route.kind === 'account') return <AccountPage />
   return <CatalogPage segments={route.segments} />

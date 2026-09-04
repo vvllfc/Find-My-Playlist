@@ -1,15 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '../lib/Link'
 import { ACCOUNT_PATH, FAVORITES_PATH, GLOSSARY_PATH } from '../lib/router'
-import { signInWithGoogle, signOut, useAuth } from '../lib/authStore'
 
-// The site's only navigation outside the folder hierarchy, parked in the
-// corner of the hero. Deliberately a menu rather than a row of links: there is
-// one entry today and the corner shouldn't grow a new word every time another
-// appears.
+// The site's only navigation outside the folder hierarchy, parked in the corner
+// of the hero. Deliberately a menu rather than a row of links: the corner
+// shouldn't grow a new word every time a page appears.
 export default function SiteMenu() {
   const [open, setOpen] = useState(false)
-  const { status, email } = useAuth()
   const container = useRef<HTMLDivElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
 
@@ -52,32 +49,26 @@ export default function SiteMenu() {
           <Link to="/" className="site-menu-item" role="menuitem">
             Accueil
           </Link>
+          {/* Both entries show whatever the state of the session, because the
+              question a visitor is asking is the same either way, and because a
+              menu that rearranged itself once the session loaded read as a
+              glitch. It also means the menu never announces whether anyone is
+              signed in, which is not its business to publish.
+
+              They point straight at their own page even when nobody is signed
+              in. Each of those pages turns a signed-out visitor away itself,
+              and records where to come back to on the way — which is knowledge
+              that belongs to the page, not to a list of links. */}
+          <Link to={ACCOUNT_PATH} className="site-menu-item" role="menuitem">
+            Mon compte
+          </Link>
+          <Link to={FAVORITES_PATH} className="site-menu-item" role="menuitem">
+            Mes favoris
+          </Link>
+          {/* Last: it is a reference one goes looking for, not somewhere to go. */}
           <Link to={GLOSSARY_PATH} className="site-menu-item" role="menuitem">
             Glossaire
           </Link>
-
-          {/* Nothing at all while the session is still being read: an entry
-              that says "Se connecter" and then flips to an address a moment
-              later reads as a glitch, and the panel is only open by choice. */}
-          {status === 'signed-out' && (
-            <button type="button" className="site-menu-item" role="menuitem" onClick={() => void signInWithGoogle()}>
-              Se connecter
-            </button>
-          )}
-          {status === 'signed-in' && (
-            <>
-              <Link to={FAVORITES_PATH} className="site-menu-item" role="menuitem">
-                Mes favoris
-              </Link>
-              <Link to={ACCOUNT_PATH} className="site-menu-item" role="menuitem">
-                Mon compte
-              </Link>
-              <span className="site-menu-identity">{email}</span>
-              <button type="button" className="site-menu-item" role="menuitem" onClick={() => void signOut()}>
-                Se déconnecter
-              </button>
-            </>
-          )}
         </div>
       )}
     </div>

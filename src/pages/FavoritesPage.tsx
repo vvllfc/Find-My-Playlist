@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useLayoutEffect, useMemo, useState } from 'react'
 import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
+import { FAVORITES_PATH, replaceLocation, SIGN_IN_PATH } from '../lib/router'
 import { compareTags, type CatalogPlaylist } from '../lib/catalog'
-import { signInWithGoogle, useAuth } from '../lib/authStore'
+import { rememberReturnTo, useAuth } from '../lib/authStore'
 import { useUserLibrary } from '../lib/userLibrary'
 import SiteMenu from './SiteMenu'
 import PlaylistRow from './PlaylistRow'
@@ -19,6 +20,15 @@ export default function FavoritesPage() {
   const { status } = useAuth()
   const { favoriteIds, loading } = useUserLibrary()
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set())
+
+  // Reached signed out from the menu, or by URL. Send them to sign in,
+  // remembering this shelf so they land back on it and not on the catalogue
+  // home — and do it before paint, so the empty page is never seen.
+  useLayoutEffect(() => {
+    if (status !== 'signed-out') return
+    rememberReturnTo(FAVORITES_PATH)
+    replaceLocation(SIGN_IN_PATH)
+  }, [status])
 
   const saved = useMemo<CatalogPlaylist[]>(
     () => (catalog?.playlists ?? []).filter((playlist) => favoriteIds.has(playlist.id)),
@@ -70,15 +80,6 @@ export default function FavoritesPage() {
           </span>
           Retour au catalogue
         </Link>
-
-        {status === 'signed-out' && (
-          <div className="favorites-empty">
-            <p>Connecte-toi pour garder des playlists de côté.</p>
-            <button type="button" className="surprise-button" onClick={() => void signInWithGoogle()}>
-              Se connecter avec Google
-            </button>
-          </div>
-        )}
 
         {status === 'loading' && <p className="catalog-loading">Chargement…</p>}
 

@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from 'react'
-import { getAuthState, onAuthChange, signInWithGoogle } from './authStore'
+import { getAuthState, onAuthChange, rememberReturnTo } from './authStore'
+import { navigate, SIGN_IN_PATH } from './router'
 import { restFetch } from './supabase'
 import { adjust } from './upvoteCounts'
 import { forgetVoters } from './voters'
@@ -113,6 +114,22 @@ async function applyPending(): Promise<void> {
   await toggle(shelf, playlistId)
 }
 
+/**
+ * Drops a click that was waiting on a sign-in which never happened.
+ *
+ * Called when the sign-in page is left in-app — the visitor thought better of
+ * it. Without this the vote would fire on some later sign-in started for an
+ * entirely different reason, and a playlist would appear to have voted for
+ * itself.
+ */
+export function forgetPendingAction(): void {
+  try {
+    sessionStorage.removeItem(PENDING_KEY)
+  } catch {
+    // Then nothing was ever stored, and there is nothing to forget.
+  }
+}
+
 if (typeof window !== 'undefined') {
   onAuthChange((auth) => {
     if (auth.status === 'signed-in') void loadShelves()
@@ -129,9 +146,19 @@ let nextOp = 0
 
 async function toggle(shelf: Shelf, playlistId: string): Promise<void> {
   // Signed out, this isn't an error to report — it's the reason to sign in.
+  // The sign-in page rather than Google straight away: being thrown off the
+  // site the instant a bookmark is clicked, with not a word about why, reads
+  // as the site breaking rather than as a question being asked. The click is
+  // kept either way, so it still lands on the way back.
   if (getAuthState().status !== 'signed-in') {
-    sessionStorage.setItem(PENDING_KEY, `${shelf}:${playlistId}`)
-    await signInWithGoogle()
+    try {
+      sessionStorage.setItem(PENDING_KEY, `${shelf}:${playlistId}`)
+    } catch {
+      // Storage blocked. Offering the sign-in is still right; only the memory
+      // of what was clicked is lost.
+    }
+    rememberReturnTo(window.location.pathname + window.location.hash)
+    navigate(SIGN_IN_PATH)
     return
   }
 

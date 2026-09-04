@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 /** A promise plus the handles to settle it, so a request can be held open. */
 function deferred() {
@@ -13,13 +13,16 @@ function deferred() {
 
 // The store keeps module state, so each test gets a fresh copy of it. The two
 // modules it leans on are replaced: authStore so the signed-in answer is fixed,
-// supabase so no request leaves, upvoteCounts so the public number can be
-// watched moving.
+// router so a signed-out click can be seen being sent somewhere without one
+// existing, supabase so no request leaves, and upvoteCounts so the public
+// number can be watched moving.
 async function freshLibrary(restFetch: ReturnType<typeof vi.fn>, signedIn = true) {
   vi.resetModules()
-  const signInWithGoogle = vi.fn()
+  const rememberReturnTo = vi.fn()
+  const navigate = vi.fn()
   const adjust = vi.fn()
-  Reflect.set(globalThis, '__signIn', signInWithGoogle)
+  Reflect.set(globalThis, '__remember', rememberReturnTo)
+  Reflect.set(globalThis, '__navigate', navigate)
   Reflect.set(globalThis, '__adjust', adjust)
   vi.doMock('./authStore', () => ({
     getAuthState: () => ({
@@ -28,12 +31,17 @@ async function freshLibrary(restFetch: ReturnType<typeof vi.fn>, signedIn = true
       email: signedIn ? 'a@b.c' : null,
     }),
     onAuthChange: () => () => {},
-    signInWithGoogle,
+    rememberReturnTo,
   }))
+  vi.doMock('./router', () => ({ navigate, SIGN_IN_PATH: '/connexion' }))
   vi.doMock('./supabase', () => ({ restFetch }))
   vi.doMock('./upvoteCounts', () => ({ adjust }))
   return import('./userLibrary')
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 beforeEach(() => {
   vi.resetModules()
@@ -156,7 +164,10 @@ describe('toggleUpvote', () => {
 })
 
 describe('a click made while signed out', () => {
-  it('starts a sign-in and keeps the action for afterwards', async () => {
+  it('sends the visitor to the sign-in page and keeps the action for afterwards', async () => {
+    // The store reads the address bar to know where to come back to, and node
+    // has no window of its own to read it from.
+    vi.stubGlobal('window', { location: { pathname: '/genre/techno', hash: '' } })
     const restFetch = vi.fn()
     const { toggleUpvote } = await freshLibrary(restFetch, false)
 
@@ -165,8 +176,25 @@ describe('a click made while signed out', () => {
     // Nothing is written while signed out: the anonymous role holds no
     // privilege on this table, so the request could only come back 401.
     expect(restFetch).not.toHaveBeenCalled()
-    expect(Reflect.get(globalThis, '__signIn')).toHaveBeenCalled()
+    // The sign-in page rather than Google itself. Leaving the site the instant
+    // a bookmark is clicked, with no word about why, reads as a fault.
+    expect(Reflect.get(globalThis, '__navigate')).toHaveBeenCalledWith('/connexion')
+    // Recorded here rather than by the button over there: by the time that one
+    // is pressed the visitor is standing on /connexion, which is nowhere to
+    // come back to.
+    expect(Reflect.get(globalThis, '__remember')).toHaveBeenCalledWith('/genre/techno')
     // The shelf travels with the id, so the right one is replayed on return.
     expect(sessionStorage.getItem('pending_action')).toBe('upvotes:abc')
+  })
+
+  it('forgets the action if the sign-in is walked away from', async () => {
+    const { forgetPendingAction } = await import('./userLibrary')
+    sessionStorage.setItem('pending_action', 'upvotes:abc')
+
+    forgetPendingAction()
+
+    // Left behind, it would fire on some later sign-in started for a different
+    // reason, and a playlist would look as though it had voted for itself.
+    expect(sessionStorage.getItem('pending_action')).toBeNull()
   })
 })
