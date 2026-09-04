@@ -19,7 +19,7 @@ export const SPOTIFY_SCOPES = ['playlist-read-private', 'playlist-modify-public'
 // SHA-256 hex hash of a password gate for #/admin — a deterrent against casual
 // visitors, not real security (see src/lib/adminGate.ts). Leave empty to
 // disable the gate. Generate a hash with: node scripts/hash-password.mjs "…"
-export const ADMIN_GATE_PASSWORD_HASH = 'ac3f6da328c6062ef2e8638543b6757f54f905b664ecfcd52fcbc7cde9dda452'
+export const ADMIN_GATE_PASSWORD_HASH = '5240afcfb49b04ede7ebf884c6bb61ab4a6abf3bdf95f196143d269952369419'
 
 // Supabase project backing visitor accounts — Google sign-in, favourites and
 // upvotes. The anon key is a public-role JWT: it is meant to ship in the
