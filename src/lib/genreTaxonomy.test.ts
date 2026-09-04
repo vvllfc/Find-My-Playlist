@@ -236,7 +236,11 @@ describe('classifyPlaylistName', () => {
       energyRank: 0,
     })
     expect(classify('Jazzy Summer ChillFort')).toMatchObject({ category: 'Jazzy Soul', subcategory: 'Summer' })
-    expect(classify('Raggameff Dubbidub Much Higher')).toMatchObject({ category: 'Raggameff', subcategory: 'Dubbidub' })
+    // Dubbidub is a genre of its own, not a sub-folder of Raggameff: its rule
+    // sits before Raggameff's and claims the longer prefix, so the order of
+    // the two entries is what makes this work.
+    expect(classify('Raggameff Dubbidub Much Higher')).toMatchObject({ category: 'Dubbidub', subcategory: null })
+    expect(classify('Raggameff New Vibe Chill')).toMatchObject({ category: 'Raggameff', subcategory: 'New Vibe' })
     expect(classify('Reggaeton Chill')).toMatchObject({ category: 'Reggaeton' })
     // Classique carries no tags of its own — too few playlists for chips to
     // be worth anything, so the genre is the only thing derived from the name.

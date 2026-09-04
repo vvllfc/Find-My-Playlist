@@ -35,10 +35,17 @@
     "eraTokens": ["Very Old S", "Old S"]
   },
   {
+    "id": "dubbidub",
+    "match": { "type": "prefix", "value": "Raggameff Dubbidub" },
+    "genre": "Dubbidub",
+    "tempoTokens": { "much higher": "energetic+", "chillfort": "Chill Fort", "chill": "chill", "higher": "energetic" },
+    "voiceToken": "Voice"
+  },
+  {
     "id": "raggameff",
     "match": { "type": "prefix", "value": "Raggameff" },
     "genre": "Raggameff",
-    "subgenreTokens": ["Dubbidub", "New Vibe", "Old Vibe"],
+    "subgenreTokens": ["New Vibe", "Old Vibe"],
     "tempoTokens": { "much higher": "energetic+", "chillfort": "Chill Fort", "chill": "chill", "higher": "energetic" },
     "voiceToken": "Voice"
   },
