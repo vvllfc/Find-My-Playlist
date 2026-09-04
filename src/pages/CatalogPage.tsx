@@ -3,12 +3,15 @@ import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
 import SiteMenu from './SiteMenu'
 import PlaylistRow from './PlaylistRow'
+import { useUpvoteCounts } from '../lib/upvoteCounts'
 import {
   buildFolderTree,
   compareTags,
   findFolder,
   genreLevelTags,
+  sortPlaylists,
   type CatalogPlaylist,
+  type SortMode,
   type Folder,
 } from '../lib/catalog'
 import './CatalogPage.css'
@@ -91,6 +94,8 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   const [tagsOpen, setTagsOpen] = useState(false)
   const [surprise, setSurprise] = useState<CatalogPlaylist | null>(null)
   const [dieFace, setDieFace] = useState(3)
+  const [sortMode, setSortMode] = useState<SortMode>('default')
+  const { counts } = useUpvoteCounts()
 
   const [slug, subslug, subsubslug] =
     segments[0] === 'genre' ? [segments[1] ?? null, segments[2] ?? null, segments[3] ?? null] : [null, null, null]
@@ -242,7 +247,7 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
 
   // A surprise replaces the listing rather than filtering it, so backing out
   // of it restores exactly what was there before.
-  const shown = surprise ? [surprise] : filtered
+  const shown = surprise ? [surprise] : sortPlaylists(filtered, sortMode, counts)
 
   // The folder's own shortcut: straight out to Spotify, no listing in between.
   // Drawn from what's actually visible, so a tag filter still applies. Kept in
@@ -466,22 +471,40 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
             )}
 
             {(isSearching || listedFolder || activeTags.size > 0 || surprise) && (
-              <div className="tracklist" key={routeKey}>
-                {shown.map((playlist, index) => (
-                  <PlaylistRow
-                    key={playlist.id}
-                    playlist={playlist}
-                    index={index}
-                    depth={isSearching ? 0 : matchedFolders.length}
-                    impliedTags={impliedTags}
-                    activeTags={activeTags}
-                    onToggleTag={toggleTag}
-                  />
-                ))}
-                {shown.length === 0 && (
-                  <p className="catalog-empty">Aucune playlist ne correspond à ta recherche.</p>
+              <>
+                {/* Only over a real listing, and never over a surprise, which
+                    is one row and has no order to choose. Above the rows
+                    rather than in the mixer: it reorders what is already
+                    there instead of narrowing it. */}
+                {!surprise && shown.length > 1 && (
+                  <div className="sort-row">
+                    <button
+                      type="button"
+                      className={sortMode === 'votes' ? 'chip matched' : 'chip'}
+                      aria-pressed={sortMode === 'votes'}
+                      onClick={() => setSortMode((mode) => (mode === 'votes' ? 'default' : 'votes'))}
+                    >
+                      Les plus votées
+                    </button>
+                  </div>
                 )}
-              </div>
+                <div className="tracklist" key={routeKey}>
+                  {shown.map((playlist, index) => (
+                    <PlaylistRow
+                      key={playlist.id}
+                      playlist={playlist}
+                      index={index}
+                      depth={isSearching ? 0 : matchedFolders.length}
+                      impliedTags={impliedTags}
+                      activeTags={activeTags}
+                      onToggleTag={toggleTag}
+                    />
+                  ))}
+                  {shown.length === 0 && (
+                    <p className="catalog-empty">Aucune playlist ne correspond à ta recherche.</p>
+                  )}
+                </div>
+              </>
             )}
           </>
         )}

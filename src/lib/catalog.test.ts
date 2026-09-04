@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   buildFolderTree,
+  sortPlaylists,
   compareTags,
   findFolder,
   formatListeningTime,
@@ -299,5 +300,43 @@ describe('listAllFolders', () => {
       'Rap Game/EN/Old School',
       'Rap Game/ES',
     ])
+  })
+})
+
+describe('sortPlaylists', () => {
+  const counts = new Map([
+    ['b', 5],
+    ['c', 2],
+  ])
+
+  it('leaves the listing untouched in its default mode', () => {
+    // The incoming order is the energy ladder built by buildFolderTree, and
+    // nothing here could rebuild it — so this must not be a re-sort by the
+    // same keys, it must be the identical array.
+    const list = [playlist('Techno', null, 'A'), playlist('Techno', null, 'B')]
+    expect(sortPlaylists(list, 'default', counts)).toBe(list)
+  })
+
+  it('puts the most voted first', () => {
+    const a = { ...playlist('Techno', null, 'A'), id: 'a' }
+    const b = { ...playlist('Techno', null, 'B'), id: 'b' }
+    const c = { ...playlist('Techno', null, 'C'), id: 'c' }
+    expect(sortPlaylists([a, b, c], 'votes', counts).map((p) => p.id)).toEqual(['b', 'c', 'a'])
+  })
+
+  it('keeps equal counts in the order they arrived', () => {
+    const a = { ...playlist('Techno', null, 'A'), id: 'x' }
+    const b = { ...playlist('Techno', null, 'B'), id: 'y' }
+    // Neither is in the map, so both read zero — and a stable sort leaves the
+    // ladder they came in with intact rather than shuffling it.
+    expect(sortPlaylists([a, b], 'votes', counts).map((p) => p.id)).toEqual(['x', 'y'])
+  })
+
+  it('does not disturb the array it was given', () => {
+    const a = { ...playlist('Techno', null, 'A'), id: 'a' }
+    const b = { ...playlist('Techno', null, 'B'), id: 'b' }
+    const list = [a, b]
+    sortPlaylists(list, 'votes', counts)
+    expect(list.map((p) => p.id)).toEqual(['a', 'b'])
   })
 })

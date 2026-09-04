@@ -33,8 +33,20 @@ const NAVIGATION_HELP = [
     body: 'Une playlist encadrée de violet avec un cœur dans le coin est un coup de cœur.',
   },
   {
+    title: 'Le compte',
+    body: "Se connecter passe par Google, et rien d'autre. Il n'y a aucun mot de passe à créer ici : le site n'en voit jamais un et n'en garde aucune trace, donc il n'y a rien à perdre ni à faire fuiter. Un compte sert à garder des favoris et à voter — tout le reste du catalogue se consulte sans.",
+  },
+  {
+    title: 'Mes favoris',
+    body: "Le signet au bout d'une ligne met une playlist de côté, et le menu les rassemble sur une page. À ne pas confondre avec le cœur violet, qui est un choix de la maison : les favoris sont personnels, et personne d'autre ne peut les voir — pas même moi.",
+  },
+  {
+    title: 'Les votes',
+    body: "La flèche au bout d'une ligne vote pour une playlist, un vote par personne et par playlist. Le total est visible de tout le monde, y compris sans compte, mais qui a voté ne l'est de personne. « Les plus votées », au-dessus de la liste, la range par ce total ; l'enlever rend l'ordre habituel, du plus chill au plus NRV.",
+  },
+  {
     title: 'Ouvrir une playlist',
-    body: "Un clic n'importe où sur une ligne (sauf sur un tag) ouvre la playlist dans Spotify.",
+    body: "Un clic n'importe où sur une ligne ouvre la playlist dans Spotify — sauf sur un tag, sur le signet ou sur la flèche de vote, qui font ce qu'ils disent.",
   },
 ]
 

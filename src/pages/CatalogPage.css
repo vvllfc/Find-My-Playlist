@@ -563,10 +563,13 @@
 /* Above the stretched link, exactly as .chip is. Nothing here may set opacity,
    transform, filter or isolation: any of them would open a stacking context
    and drop the button straight back underneath. */
-.row-fav {
+.row-fav,
+.row-vote {
   position: relative;
   z-index: 1;
   display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
   padding: 0.25rem;
   border: 0;
   border-radius: 0.25rem;
@@ -575,18 +578,30 @@
   cursor: pointer;
   transition: color 120ms ease;
 }
-.row-fav svg {
+.row-fav svg,
+.row-vote svg {
   width: 1.05rem;
   height: 1.05rem;
   display: block;
 }
+.row-votes {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  /* Tabular figures so a row does not shift sideways as its count ticks over,
+     and a fixed minimum so the arrow stays put when the first vote lands. */
+  font-variant-numeric: tabular-nums;
+  min-width: 1ch;
+}
 .row-fav:hover,
-.row-fav.saved {
+.row-fav.saved,
+.row-vote:hover,
+.row-vote.voted {
   /* Green, where the curated coup de cœur is violet: on this site green marks
      what a visitor does, violet what the owner decided. */
   color: var(--accent);
 }
-.row-fav:focus-visible {
+.row-fav:focus-visible,
+.row-vote:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -1039,4 +1054,12 @@ button.back-link {
   flex-direction: column;
   align-items: flex-start;
   gap: 1rem;
+}
+
+/* Sits between the filter strip and the rows, since it changes the order of
+   what is already listed rather than what is listed. */
+.sort-row {
+  display: flex;
+  justify-content: flex-end;
+  margin: 1.25rem 0 -0.5rem;
 }

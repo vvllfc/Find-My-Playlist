@@ -285,3 +285,26 @@ export function formatListeningTime(totalDurationMs: number): string | null {
   if (hours === 0) return `${minutes} min`
   return `${hours} h ${String(minutes).padStart(2, '0')}`
 }
+
+export type SortMode = 'default' | 'votes'
+
+/**
+ * Reorders a listing by public vote count, or leaves it exactly as it came.
+ *
+ * The counts arrive from the database long after the catalogue itself, so this
+ * cannot live in buildFolderTree — that works on the build-time snapshot, which
+ * holds no vote at all. 'default' therefore has to be a genuine no-op rather
+ * than a re-sort by the same keys: the folder order it would be undoing is the
+ * calmest-to-most-energetic ladder, and nothing else reproduces it.
+ */
+export function sortPlaylists(
+  playlists: CatalogPlaylist[],
+  mode: SortMode,
+  counts: ReadonlyMap<string, number>,
+): CatalogPlaylist[] {
+  if (mode !== 'votes') return playlists
+  // A copy, because the caller's array is a memo others still read; and sort is
+  // stable per spec, so playlists on equal votes keep the order they came in —
+  // which is the energy ladder, not an arbitrary shuffle.
+  return [...playlists].sort((a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0))
+}

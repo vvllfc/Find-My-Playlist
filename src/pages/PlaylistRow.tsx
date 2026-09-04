@@ -1,6 +1,7 @@
 import { displayNameAtDepth, formatListeningTime, type CatalogPlaylist } from '../lib/catalog'
 import { useAuth } from '../lib/authStore'
-import { toggleFavorite, useUserLibrary } from '../lib/userLibrary'
+import { toggleFavorite, toggleUpvote, useUserLibrary } from '../lib/userLibrary'
+import { useUpvoteCounts } from '../lib/upvoteCounts'
 
 interface PlaylistRowProps {
   playlist: CatalogPlaylist
@@ -27,8 +28,11 @@ export default function PlaylistRow({
 }: PlaylistRowProps) {
   const listeningTime = formatListeningTime(playlist.totalDurationMs)
   const { status } = useAuth()
-  const { favoriteIds } = useUserLibrary()
+  const { favoriteIds, upvotedIds } = useUserLibrary()
+  const { counts } = useUpvoteCounts()
   const saved = favoriteIds.has(playlist.id)
+  const voted = upvotedIds.has(playlist.id)
+  const votes = counts.get(playlist.id) ?? 0
 
   return (
     // A div rather than the link itself: the tags below the name are buttons
@@ -85,6 +89,27 @@ export default function PlaylistRow({
             to two columns under 480px, and a new column would mean keeping two
             breakpoints in step forever. */}
         <span className="row-actions">
+          <button
+            type="button"
+            className={voted ? 'row-vote voted' : 'row-vote'}
+            aria-pressed={voted}
+            aria-label={
+              status !== 'signed-in'
+                ? `Se connecter pour voter (${votes} vote${votes > 1 ? 's' : ''})`
+                : voted
+                  ? `Retirer mon vote (${votes})`
+                  : `Voter pour cette playlist (${votes})`
+            }
+            onClick={() => void toggleUpvote(playlist.id)}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M12 5l7 9H5l7-9z" fill={voted ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+            </svg>
+            {/* Hidden at zero rather than showing a 0 on every row: an empty
+                count is noise, and the arrow on its own already invites the
+                first vote. */}
+            {votes > 0 && <span className="row-votes">{votes}</span>}
+          </button>
           <button
             type="button"
             className={saved ? 'row-fav saved' : 'row-fav'}

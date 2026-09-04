@@ -51,6 +51,22 @@ jobs:
           # maintenant" button (workflow_dispatch) actually call Spotify; a
           # plain code push reuses the cached playlist list to save quota.
           SKIP_LIVE_FETCH: ${{ github.event_name == 'push' && 'true' || 'false' }}
+      # A free Supabase project pauses after a week with no database activity,
+      # and the site would then stop showing vote counts. Visitors are the real
+      # keep-alive now that every page load reads them; this is the floor for a
+      # week with none. It only uses the anon key, already public in the bundle,
+      # so there is nothing to keep secret. -f so a broken key or an already
+      # paused project shows up red rather than passing quietly, and
+      # continue-on-error so Supabase being down never blocks a deploy.
+      - name: Keep the Supabase project awake
+        continue-on-error: true
+        run: |
+          curl -fsS "${SUPABASE_URL}/rest/v1/playlist_upvote_counts?select=playlist_id&limit=1" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" > /dev/null
+        env:
+          SUPABASE_URL: https://hvfzgrtfcikamyssbipc.supabase.co
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh2ZnpncnRmY2lrYW15c3NiaXBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg0NzQwNTUsImV4cCI6MjEwNDA1MDA1NX0.aoXH9a2TRXu90kbLLPw2-RtpU3oE66aks67Ztht7Wvs
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
