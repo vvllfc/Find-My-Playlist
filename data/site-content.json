@@ -32,6 +32,9 @@
     },
     "Rap Game/ES": {
       "description": "Rap espagnol"
+    },
+    "Rap Game/FR": {
+      "description": "Rap français"
     }
   },
   "playlists": {
