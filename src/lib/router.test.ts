@@ -60,6 +60,26 @@ describe('pivotBetween', () => {
   })
 })
 
+// Each of these ships as <path>/index.html so GitHub Pages answers 200 rather
+// than falling through to 404.html — see PUBLIC_PATHS in vite.config.ts. Pages
+// then serves them at /<path>/, with the trailing slash, so every one of them
+// has to resolve with it as well as without. Adding a page to that list without
+// this holding is how a 200 would start landing on the catalogue.
+describe('the pre-rendered public paths', () => {
+  it('resolve with a trailing slash exactly as without one', () => {
+    for (const [path, kind] of [
+      ['/glossaire', 'glossary'],
+      ['/confidentialite', 'privacy'],
+      ['/connexion', 'signIn'],
+      ['/favoris', 'favorites'],
+      ['/compte', 'account'],
+    ] as const) {
+      expect(parseRoute(path)).toEqual({ kind })
+      expect(parseRoute(`${path}/`)).toEqual({ kind })
+    }
+  })
+})
+
 describe('the privacy notice', () => {
   it('is a public page of its own, reachable without a session', () => {
     expect(parseRoute('/confidentialite')).toEqual({ kind: 'privacy' })

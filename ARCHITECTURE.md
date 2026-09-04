@@ -142,6 +142,17 @@ routes à dièse : un dièse n'est jamais envoyé au serveur. GitHub Pages n'aya
 SPA, le build copie `index.html` en `404.html` (voir `vite.config.ts`) — c'est ce qui fait marcher
 un lien profond à froid.
 
+> ⚠️ **Le repli 404 rend la page, mais renvoie bel et bien un statut 404.** Invisible pour un
+> visiteur, décisif pour un robot : Google va chercher l'URL de la politique de confidentialité en
+> vérifiant la marque du site, et un crawler à qui l'on répond 404 a toutes les raisons de conclure
+> que la page n'existe pas. C'est pour ça que `PUBLIC_PATHS` dans `vite.config.ts` liste les pages
+> à chemin fixe et leur fabrique un `<chemin>/index.html` : Pages les sert alors en 200, et redirige
+> `/<chemin>` sans barre finale vers `/<chemin>/`.
+>
+> **Ajouter une page à chemin fixe veut donc dire l'ajouter à cette liste**, et vérifier qu'elle
+> résout aussi avec la barre finale — `router.test.ts` épingle les deux formes pour chacune. Les
+> chemins de catalogue, eux, sont ouverts et continuent de passer par `404.html`.
+
 ---
 
 ## Comptes, connexion, sécurité
