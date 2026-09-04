@@ -125,9 +125,6 @@ export default function FavoritesPage() {
                       // The shelf spans every folder, so a name cut back to fit
                       // one of them would lose what tells it apart here.
                       depth={0}
-                      impliedTags={new Set()}
-                      activeTags={activeTags}
-                      onToggleTag={toggleTag}
                     />
                   ))}
                   {shown.length === 0 && (

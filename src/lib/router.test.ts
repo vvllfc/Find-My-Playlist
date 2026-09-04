@@ -73,6 +73,7 @@ describe('the pre-rendered public paths', () => {
       ['/connexion', 'signIn'],
       ['/favoris', 'favorites'],
       ['/compte', 'account'],
+      ['/trouver', 'selector'],
     ] as const) {
       expect(parseRoute(path)).toEqual({ kind })
       expect(parseRoute(`${path}/`)).toEqual({ kind })

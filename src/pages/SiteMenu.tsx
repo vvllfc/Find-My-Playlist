@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from '../lib/Link'
-import { ACCOUNT_PATH, FAVORITES_PATH, GLOSSARY_PATH } from '../lib/router'
+import { ACCOUNT_PATH, FAVORITES_PATH, GLOSSARY_PATH, SELECTOR_PATH } from '../lib/router'
 
 // The site's only navigation outside the folder hierarchy, parked in the corner
 // of the hero. Deliberately a menu rather than a row of links: the corner
@@ -59,6 +59,10 @@ export default function SiteMenu() {
               in. Each of those pages turns a signed-out visitor away itself,
               and records where to come back to on the way — which is knowledge
               that belongs to the page, not to a list of links. */}
+          {/* Directly under Accueil: it is a second way in, not a setting. */}
+          <Link to={SELECTOR_PATH} className="site-menu-item" role="menuitem">
+            Filtrer par critères
+          </Link>
           <Link to={ACCOUNT_PATH} className="site-menu-item" role="menuitem">
             Mon compte
           </Link>

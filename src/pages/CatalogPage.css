@@ -117,11 +117,8 @@
   z-index: 5;
 }
 .site-menu-button {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   padding: 0.45rem 0.85rem;
   border: 1px solid var(--border);
   border-radius: 0.3rem;
@@ -161,7 +158,6 @@
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.55);
 }
 .site-menu-item {
-  font-family: var(--font-mono);
   font-size: 0.85rem;
   color: var(--ink);
   text-decoration: none;
@@ -249,25 +245,29 @@
 /* Names the strip where nothing else does. Same type as the .tag-toggle it
    stands in for at the top level, so the two read as the same label — white
    rather than the chips' violet, being a heading and not a filter. */
+/* The mono is being kept for figures — indices, durations, counts, the
+   wordmark. A one-word label is not a figure. */
 .mixer-label {
-  font-family: var(--font-mono);
   font-size: 0.85rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
   color: var(--ink);
 }
+/* Neutral until it is chosen, then green — because choosing one is something
+   the visitor does. It used to be violet at rest, which spent the owner's
+   colour on a control he never touches. */
 .tag {
-  font-family: var(--font-mono);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  padding: 0.35rem 0.7rem;
+  padding: 0.42rem 0.7rem;
   border-radius: 999px;
-  border: 1px solid rgba(166, 107, 255, 0.3);
-  background: rgba(166, 107, 255, 0.12);
+  border: 1px solid #3a3a40;
+  background: rgba(255, 255, 255, 0.04);
   color: var(--ink);
   cursor: pointer;
+}
+.tag:hover:not(:disabled) {
+  border-color: var(--accent);
 }
 .tag:focus-visible,
 .chip:focus-visible,
@@ -275,46 +275,57 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
-/* The one chip that's always there, opening the rest. Deliberately larger and
-   in the page's own ink rather than the violet of a filter — it doesn't filter
-   anything, it just unfolds. */
-.tag-toggle {
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  padding: 0.42rem 0.9rem;
-  border-color: var(--border);
-  background: var(--surface);
-}
-.tag-toggle::after {
-  content: ' ▾';
-  opacity: 0.6;
-}
-.tag-toggle.open::after {
-  content: ' ▴';
-}
-
 /* Deliberately not built on .tag: it acts on the catalog rather than filtering
    it, so nothing about it should read as a chip. Square corners against their
    pills, a solid fill against their outlines, and the dice says at a glance
    what it does — three ways of not being mistaken for a filter. */
+/* Outlined now, where it used to be the one filled button in the strip. The
+   selector beside it took the fill: two solid buttons side by side argue over
+   the eye, and the shortcut should not outrank the main way through. */
 .surprise-button {
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-family: var(--font-mono);
   font-size: 0.85rem;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   padding: 0.5rem 0.95rem;
-  border: none;
+  border: 1px solid var(--accent);
+  border-radius: 0.3rem;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Where the tag toggle used to sit. Filled, because it is now the main way
+   through the catalogue for anyone who knows what they are after. */
+.selector-link {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--accent-fill);
   border-radius: 0.3rem;
   background: var(--accent-fill);
   color: var(--accent-ink);
-  cursor: pointer;
+  text-decoration: none;
   white-space: nowrap;
+}
+.selector-link:hover {
+  filter: brightness(1.1);
+}
+.selector-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.selector-link-arrow {
+  width: 1rem;
+  height: 0.8rem;
+  display: block;
 }
 .surprise-icon {
   width: 1.05rem;
@@ -352,10 +363,6 @@
     width: 0.95rem;
     height: 0.95rem;
   }
-  .tag-toggle {
-    font-size: 0.8rem;
-    padding: 0.42rem 0.75rem;
-  }
 }
 /* The narrowest screens still around (320px): a few pixels off the strip's own
    padding keeps the pair together instead of dropping the toggle onto a line
@@ -367,33 +374,12 @@
   }
 }
 
-/* The choices, unfolded inside the mixer itself rather than a second box
-   underneath it. Forced onto its own row (full width) so it wraps under the
-   search bar and toggle instead of squeezing in beside them; capped and
-   scrollable on its own so a long vocabulary can never push the playlists off
-   screen without dragging the search input out of view with it. */
-.tag-panel {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  align-items: flex-start;
-  width: 100%;
-  max-height: 40vh;
-  overflow-y: auto;
-}
-
-/* Two levels of filter, told apart by colour: a genre picks up the green used
-   for folders, a refinement the violet already worn by the tags under playlist
-   names. */
+/* One level of filter now, so one colour. The genre row this used to share
+   the strip with has become the selector, a page of its own. */
 .tag.active {
   background: var(--accent-fill);
   border-color: var(--accent-fill);
   color: var(--accent-ink);
-}
-.tag-detail.active {
-  background: var(--violet);
-  border-color: var(--violet);
-  color: #150a24;
   font-weight: 700;
 }
 .tag:disabled {
@@ -413,7 +399,12 @@
 .row {
   position: relative;
   display: grid;
-  grid-template-columns: 2.75rem 1fr auto;
+  /* A fourth column, fixed, for the two controls. They used to hang off the
+     top-left corner in a strip of their own, where they lined up with nothing
+     — and pinned beside the metadata they drifted sideways row to row, because
+     "1 titre" and "138 titres" are not the same width. A column of their own
+     is what makes them a column. */
+  grid-template-columns: 2.75rem 1fr auto auto;
   /* On the title's own line, not in the middle of the row. Centring lined the
      number and the duration up against a cell whose height changes with the
      description and the tags, so they drifted downwards on a long row while
@@ -421,14 +412,27 @@
      whatever the row holds, and at whatever size each of them is set. */
   align-items: baseline;
   column-gap: 1.25rem;
-  padding: 1rem 0.35rem;
+  padding: 0.85rem 0.35rem;
   border-bottom: 1px solid var(--border);
   color: inherit;
+  border-radius: 0.3rem;
   /* A stacking context of the row's own, so the three layers inside it — the
      controls, the frame of a coup de coeur, and the heart — are ordered
      against each other and never against a neighbouring row. */
   z-index: 0;
 }
+/* The whole row is a link and nothing said so. The ground lifts, and the name
+   and its number take the colour of everything else you can act on. */
+@media (hover: hover) {
+  .row:hover {
+    background: rgba(255, 255, 255, 0.035);
+  }
+  .row:hover .name,
+  .row:hover .row-index {
+    color: var(--accent);
+  }
+}
+
 /* Hand-picked favourites, framed rather than merely marked. The frame replaces
    the row's own separator, so it reads as one object instead of a row wearing
    an extra line. */
@@ -473,6 +477,14 @@
      instead of being cut by them. */
   filter: drop-shadow(0 0 2px var(--bg)) drop-shadow(0 0 2px var(--bg));
 }
+/* The row lost a line when the tags came off it, which brought the controls up
+   into the corner the heart breaks out of. Only on a framed row, and only on a
+   desktop — on a phone the controls sit on the second line, nowhere near it. */
+@media (min-width: 481px) {
+  .row.favorite .row-actions {
+    margin-right: 1.1rem;
+  }
+}
 .row-heart svg {
   display: block;
   width: 2.5rem;
@@ -493,20 +505,32 @@
 }
 
 @media (max-width: 480px) {
+  /* Two lines: the name across the top, then the figures and the controls
+     facing each other underneath. There is no hover on a phone, so the
+     controls cannot hide behind one — they are shown at full size and simply
+     take the end of the second line. */
   .row {
-    grid-template-columns: 1.75rem 1fr;
+    grid-template-columns: 1.75rem 1fr auto;
+    column-gap: 0.75rem;
   }
-  /* Its own breathing room, now that the row no longer has a shared gap: the
-     actions strip made this a three-row grid on a phone, and one spacing
-     cannot suit both the strip above the title and the duration below it. */
+  .row-index {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .row-main {
+    grid-column: 2 / -1;
+    grid-row: 1;
+  }
   .row-meta {
     grid-column: 2;
-    margin-top: 0.6rem;
+    grid-row: 2;
+    margin-top: 0.5rem;
   }
-  /* Half the page gutter out here, so the same overhang would put the strip
-     within a few pixels of the screen edge. */
   .row-actions {
-    margin-left: -0.25rem;
+    grid-column: 3;
+    grid-row: 2;
+    margin-top: 0.5rem;
+    min-width: 0;
   }
   /* Only 1rem of page gutter here, and the tilt widens the heart's footprint
      by about 7px on top of the offset — at the desktop offset it lands just
@@ -528,44 +552,43 @@
   font-size: 1.1rem;
   margin: 0 0 0.2rem;
 }
-/* Green rather than the muted grey of the metadata around it: these are the
-   only hand-written words on the row, so they shouldn't read as small print. */
+/* Muted rather than green. It was in the interactive accent to keep it from
+   reading as small print, which was the right worry and the wrong fix: a
+   coloured paragraph on a row full of links reads as another link. Size and
+   position carry it instead — green now means only "you can act on this". */
 .row-main .desc {
   font-size: 0.9rem;
-  color: var(--accent);
-  margin: 0 0 0.5rem;
-}
-.row-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
+  color: var(--muted);
+  margin: 0.15rem 0 0;
 }
 /* Above the stretched row link, so a click filters by the tag instead of
    opening the playlist. */
+/* Left over in two places now the rows carry no tags: the sort control above
+   a listing, and the glossary's labels. Same neutral-until-chosen vocabulary
+   as the filter pills. */
 .chip {
   position: relative;
   z-index: 1;
-  font-family: var(--font-mono);
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  padding: 0.18rem 0.55rem;
+  padding: 0.22rem 0.55rem;
   border-radius: 0.2rem;
-  background: rgba(166, 107, 255, 0.12);
-  border: 1px solid rgba(166, 107, 255, 0.3);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid #3a3a40;
   color: var(--muted);
   cursor: pointer;
 }
 .chip:hover {
-  border-color: var(--violet);
+  border-color: var(--accent);
   color: var(--ink);
 }
 /* Highlights only when this tag is currently selected in the mixer above —
    not tied to any specific tag value. */
 .chip.matched {
-  background: var(--violet);
-  border-color: var(--violet);
-  color: #150a24;
+  background: var(--accent-fill);
+  border-color: var(--accent-fill);
+  color: var(--accent-ink);
   font-weight: 700;
 }
 .row-meta {
@@ -592,39 +615,53 @@
    this box: giving the box a z-index would lift the count with it, and the
    number is not a control. */
 .row-actions {
-  grid-column: 1 / -1;
-  justify-self: start;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  /* Pulled up flush with the top of the row and out past its left edge, the
-     way the curated heart breaks out of the opposite corner: the controls read
-     as pinned onto the row rather than laid out inside it, and the eye finds
-     them without hunting. The -1rem cancels the row's own top padding exactly,
-     which is what puts them on the container's edge rather than inside it.
-
-     Deliberately no background: one was tried, to keep the violet frame from
-     crossing the icons, and it showed as a block of page colour hanging off
-     the left of every row. The frame is drawn in front instead. */
-  margin: -1rem 0 0.3rem -0.65rem;
+  /* On the cell rather than the row's baseline: an SVG has no text baseline to
+     align to, so left to `baseline` the icons sit wherever the browser guesses. */
+  align-self: center;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  /* Same width whatever the vote count, so the hearts form a straight edge. */
+  min-width: 6rem;
 }
 /* Above the stretched link, exactly as .chip is. Nothing here may set opacity,
    transform, filter or isolation: any of them would open a stacking context
    and drop the button straight back underneath. */
+/* Never grey. The outline invites, and only the fill answers — so the two
+   controls read as offered rather than as disabled decoration.
+
+   Three states, and the middle one is why the fill comes from a custom
+   property rather than an attribute: outlined at rest, translucent under the
+   pointer, solid once set. If hover filled solid it would look exactly like a
+   vote already cast, and nothing would tell you what you had voted for. */
 .row-fav,
 .row-vote {
   position: relative;
   z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
   padding: 0.25rem;
   border: 0;
   border-radius: 0.25rem;
   background: none;
-  color: var(--muted);
+  color: var(--accent);
+  --icon-fill: none;
   cursor: pointer;
-  transition: color 120ms ease;
+}
+.row-fav svg path,
+.row-vote svg path {
+  fill: var(--icon-fill);
+}
+@media (hover: hover) {
+  .row-fav:hover,
+  .row-vote:hover {
+    --icon-fill: rgba(30, 215, 96, 0.38);
+  }
+}
+.row-fav.saved,
+.row-vote.voted {
+  --icon-fill: var(--accent);
 }
 .row-fav svg,
 .row-vote svg {
@@ -640,20 +677,19 @@
   font-family: var(--font-mono);
   font-size: 0.85rem;
   color: var(--muted);
-  /* Tabular figures so the strip does not shift sideways as the count ticks
-     over, and a floor so the flame stays put when the first vote lands. */
+  /* Tabular figures, and a slot held open even at zero: the count used to
+     appear with the first vote and shove the flame sideways under the
+     reader's eye. */
   font-variant-numeric: tabular-nums;
-  min-width: 1ch;
-  margin-right: 0.2rem;
+  min-width: 2ch;
+  text-align: right;
 }
-.row-fav:hover,
-.row-fav.saved,
-.row-vote:hover,
-.row-vote.voted {
-  /* Green, where the curated coup de coeur is violet: on this site green marks
-     what a visitor does, violet what the owner decided. */
+/* Green only once the vote is this reader's own — which is the last thing left
+   saying so, now that the flame is green either way. */
+.row-actions:has(.row-vote.voted) .row-votes {
   color: var(--accent);
 }
+
 .row-fav:focus-visible,
 .row-vote:focus-visible {
   outline: 2px solid var(--accent);
@@ -797,11 +833,11 @@
   margin: 0;
 }
 
-/* Green like the playlist descriptions, and for the same reason: on a tile
-   otherwise made of a name and a count, this is the written part. */
+/* Muted, like every other hand-written line on the site: a text is read, it
+   does not signal. */
 .folder-desc {
   font-size: 0.85rem;
-  color: var(--accent);
+  color: var(--muted);
   margin: 0 0 0.4rem;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -841,7 +877,7 @@
 .folder-header p {
   margin: 0.35rem 0 0;
   max-width: 44em;
-  color: var(--accent);
+  color: var(--muted);
   font-size: 0.95rem;
 }
 
@@ -852,8 +888,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   color: var(--accent);
   text-decoration: none;
   margin: 1.25rem 0 1.4rem;
@@ -883,10 +918,10 @@ button.back-link {
   margin: 0 0 1.25rem;
 }
 
-/* The folder's shortcut out to Spotify. It takes the violet the wordmark above
-   it now wears — an invitation rather than a control — and lights up on hover
-   instead of just changing shade. Square corners keep it clear of the tags'
-   pill vocabulary, the same way the surprise button it echoes does. */
+/* The folder's shortcut out to Spotify. Green: it opens something, which is
+   the visitor acting, and violet is kept for what the owner decided. Square
+   corners keep it clear of the tags' pill vocabulary, the same way the
+   surprise button it echoes does. */
 .random-button {
   /* Block-level but shrink-wrapped: as inline-flex it shared a line with the
      back arrow, which read as one control group rather than two. */
@@ -901,10 +936,10 @@ button.back-link {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 0.55rem 1rem;
-  border: 1px solid var(--violet);
+  border: 1px solid var(--accent);
   border-radius: 0.3rem;
-  background: rgba(166, 107, 255, 0.16);
-  color: var(--ink);
+  background: none;
+  color: var(--accent);
   cursor: pointer;
   transition:
     box-shadow 200ms ease,
@@ -917,11 +952,11 @@ button.back-link {
 }
 .random-button:hover:not(:disabled),
 .random-button:focus-visible {
-  background: rgba(166, 107, 255, 0.3);
-  box-shadow: 0 0 14px rgba(166, 107, 255, 0.35);
+  background: rgba(30, 215, 96, 0.14);
+  box-shadow: 0 0 14px rgba(30, 215, 96, 0.25);
 }
 .random-button:focus-visible {
-  outline: 2px solid var(--violet);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .random-button:disabled {
@@ -936,6 +971,208 @@ button.back-link {
 .back-link:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* --- Le sélecteur ------------------------------------------------------- */
+
+/* One panel rather than rails loose on the page: over the oil-slick they
+   dissolved into it. Translucent like the catalogue's own filter strip, so the
+   two read as the same apparatus asked in two places. */
+.selector {
+  background: rgba(26, 26, 26, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  padding: 1.35rem 1.4rem;
+  margin: 0 0 2rem;
+}
+.rail-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+/* Where you are, above; what you want of it, below. */
+.selector-rule {
+  height: 1px;
+  background: var(--border);
+  margin: 1.35rem 0;
+}
+.rail {
+  display: flex;
+  gap: 1.5rem;
+  align-items: baseline;
+}
+.rail-label {
+  flex: 0 0 7.5rem;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+/* A family with nothing under the current folder says so on one line, rather
+   than vanishing — a rail that comes and goes makes the panel jump as you
+   narrow, and a facet you cannot see is one you cannot know exists. */
+.rail-empty {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #5f5a66;
+}
+.rail-track {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.rail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  border: 1px solid #3a3a40;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--ink);
+  cursor: pointer;
+}
+.pick:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+.pick.on {
+  border-color: var(--accent-fill);
+  background: var(--accent-fill);
+  color: var(--accent-ink);
+  font-weight: 700;
+}
+/* Emptied by a choice made elsewhere. Shown rather than removed, so the rail
+   keeps its shape while you narrow. */
+.pick.off {
+  border-color: var(--border);
+  background: none;
+  color: #5f5a66;
+  cursor: default;
+}
+.pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.pick-count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.pick.on .pick-count {
+  color: var(--accent-ink);
+  opacity: 0.65;
+}
+.pick.off .pick-count {
+  color: #4a4650;
+}
+
+/* The number is the whole point of the page — it is what moves while you
+   choose — so it is set at the size of a heading, not of a caption. */
+.tally {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.tally-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.8rem;
+  margin: 0;
+  font-family: var(--font-display);
+  text-transform: uppercase;
+  font-size: 1.5rem;
+}
+.tally-count strong {
+  font-weight: 400;
+  font-size: 3.5rem;
+  line-height: 1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.tally-time {
+  font-family: var(--font-body);
+  text-transform: none;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.tally-clear {
+  font-size: 0.85rem;
+  color: var(--accent);
+  background: none;
+  border: 0;
+  padding: 0.4rem 0;
+  cursor: pointer;
+}
+.tally-clear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* The selector's results are whole rows that are links themselves — there is
+   no heart or flame on them to keep out of an anchor. */
+.row-plain {
+  text-decoration: none;
+}
+.row-path {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+@media (max-width: 700px) {
+  /* Twenty genres wrapped over four lines push everything that matters off the
+     screen, so each rail runs sideways instead. The label goes above it: at
+     this width a fixed 7.5rem gutter costs more than it explains. */
+  .rail {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.55rem;
+  }
+  .rail-label {
+    flex: none;
+  }
+  .rail-track {
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* Bleeds into the panel's own padding so a chip is cut by the edge rather
+       than stopping short of it — which is what says there is more sideways. */
+    margin-right: -1.4rem;
+    padding-right: 1.4rem;
+  }
+  .rail-track::-webkit-scrollbar {
+    display: none;
+  }
+  .rail-chips {
+    flex-wrap: nowrap;
+    width: max-content;
+  }
+  /* A thumb needs its 44px, and these are the page's only controls. */
+  .pick {
+    min-height: 44px;
+  }
+  .selector {
+    padding: 1rem 0.85rem;
+  }
+  .selector-rule {
+    margin: 1.1rem 0;
+  }
+  .tally-count strong {
+    font-size: 2.75rem;
+  }
 }
 
 .search-summary {
@@ -1376,6 +1613,10 @@ button.back-link {
   margin: -2rem auto 0;
   padding: 0 2rem 2.5rem;
   box-sizing: border-box;
+  /* Bottom right rather than a band across the foot of the page: it is one
+     link that has to be reachable, not a section. */
+  display: flex;
+  justify-content: flex-end;
   /* Both of these are why it was invisible. .catalog-page lays two decorative
      sheets over the whole viewport in position: fixed, and .catalog carries a
      z-index of its own to sit above them — this needs the same, or it is
@@ -1387,15 +1628,16 @@ button.back-link {
   background: #0a0a0d;
 }
 .site-footer a {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
+  font-size: 0.75rem;
   color: var(--muted);
   text-decoration: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
 }
 .site-footer a:hover {
   color: var(--ink);
-  text-decoration: underline;
+  border-color: #3a3a40;
 }
 .site-footer a:focus-visible {
   outline: 2px solid var(--accent);

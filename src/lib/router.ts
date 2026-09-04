@@ -17,6 +17,7 @@ export type Route =
   | { kind: 'signIn' }
   | { kind: 'favorites' }
   | { kind: 'account' }
+  | { kind: 'selector' }
   | { kind: 'catalog'; segments: string[] }
 
 export const GLOSSARY_PATH = '/glossaire'
@@ -51,6 +52,11 @@ export const FAVORITES_PATH = '/favoris'
 
 export const ACCOUNT_PATH = '/compte'
 
+// The selector: the way through the catalogue that asks what you want instead
+// of where it is filed. A page of its own rather than a mode of the home page,
+// because it answers a different question and deserves its own link.
+export const SELECTOR_PATH = '/trouver'
+
 // Public and reachable without an account, on purpose: it is the page that
 // says what having one costs, and Google checks that it answers before it will
 // show this site's own name on its sign-in screen.
@@ -72,6 +78,7 @@ export function parseRoute(location: string): Route {
   if (segments.length === 1 && segments[0] === 'connexion') return { kind: 'signIn' }
   if (segments.length === 1 && segments[0] === 'favoris') return { kind: 'favorites' }
   if (segments.length === 1 && segments[0] === 'compte') return { kind: 'account' }
+  if (segments.length === 1 && segments[0] === 'trouver') return { kind: 'selector' }
   if (segments.length === 1 && segments[0] === 'confidentialite') return { kind: 'privacy' }
   return { kind: 'catalog', segments }
 }

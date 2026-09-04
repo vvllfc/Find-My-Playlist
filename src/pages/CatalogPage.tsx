@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useCatalog } from '../lib/useCatalog'
 import { Link } from '../lib/Link'
+import { SELECTOR_PATH } from '../lib/router'
 import SiteMenu from './SiteMenu'
 import PlaylistRow from './PlaylistRow'
 import { useUpvoteCounts } from '../lib/upvoteCounts'
@@ -8,7 +9,6 @@ import {
   buildFolderTree,
   compareTags,
   findFolder,
-  genreLevelTags,
   sortPlaylists,
   type CatalogPlaylist,
   type SortMode,
@@ -91,7 +91,6 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   const { catalog, error } = useCatalog()
   const [query, setQuery] = useState('')
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set())
-  const [tagsOpen, setTagsOpen] = useState(false)
   const [surprise, setSurprise] = useState<CatalogPlaylist | null>(null)
   const [dieFace, setDieFace] = useState(3)
   const [sortMode, setSortMode] = useState<SortMode>('default')
@@ -163,46 +162,28 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
     })
   }, [scope, query, activeTags])
 
-  // Inside a folder the genre is a given, so the row goes straight to the
-  // detail; at the top it starts with genres only and opens up from there.
-  const genreTags = useMemo(() => genreLevelTags(catalog?.playlists ?? []), [catalog])
-  const pickedGenre = [...activeTags].find((tag) => genreTags.includes(tag)) ?? null
-  const showGenreRow = !match && !pickedGenre
-
+  // Only ever rendered inside a folder now, where the genre is a given: the
+  // home page used to unfold the twenty-one genres here and sends you to the
+  // selector instead, which asks the question properly and on a page with room
+  // for it.
   const chips = useMemo(() => {
-    // Narrowed to the genres actually reachable — a search for "techno" has no
-    // reason to still offer Ska.
-    if (showGenreRow) {
-      const reachable = new Set(filtered.flatMap((p) => p.tags))
-      return genreTags.filter((tag) => reachable.has(tag))
-    }
     const tags = new Set<string>()
     for (const playlist of filtered) {
       for (const tag of playlist.tags) {
         if (impliedTags.has(tag)) continue
-        if (genreTags.includes(tag) && tag !== pickedGenre) continue
         tags.add(tag)
       }
     }
-    return [...tags].sort((a, b) => {
-      // The chosen genre leads the row, so it stays easy to click off.
-      if (a === pickedGenre) return -1
-      if (b === pickedGenre) return 1
-      return compareTags(a, b)
-    })
-  }, [showGenreRow, genreTags, filtered, impliedTags, pickedGenre])
+    return [...tags].sort(compareTags)
+  }, [filtered, impliedTags])
 
-  // Genres keep the green already used for folders; refinements take the
-  // violet already worn by the tags under playlist names.
   function renderChip(tag: string) {
     const selected = activeTags.has(tag)
     return (
       <button
         key={tag}
         type="button"
-        className={['tag', genreTags.includes(tag) ? 'tag-genre' : 'tag-detail', selected ? 'active' : '']
-          .filter(Boolean)
-          .join(' ')}
+        className={selected ? 'tag active' : 'tag'}
         aria-pressed={selected}
         onClick={() => toggleTag(tag)}
       >
@@ -217,14 +198,8 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
     setSurprise(null)
     setActiveTags((prev) => {
       const next = new Set(prev)
-      if (next.has(tag)) {
-        next.delete(tag)
-        // Dropping the genre drops what was refining it — those chips are
-        // about to disappear, and leaving them active would filter invisibly.
-        if (genreTags.includes(tag)) next.clear()
-      } else {
-        next.add(tag)
-      }
+      if (next.has(tag)) next.delete(tag)
+      else next.add(tag)
       return next
     })
   }
@@ -265,9 +240,10 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
   // Inside a folder the search box goes away — the folder is the query. What
   // stays is the tag row, and only where playlists are actually listed: over a
   // grid of sub-folders the chips filter nothing you can see. No folder carries
-  // more than eight of them, so they sit open instead of behind the toggle.
+  // more than eight of them, so they sit open rather than behind a toggle.
+  // Outside a folder there is no tag row at all any more.
   const inFolder = Boolean(match)
-  const showTagRow = chips.length > 0 && (!inFolder || Boolean(listedFolder))
+  const showTagRow = inFolder && Boolean(listedFolder) && chips.length > 0
   const showMixer = !inFolder || showTagRow
 
   // Route only, deliberately not the query — otherwise every keystroke in the
@@ -382,8 +358,33 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                   aria-label="Rechercher une playlist"
                 />
               )}
-              {/* Only alongside the search box, and deliberately not a chip:
-                  it acts on the catalog instead of narrowing it. */}
+              {/* Where the tag toggle used to be. It unfolded twenty-one
+                  genres into the strip, which on a phone filled the screen
+                  before a single playlist showed; the selector asks the same
+                  question with room to answer it, and four more besides. The
+                  main way through the catalogue now, so it takes the filled
+                  green and the dice beside it steps back to an outline. */}
+              {!inFolder && (
+                <Link to={SELECTOR_PATH} className="selector-link">
+                  Filtrer par critères
+                  <svg
+                    className="selector-link-arrow"
+                    viewBox="0 0 18 14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M11 1l6 6-6 6" />
+                    <path d="M17 7H1" />
+                  </svg>
+                </Link>
+              )}
+              {/* Deliberately not a chip: it acts on the catalog instead of
+                  narrowing it. */}
               {!inFolder && (
                 <button
                   type="button"
@@ -397,39 +398,9 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
               )}
               {showTagRow && (
                 <>
-                  {/* Inside a folder the strip is nothing but tags, so it says
-                      so outright — at the top level the toggle below already
-                      carries that word. */}
-                  {inFolder && <span className="mixer-label">Tags</span>}
+                  <span className="mixer-label">Tags</span>
                   <div className="mixer-divider" />
-                  {inFolder ? (
-                    chips.map((tag) => renderChip(tag))
-                  ) : (
-                    <>
-                      {/* Folded away at the top level only: laid out flat,
-                          twenty-odd genres filled the screen on a phone before
-                          any playlist showed. A folder's handful doesn't. */}
-                      <button
-                        type="button"
-                        className={tagsOpen ? 'tag tag-toggle open' : 'tag tag-toggle'}
-                        aria-expanded={tagsOpen}
-                        onClick={() => setTagsOpen((open) => !open)}
-                      >
-                        Tags{activeTags.size > 0 ? ` · ${activeTags.size}` : ''}
-                      </button>
-                      {/* What's filtering stays visible even when folded, so
-                          the list is never quietly narrowed by something off
-                          screen. */}
-                      {chips.filter((tag) => activeTags.has(tag)).map((tag) => renderChip(tag))}
-                      {/* Unfolds inside the same mixer box rather than a second
-                          one underneath — it's still one filter strip. */}
-                      {tagsOpen && chips.some((tag) => !activeTags.has(tag)) && (
-                        <div className="tag-panel">
-                          {chips.filter((tag) => !activeTags.has(tag)).map((tag) => renderChip(tag))}
-                        </div>
-                      )}
-                    </>
-                  )}
+                  {chips.map((tag) => renderChip(tag))}
                 </>
               )}
             </div>
@@ -495,9 +466,6 @@ export default function CatalogPage({ segments }: { segments: string[] }) {
                       playlist={playlist}
                       index={index}
                       depth={isSearching ? 0 : matchedFolders.length}
-                      impliedTags={impliedTags}
-                      activeTags={activeTags}
-                      onToggleTag={toggleTag}
                     />
                   ))}
                   {shown.length === 0 && (

@@ -9,6 +9,7 @@ import SignInPage from './pages/SignInPage'
 import FavoritesPage from './pages/FavoritesPage'
 import AccountPage from './pages/AccountPage'
 import PrivacyPage from './pages/PrivacyPage'
+import SelectorPage from './pages/SelectorPage'
 import SiteFooter from './pages/SiteFooter'
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
       {route.kind === 'favorites' && <FavoritesPage />}
       {route.kind === 'account' && <AccountPage />}
       {route.kind === 'privacy' && <PrivacyPage />}
+      {route.kind === 'selector' && <SelectorPage />}
       {route.kind === 'catalog' && <CatalogPage segments={route.segments} />}
       <SiteFooter />
     </>
