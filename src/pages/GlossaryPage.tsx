@@ -34,7 +34,7 @@ const NAVIGATION_HELP = [
   },
   {
     title: 'Le compte',
-    body: "Se connecter passe par Google, et rien d'autre. Il n'y a aucun mot de passe à créer ici : le site n'en voit jamais un et n'en garde aucune trace, donc il n'y a rien à perdre ni à faire fuiter. Un compte sert à garder des favoris et à voter — tout le reste du catalogue se consulte sans. La page « Mon compte » sert à choisir un nom, à décider si tes votes portent ce nom en public, et à tout effacer si tu le souhaites.",
+    body: "Se connecter passe par Google, et rien d'autre. Il n'y a aucun mot de passe à créer ici : le site n'en voit jamais un et n'en garde aucune trace, donc il n'y a rien à perdre ni à faire fuiter. Un compte sert à garder des favoris et à voter — tout le reste du catalogue se consulte sans. La page « Mon compte » sert à choisir un pseudo, à décider si tes votes le portent en public, et à tout effacer si tu le souhaites.",
   },
   {
     title: 'Mes favoris',

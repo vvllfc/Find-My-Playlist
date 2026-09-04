@@ -151,7 +151,7 @@ export async function saveProfile(userId: string, next: Profile): Promise<boolea
       ...state,
       saving: false,
       error: taken
-        ? "Ce nom est déjà pris. Choisis-en un autre."
+        ? "Ce pseudo est déjà pris. Choisis-en un autre."
         : "Le profil n'a pas pu être enregistré.",
     })
     return false

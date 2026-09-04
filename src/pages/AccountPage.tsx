@@ -111,9 +111,9 @@ export default function AccountPage() {
             </p>
 
             <section className="account-block">
-              <h2>Mon nom</h2>
+              <h2>Mon pseudo</h2>
               <p className="account-note">
-                Le seul nom que le site peut afficher. Il n’apparaît nulle part tant que tes votes restent privés.
+                Le seul pseudo que le site peut afficher. Il n’apparaît nulle part tant que tes votes restent privés.
               </p>
               <input
                 type="text"
@@ -125,7 +125,7 @@ export default function AccountPage() {
                   setName(e.target.value)
                   setSaved(false)
                 }}
-                aria-label="Mon nom affiché"
+                aria-label="Mon pseudo"
               />
             </section>
 
@@ -141,16 +141,16 @@ export default function AccountPage() {
                     setSaved(false)
                   }}
                 />
-                <span>Afficher mon nom à côté des playlists pour lesquelles j’ai voté</span>
+                <span>Afficher mon pseudo à côté des playlists pour lesquelles j’ai voté</span>
               </label>
               {/* Said outright rather than discovered: it applies backwards as
                   well as forwards, and both ways round. */}
               <p className="account-note">
-                Décoché, personne ne peut savoir que tu as voté — pas même moi. Coché, ton nom devient visible sur{' '}
+                Décoché, personne ne peut savoir que tu as voté — pas même moi. Coché, ton pseudo devient visible sur{' '}
                 <strong>tous</strong> tes votes, y compris ceux d’avant ; le décocher les cache tous aussitôt. Le
                 nombre de votes, lui, est public dans les deux cas.
               </p>
-              {!nameIsUsable && <p className="account-note">Il faut d’abord choisir un nom.</p>}
+              {!nameIsUsable && <p className="account-note">Il faut d’abord choisir un pseudo.</p>}
             </section>
 
             <div className="account-actions">
@@ -180,7 +180,7 @@ export default function AccountPage() {
             <section className="account-block danger">
               <h2>Supprimer mon compte</h2>
               <p className="account-note">
-                Efface définitivement tes favoris, tes votes, ton nom et ton compte. Les compteurs de votes
+                Efface définitivement tes favoris, tes votes, ton pseudo et ton compte. Les compteurs de votes
                 baissent d’autant. Rien n’est conservé et c’est irréversible.
               </p>
               {!confirmingDelete ? (
