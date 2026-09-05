@@ -85,6 +85,11 @@
   color: inherit;
   text-decoration: none;
 }
+/* Violet, and kept violet deliberately (Valentin, 2026-09-04) though the
+   colour law would say green: this whole corner belongs to the wordmark, which
+   is the one place his colour signs the site rather than saying anything. The
+   menu's own border and focus rings below follow it for the same reason —
+   they are that corner, not controls out in the page. */
 .kicker-link:focus-visible {
   outline: 2px solid var(--violet);
   outline-offset: 3px;
@@ -1283,6 +1288,8 @@ button.back-link {
 .glossary-tags dt {
   padding-right: 1rem;
 }
+/* Violet like every other line he wrote himself: these are his questions,
+   not the site's labels. Kept deliberately (2026-09-04). */
 .glossary-help dt {
   font-family: var(--font-mono);
   font-size: 0.8rem;
@@ -1431,7 +1438,11 @@ button.back-link {
   color: var(--accent);
 }
 /* Framed in the contrast accent rather than in red: nothing else on this site
-   is red, and the section already says plainly what it does. */
+   is red, and the section already says plainly what it does.
+   The one control on the site that is violet, and kept so deliberately
+   (2026-09-04). Green would be worse than wrong here — it is the colour of
+   "go" on the only button that destroys something — and red is a vocabulary
+   this site does not have. Violet at least reads as "not the usual". */
 .account-block.danger {
   border: 1px solid var(--violet);
   border-radius: 0.4rem;
