@@ -52,7 +52,27 @@ function spaFallback(): Plugin {
   }
 }
 
+// The oldest browsers the stylesheet is compiled for.
+//
+// This is not cosmetic. Vite 8 minifies CSS with Lightning CSS, and Lightning
+// CSS rewrites whatever the target browsers can read — with the default target
+// (Safari 16.4) it turns every `@media (max-width: 700px)` into the Media
+// Queries 4 range form `@media (width <= 700px)`. Safari only learned that
+// form in 16.4, and a browser that cannot parse a media query drops the block
+// whole: an iPhone still on iOS 15 was getting the four-across desktop grid on
+// a 390px screen, folder names and counts sliced off by the tile's
+// `overflow: hidden`. Nothing was wrong with the CSS in src/ — only with what
+// was being shipped.
+//
+// iOS 14.5 is the floor because that is where grid/flex `gap` arrives, which
+// the layout leans on everywhere. Raise it only against a real reason, and
+// re-check dist/assets/*.css for range-syntax media queries afterwards.
+const CSS_TARGET = ['chrome87', 'edge88', 'firefox78', 'safari14.1', 'ios14.5']
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), spaFallback()],
+  build: {
+    cssTarget: CSS_TARGET,
+  },
 })
